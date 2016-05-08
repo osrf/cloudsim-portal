@@ -14,9 +14,7 @@ This is the portal  server for Cloudsim
 You need AWS keys (AWSAccessKeyId and AWSSecretKey). Get them from the AWS
 console.
 
-![IMAGE](aws_keys.png)
-
-Then you must prepare your environment variables. A good option is to create an
+![IMAGE](aws_keys.png) Then you must prepare your environment variables. A good option is to create an
 aws_setup.bash file outside of your repo that you can source. It can look like
  this (but replace the xxx with your aws keys):
 
