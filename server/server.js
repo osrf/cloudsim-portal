@@ -1,22 +1,27 @@
 'use strict'
 
-let express = require('express');
-let app=express();
-
+let express = require('express')
+let app = express()
+let util = require('util')
 let fs = require('fs')
+let bodyParser = require('body-parser')
 
 let httpServer = null
 let io = null
 
 const useHttps = true
 if(useHttps) {
-  const privateKey  = fs.readFileSync(__dirname + '/key.pem', 'utf8')
-  const certificate = fs.readFileSync(__dirname + '/key-cert.pem', 'utf8')
+  const keyPath = __dirname + '/key.pem'
+  const certPath = __dirname + '/key-cert.pem'
+  const privateKey  = fs.readFileSync(keyPath, 'utf8')
+  const certificate = fs.readFileSync(certPath, 'utf8')
   httpServer = require('https').Server({key: privateKey, cert: certificate}, app)
 }
 else {
   httpServer = require('http').Server(app)
 }
+
+app.use(bodyParser.json())
 
 io = require('socket.io')(httpServer)
 
@@ -204,6 +209,31 @@ app.get('/', function (req, res) {
 `
   res.end(s)
 })
+
+let sims = []
+
+app.get('/simulations', function (req, res) {
+
+  console.log('body: ' + util.inspect(req.body))
+  let s = `
+    [{name:'walking', id:'1', score:'1.1'},
+     {name:'manipulation', id:'2', score:'2.2'},
+     {name:'navigation', id:'3', score:'3.3'}]`
+
+  console.log('/simulations' +  s)
+  res.end(s)
+})
+
+app.post('/simulation', function(req, res) {
+
+  console.log('body: ' + util.inspect(req.body))
+  console.log('query: ' + util.inspect(req.query))
+
+  res.end('{"success":"true"}')
+})
+
+// app.post('/register', UserRoutes.register)
+// app.post('/unregister', UserRoutes.unregister)
 
 let port = 4000
 if (process.argv.length > 2) {
