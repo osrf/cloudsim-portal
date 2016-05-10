@@ -6,7 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": {
+    "name": "hugomatic",
+    "email": "hugo@osrfoundation.org",
+    "url": "http://osrfoundation.org"
+  },
   "license": "ISC",
   "dependencies": {
     "ansi-to-html": "^0.4.1",

@@ -21,7 +21,7 @@ aws_setup.bash file outside of your repo that you can source. It can look like
 `export AWS_ACCESS_KEY_ID=XXXXXXXX
  export AWS_SECRET_ACCESS_KEY=XXXXXXXXXX`
 
-These environment variables must be loaded: 
+These environment variables must be loaded:
 
 * in the shell that runs the portal web app (the keys are used to launch
  simulation machines)
@@ -36,19 +36,22 @@ region where you want to launch machines. That key must be called "cloudsim".
 
 You need the following: nodejs (version 4 and up) and gulp
 
-* If you are running Trusty, you should use with nodesource: 
+* If you are running Trusty, you should use with nodesource:
 curl https://deb.nodesource.com/setup_4.x | sudo -E bash -
 
 to install nodejs:
 
-`sudo apt-get install -y nodejs nodejs-legacy npm redis-server
+`sudo apt-get install -y nodejs nodejs-legacy npm redis-server mercurial
 sudo npm install -g gulp`
 
 
 #### Launch on an AWS server ####
 
-The AMI for the portal is not ready.
+Use the launch_portal.js scrfipt to create a new aws instance.
 
+sudo su
+echo "portal" > /etc/hostname
+bonus: echo "127.0.1.1 portal" >>  /etc/hosts
 
 ### Setup ###
 
