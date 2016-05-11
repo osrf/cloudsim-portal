@@ -13,8 +13,8 @@ if( !process.env.AWS_ACCESS_KEY_ID) {
 
 if (process.argv.length != 4) {
   console.log('Wrong # of arguments!')
-  console.log('  should be: aws_ssh_keyname script')
-  console.log('  ex: node launch_sim.js hugo_osrf src_start.bash\n')
+  console.log('  should be: aws_ssh_keyname')
+  console.log('  ex: node launch_sim.js cloudsim portal.bash\n')
   console.log('actual args: ', process.argv.length)
   process.argv.forEach((val, index, array) => {
     console.log(' ', `${index}: ${val}`);
@@ -25,19 +25,12 @@ if (process.argv.length != 4) {
 var aws_ssh_key = process.argv[2]
 var script = fs.readFileSync(process.argv[3], 'utf8')
 
-// var base_good = { desc: 'Trusty + nvidia (CUDA 6.5)',
-//               region : 'us-west-1',
-//               keyName : 'hugo_osrf',
-//               hardware : 'g2.2xlarge',
-//               security : 'gazebo',
-//               image : 'ami-ea9af68a'}
-
-var base_good = { desc: 'Trusty + nvidia (CUDA 7.5)',
+var base_good = { desc: 'Cloudsim portal on m4 xenial',
                region : 'us-west-1',
                keyName : aws_ssh_key,
-               hardware : 'g2.2xlarge',
-               security : 'gazebo',
-               image : 'ami-610c7801'}
+               hardware : 'm4.large',  // hvm:ebs-ssd
+               security : 'cloudsim_portal',
+               image : 'ami-d8e996b8'}
 
 
 let m  = base_good
@@ -46,7 +39,7 @@ console.log('region: ' + m.region)
 
 let info = {}
 
-let tags = {Name:'simtest'}
+let tags = {Name:'gazebo-portal'}
 
 xcloud.launchSimulator (m.region, m.keyName, m.hardware, m.security, m.image, tags, script,
   function (err, machine) {
