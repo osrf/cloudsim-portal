@@ -29,7 +29,7 @@ var base_good = { desc: 'Cloudsim portal on m4 xenial',
                region : 'us-west-1',
                keyName : aws_ssh_key,
                hardware : 'm4.large',  // hvm:ebs-ssd
-               security : 'cloudsim_portal',
+               security : 'cloudsim-portal',
                image : 'ami-d8e996b8'}
 
 

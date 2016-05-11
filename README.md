@@ -1,6 +1,6 @@
 # README #
 
-This is the portal  server for Cloudsim
+This is the portal server for Cloudsim
 
 ### What is this repository for? ###
 
@@ -9,17 +9,16 @@ This is the portal  server for Cloudsim
 * Launches new AWS gpu instances with simulators and field computers
 * Must be run from an AWS instance when using SSL certificates
 
-### Setup ###
+### AWS Setup ###
 
 You need AWS keys (AWSAccessKeyId and AWSSecretKey). Get them from the AWS
 console.
 
-![IMAGE](aws_keys.png) Then you must prepare your environment variables. A good option is to create an
-aws_setup.bash file outside of your repo that you can source. It can look like
- this (but replace the xxx with your aws keys):
+![IMAGE](aws_keys.png) Then you must prepare your environment variables.
+Create a .env file and add the follwing but replace the xxx with your aws keys:
 
-`export AWS_ACCESS_KEY_ID=XXXXXXXX
- export AWS_SECRET_ACCESS_KEY=XXXXXXXXXX`
+`AWS_ACCESS_KEY_ID=XXXXXXXX
+ AWS_SECRET_ACCESS_KEY=XXXXXXXXXX`
 
 These environment variables must be loaded:
 
@@ -32,7 +31,58 @@ region where you want to launch machines. That key must be called "cloudsim".
 
 ![IMAGE](cloudsim_key.png)
 
-#### Install the software (on your local machine) ####
+If you created the key file then when ssh'ing to the machine you'll need to do:
+
+`ssh -i cloudsim.pem ubuntu@ip_address`
+
+
+Add two security groups (names are important):
+
+* cloudsim-sim
+
+Inbound rules:
+
+HTTPS / TCP / 443 / Anywhere
+SSH  / TCP / 22 / Anywhere
+All ICMP / ICMP / 0-65535 / Anywhere
+Custom UDP Rule  / UDP / 1194 / Anywhere
+
+* cloudsim-portal
+
+Inbound rules:
+
+HTTPS / TCP / 443 / Anywhere
+SSH  / TCP / 22 / Anywhere
+All ICMP / ICMP / 0-65535 / Anywhere
+
+
+#### Launch portal on an AWS server ####
+
+Use the launch_portal.js script to create a new aws instance.
+
+`node launch_portal.js cloudsim empty.bash`
+
+You should see the ip address printed when the machine is launched.
+
+Once the new aws instance is up and running, ssh into the machine:
+
+`ssh -i cloudsim.pem ubuntu@ip_address`
+
+Change the hostname to `portal`
+
+~~~
+sudo su
+echo "portal" > /etc/hostname
+bonus: echo "127.0.1.1 portal" >>  /etc/hosts
+~~~
+
+Setup the iptables. This won't survive a reboot unless you put this in
+`/etc/rc.local`
+
+`bash port_redirect.bash`
+
+
+#### Install the dependencies ####
 
 You need the following: nodejs (version 4 and up) and gulp
 
@@ -44,21 +94,20 @@ to install nodejs:
 `sudo apt-get install -y nodejs nodejs-legacy npm redis-server mercurial
 sudo npm install -g gulp`
 
-
-#### Launch on an AWS server ####
-
-Use the launch_portal.js scrfipt to create a new aws instance.
-
-sudo su
-echo "portal" > /etc/hostname
-bonus: echo "127.0.1.1 portal" >>  /etc/hosts
-
-### Setup ###
+### Setup the portal ###
 
 From the root directory
 
 * npm install
 * gulp
+
+gulp starts the portal http server and you should able to access it by going
+to:
+
+https://ip_address:4000 (if port 4000 is open)
+
+https://ip_address (if the port 4000 is redirected to 443)
+
 
 * Database configuration: Redis for now
 * How to run tests: gulp test
