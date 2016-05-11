@@ -1,8 +1,11 @@
 'use strict';
 
 // Load the SDK and UUID
-var AWS = require ('aws-sdk');
-var util = require ('util');
+const AWS = require ('aws-sdk');
+const util = require ('util');
+
+// read environment
+require('dotenv').config()
 
 // configure what to do for cloud API calls:
 var dryRun = process.env.CLOUDSIM_DRY_RUN === 'true';
