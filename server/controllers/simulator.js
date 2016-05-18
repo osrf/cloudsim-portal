@@ -24,6 +24,7 @@ if(process.env.AWS_ACCESS_KEY_ID) {
 //    cloudServices = require('../lib/fake_cloud_services.js');
 }
 
+/*
 ////////////////////////////////////
 // The AWS server information
 var awsData = { desc: 'Trusty + nvidia (CUDA 7.5)',
@@ -32,7 +33,7 @@ var awsData = { desc: 'Trusty + nvidia (CUDA 7.5)',
                hardware : 'g2.2xlarge',
                security : 'gazebo',
                image : 'ami-610c7801'}
-
+*/
 
 
 /////////////////////////////////////////////////
