@@ -13,6 +13,28 @@ var mongoose = require('mongoose'),
 
 var util = require('util');
 
+
+// initialise cloudServices, depending on the environment
+var cloudServices;
+if(process.env.AWS_ACCESS_KEY_ID) {
+    console.log('using the real cloud services!');
+    cloudServices = require('../../cloud_services.js');
+} else {
+    console.log('process.env.AWS_ACCESS_KEY_ID not defined: using the fake cloud services');
+//    cloudServices = require('../lib/fake_cloud_services.js');
+}
+
+////////////////////////////////////
+// The AWS server information
+var awsData = { desc: 'Trusty + nvidia (CUDA 7.5)',
+               region : 'us-west-1',
+               keyName : aws_ssh_key,
+               hardware : 'g2.2xlarge',
+               security : 'gazebo',
+               image : 'ami-610c7801'}
+
+
+
 /////////////////////////////////////////////////
 /// format json response object
 var formatResponse = function(simulator)
