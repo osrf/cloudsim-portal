@@ -157,54 +157,10 @@ io
   .on('authenticated', function(socket){
     console.log('connected & authenticated: ' + JSON.stringify(socket.decoded_token));
     let gzlauncher = {proc:null, output:'', state: 'ready', cmdline:''}
-    socket.on('gz-launcher', function(msg) {
+
+    socket.on('gz-simulatorlauncher', function(msg) {
+
       console.log('received: ' + JSON.stringify(msg))
-      if (msg.cmd === 'run'){
-        const items = msg.cmdline.split(' ')
-        const proc = items[0]
-        const args = items.slice(1)
-        console.log('spwaning: ' + proc + ' ' + args)
-
-        gzlauncher.proc = spawn(proc, args, {stdio:'pipe'})
-        gzlauncher.state = 'running'
-        gzlauncher.cmdline = msg.cmdline
-
-        var onNewData = function (buf) {
-          const txt = buf.toString()
-          // replace new lines with html line breaks
-          const html = txt.split('\n').join('<br>')
-          // convert the console color codes to html
-          //   ex: "[0m[1;31m:[0m[1;31m96[0m[1;31m] [0m[1;31m"
-          const ansi = ansi2html.toHtml(html)
-          gzlauncher.output += ansi
-          const msg = {output: gzlauncher.output,
-            state:gzlauncher.state,
-            pid:gzlauncher.proc.pid }
-          console.log(msg)
-          return msg
-        }
-
-        gzlauncher.proc.stdout.on('data', (data)=> {
-          io.emit('gz-launcher', onNewData(data))
-        })
-        gzlauncher.proc.stderr.on('data', (data)=> {
-          io.emit('gz-launcher', onNewData(data))
-        })
-        gzlauncher.proc.on('close', (code)=>{
-	        console.log('gzlauncher.proc.on close')
-          gzlauncher.state = 'closed'
-          // tell client
-          io.emit('gz-launcher', {output: gzlauncher.output,
-            state:gzlauncher.state,
-            pid:gzlauncher.proc.pid })
-          gzlauncher = null
-        })
-        // io.emit('gz-launcher', msg);
-      }
-      if (msg.cmd === 'kill'){
-        console.log('kill message received')
-        gzlauncher.proc.kill()
-      }
 		});
 	});
 
