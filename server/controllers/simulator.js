@@ -6,6 +6,7 @@
 var uuid = require('node-uuid');
 var mongoose = require('mongoose'),
     Simulator = mongoose.model('Simulator'),
+    Simulation = mongoose.model('Simulation'),
     fs = require('fs'),
     _ = require('lodash');
 
@@ -13,12 +14,12 @@ var mongoose = require('mongoose'),
 var util = require('util');
 
 /////////////////////////////////////////////////
-/// Find Simulator by id
-var sendResponse = function(res, simulator)
+/// format json response object
+var formatResponse = function(simulator)
 {
-  simulator.users = [];
-  simulator.simulations = [];
-  res.jsonp(simulator);
+  delete simulator._id;
+  delete simulator.__v;
+  return simulator;
 }
 
 /////////////////////////////////////////////////
@@ -38,7 +39,12 @@ exports.simulatorId = function(req, res, next, id) {
 
     // If a simulator instance was not found, then return an error
     if (!simulator) {
-        return next(new Error('Failed to load simulator ' + id));
+      // Create an error
+      var error = {error: {
+        msg: 'Cannot find simulator'
+      }};
+      res.jsonp(error);
+//        return next(new Error('Failed to load simulator ' + id));
     }
 
     // Add the new simulator to the request object
@@ -94,7 +100,7 @@ exports.create = function(req, res) {
     } else {
       // send json response object to update the
       // caller with new simulator data.
-      sendResponse(res, simulator);
+      res.jsonp(formatResponse(simulator));
     }
   }); // simulator.save (simulatorInstance)
 };
@@ -207,7 +213,7 @@ exports.destroy = function(req, res) {
           }};
           res.jsonp(error);
         } else {
-          sendResponse(res, simulator.toObject());
+          res.jsonp(formatResponse(simulator.toObject()));
         }
     });
 
@@ -220,7 +226,7 @@ exports.destroy = function(req, res) {
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
 exports.show = function(req, res) {
-  sendResponse(res, req.simulator);
+  res.jsonp(formatResponse(req.simulator.toObject()));
 };
 
 /////////////////////////////////////////////////
@@ -229,6 +235,30 @@ exports.show = function(req, res) {
 /// @param[out] res Nodejs response object.
 /// @return Function to get all simulator instances for a user.
 exports.all = function(req, res) {
+
+  var result = [];
+
+  var populateSimulations = function(index, simulators, res) {
+    console.log('populating simulations ' + index);
+    if (index == simulators.length) {
+      res.jsonp(result);
+      return;
+    }
+
+    var sim = simulators[index];
+    var filter = {owner: req.user, simulator: sim};
+    Simulation.find(filter)
+        .exec(function(err, simulations) {
+          if (err) {}
+          else {
+            console.log('filling simulations ' + index);
+            result[index] = formatResponse(simulators[index].toObject());
+            result[index].simulations = simulations;
+            index++;
+            populateSimulations(index, simulators, res);
+          }
+        });
+  }
 
   var filter = {owner: req.user};
 
@@ -241,7 +271,23 @@ exports.all = function(req, res) {
           }};
           res.jsonp(error);
       } else {
-        res.jsonp(simulators);
+        populateSimulations(0, simulators, res)
       }
   });
+
+/*  var filter = {owner: req.user}
+
+  // Get all simulator models, in creation order, for a user
+  Simulation.find(filter).sort().populate('owner', 'username').populate('simulator')
+    .exec(function(err, simulations) {
+      if (err) {
+          var error = {error: {
+            msg: 'Error finding simulations'
+          }};
+          res.jsonp(error);
+      } else {
+        res.jsonp(simulations);
+      }
+  });
+*/
 };

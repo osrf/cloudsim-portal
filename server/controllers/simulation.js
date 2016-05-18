@@ -14,6 +14,16 @@ var mongoose = require('mongoose'),
 var util = require('util');
 
 /////////////////////////////////////////////////
+/// format json response object
+var formatResponse = function(simulation)
+{
+  delete simulation._id;
+  delete simulation.__v;
+  return simulation;
+}
+
+
+/////////////////////////////////////////////////
 /// Find Simulation by id
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
@@ -30,7 +40,13 @@ exports.simulation = function(req, res, next, id) {
 
     // If a simulation instance was not found, then return an error
     if (!simulation) {
-        return next(new Error('Failed to load simulation ' + id));
+      // Create an error
+      var error = {error: {
+        msg: 'Cannot find simulation'
+      }};
+      res.jsonp(error);
+      return;
+//        return next(new Error('Failed to load simulation ' + id));
     }
 
     // Add the new simulation to the request object
@@ -100,7 +116,7 @@ exports.create = function(req, res) {
           }};
           res.jsonp(error);
         } else {
-            res.jsonp(simulation);
+            res.jsonp(formatResponse(simulation));
         }
       }); // simulation.save
     }
@@ -216,7 +232,7 @@ exports.destroy = function(req, res) {
         }};
         res.jsonp(error);
       } else {
-        res.jsonp(simulation);
+        res.jsonp(formatResponse(simulation.toObject()));
       }
     });
 
@@ -250,7 +266,11 @@ exports.all = function(req, res) {
           msg: 'Error finding simulations'
         }};
       } else {
-        res.jsonp(simulations);
+        var result = [];
+        for (var i = 0; i < simulations.length; ++i) {
+          result.push(formatResponse(simulations[i].toObject()));
+        }
+        res.jsonp(result);
       }
   });
 };
