@@ -54,6 +54,7 @@ Inbound rules:
 HTTPS / TCP / 443 / Anywhere
 SSH  / TCP / 22 / Anywhere
 All ICMP / ICMP / 0-65535 / Anywhere
+Custom TCP Rule / TCP / 5050 / Anywhere
 
 
 #### Launch portal on an AWS server ####
