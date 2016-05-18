@@ -99,6 +99,16 @@ Install MongoDB
 
 https://docs.mongodb.com/manual/installation/
 
+some useful mongo commands:
+
+$ mongo
+
+> show dbs
+> use cloudsim-portal
+> db.users.find().pretty()
+> db.simulators.find().pretty()
+> db.simulations.find().pretty()
+
 ### Setup the portal ###
 
 From the root directory
