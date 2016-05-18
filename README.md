@@ -94,6 +94,11 @@ to install nodejs:
 `sudo apt-get install -y nodejs nodejs-legacy npm redis-server mercurial
 sudo npm install -g gulp`
 
+
+Install MongoDB
+
+https://docs.mongodb.com/manual/installation/
+
 ### Setup the portal ###
 
 From the root directory

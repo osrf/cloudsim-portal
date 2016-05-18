@@ -9,6 +9,13 @@ let bodyParser = require('body-parser')
 let httpServer = null
 let io = null
 
+let mongoose = require('mongoose');
+
+// Bootstrap db connection
+console.log('Using database: cloudsim-portal');
+var db = mongoose.connect('mongodb://localhost/cloudsim-portal');
+
+
 const useHttps = true
 if(useHttps) {
   const keyPath = __dirname + '/key.pem'
@@ -21,6 +28,7 @@ else {
   httpServer = require('http').Server(app)
 }
 
+// use body parser so we can get info from POST and/or URL parameters
 app.use(bodyParser.json())
 
 io = require('socket.io')(httpServer)
@@ -202,6 +210,111 @@ io
 // app.use(express.static(__dirname + '../public'));
 
 
+// Bootstrap models
+var models_path = __dirname + '/models';
+var walk = function(path) {
+    fs.readdirSync(path).forEach(function(file) {
+        var newPath = path + '/' + file;
+        var stat = fs.statSync(newPath);
+        if (stat.isFile()) {
+            if (/(.*)\.(js$|coffee$)/.test(file)) {
+                require(newPath);
+            }
+        } else if (stat.isDirectory()) {
+            walk(newPath);
+        }
+    });
+};
+walk(models_path);
+
+// API ROUTES -------------------
+
+// get an instance of the router for api routes
+var apiRoutes = express.Router();
+
+// route middleware to verify a token
+apiRoutes.use(function(req, res, next) {
+
+  console.log('decoding token');
+
+  var token = req.body.token;
+
+
+  // decode token
+  if (token || true) {
+
+    req.username = 'admin'
+    next();
+  }
+  else {
+    // if there is no token
+    // return an error
+    return res.status(403).send({
+        success: false,
+        message: 'No token provided.'
+    });
+  }
+
+/*  // check header or url parameters or post parameters for token
+  var token = req.body.token || req.query.token || req.headers['x-access-token'];
+
+  // decode token
+  if (token) {
+
+    // verifies secret and checks exp
+    jwt.verify(token, app.get('superSecret'), function(err, decoded) {
+      if (err) {
+        return res.json({ success: false, message: 'Failed to authenticate token.' });
+      } else {
+        // if everything is good, save to request for use in other routes
+        req.decoded = decoded;
+        next();
+      }
+    });
+
+  } else {
+
+    // if there is no token
+    // return an error
+    return res.status(403).send({
+        success: false,
+        message: 'No token provided.'
+    });
+
+  }*/
+});
+
+// Bootstrap routes
+var routes_path = __dirname + '/routes';
+var walk = function(path) {
+    fs.readdirSync(path).forEach(function(file) {
+        var newPath = path + '/' + file;
+        var stat = fs.statSync(newPath);
+        if (stat.isFile()) {
+            console.log('## loading: ' + newPath);
+            if (/(.*)\.(js$|coffee$)/.test(file)) {
+                require(newPath)(apiRoutes);
+            }
+        // We skip the app/routes/middlewares directory as it is meant to be
+        // used and shared by routes as further middlewares and is not a
+        // route by itself
+        } else if (stat.isDirectory() && file !== 'middlewares') {
+            walk(newPath);
+        }
+    });
+};
+walk(routes_path);
+
+
+// apply the routes to our application with the prefix /api
+app.use('/', apiRoutes);
+
+
+// Expose app
+exports = module.exports = app;
+
+
+/*
 app.get('/', function (req, res) {
   // res.sendFile(__dirname + '/../public/index.html')
   let s = `
@@ -210,8 +323,8 @@ app.get('/', function (req, res) {
   res.end(s)
 })
 
-let sims = []
 
+let sims = []
 app.get('/simulations', function (req, res) {
 
   console.log('body: ' + util.inspect(req.body))
@@ -230,22 +343,21 @@ app.post('/simulation', function(req, res) {
   console.log('query: ' + util.inspect(req.query))
 
   res.end('{"success":"true"}')
-})
+})*/
 
 // app.post('/register', UserRoutes.register)
 // app.post('/unregister', UserRoutes.unregister)
 
 let port = 4000
-if (process.argv.length > 2) {
+/*if (process.argv.length > 2) {
   // console.log(process.argv[0])
   // console.log(process.argv[1])
   // console.log(process.argv[2])
   port = Number(process.argv[2])
-}
+}*/
 
 httpServer.listen(port, function(){
 
   console.log('ssl: ' + useHttps)
 	console.log('listening on *:' + port);
 });
-

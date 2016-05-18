@@ -19,10 +19,15 @@
     "browser-sync": "^2.12.5",
     "dotenv": "^2.0.0",
     "express": "^4.13.4",
+    "gulp-mocha": "^2.2.0",
     "gulp-nodemon": "^2.0.6",
     "jsonwebtoken": "^6.2.0",
+    "mocha": "^2.4.5",
+    "mongoose": "^4.4.17",
+    "should": "^8.3.1",
     "socket.io": "^1.4.6",
     "socketio-jwt": "^4.3.4",
+    "supertest": "^1.2.0",
     "xtend": "^4.0.1"
   }
 }
