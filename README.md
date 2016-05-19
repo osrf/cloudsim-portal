@@ -85,6 +85,8 @@ Setup the iptables. This won't survive a reboot unless you put this in
 
 ### Install the dependencies ###
 
+#### nodejs ####
+
 You need the following: nodejs (version 4 and up) and gulp
 
 * If you are running Trusty, you should use with nodesource:
@@ -93,11 +95,11 @@ You need the following: nodejs (version 4 and up) and gulp
 
 to install nodejs:
 
-`sudo apt-get install -y nodejs nodejs-legacy npm redis-server mercurial
-sudo npm install -g gulp`
+    sudo apt-get install -y nodejs nodejs-legacy npm redis-server mercurial
+sudo npm install -g gulp
 
 
-Install MongoDB
+#### MongoDB ####
 
 https://docs.mongodb.com/manual/installation/
 
@@ -117,7 +119,7 @@ https://ip_address:4000 (if port 4000 is open)
 https://ip_address (if the port 4000 is redirected to 443)
 
 
-### Mongo ###
+### MongoDB ###
 
 Set up mongo with an admin user:
 
