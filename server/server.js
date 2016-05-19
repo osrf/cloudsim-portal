@@ -9,11 +9,20 @@ let bodyParser = require('body-parser')
 let httpServer = null
 let io = null
 
-let mongoose = require('mongoose');
 const cors = require('cors')
+
+// Load configurations
+process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+console.log('ENV ' + process.env.NODE_ENV);
+
+let mongoose = require('mongoose');
 // Bootstrap db connection
-console.log('Using database: cloudsim-portal');
-var db = mongoose.connect('mongodb://localhost/cloudsim-portal');
+var dbName = 'mongodb://localhost/cloudsim-portal';
+if (process.env.NODE_ENV === 'test')
+  dbName = dbName + '-test';
+
+console.log('Using database: ' + dbName);
+var db = mongoose.connect(dbName);
 
 
 const useHttps = true

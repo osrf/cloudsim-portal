@@ -10,30 +10,30 @@ var mongoose = require('mongoose'),
     fs = require('fs'),
     _ = require('lodash');
 
-
 var util = require('util');
 
-
 // initialise cloudServices, depending on the environment
-var cloudServices;
-if(process.env.AWS_ACCESS_KEY_ID) {
-    console.log('using the real cloud services!');
-    cloudServices = require('../../cloud_services.js');
+var cloudServices = null;
+if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
+  console.log('using the real cloud services!');
+  cloudServices = require('../../cloud_services.js');
 } else {
-    console.log('process.env.AWS_ACCESS_KEY_ID not defined: using the fake cloud services');
-//    cloudServices = require('../lib/fake_cloud_services.js');
+  console.log('process.env.AWS_ACCESS_KEY_ID not defined: using the fake cloud services');
+  cloudServices = require('../../fake_cloud_services.js');
 }
 
-/*
+var aws_ssh_key = 'cloudsim';
+
 ////////////////////////////////////
 // The AWS server information
 var awsData = { desc: 'Trusty + nvidia (CUDA 7.5)',
                region : 'us-west-1',
                keyName : aws_ssh_key,
                hardware : 'g2.2xlarge',
-               security : 'gazebo',
-               image : 'ami-610c7801'}
-*/
+               security : 'cloudsim-sim',
+//               image : 'ami-610c7801'}
+               image : 'ami-d8e996b8'}
+
 
 
 /////////////////////////////////////////////////
@@ -91,6 +91,15 @@ exports.create = function(req, res) {
   // request
   console.log(util.inspect(req.body));
 
+  if (!cloudServices) {
+    // Create an error
+    var error = {error: {
+      msg: 'Cloud services are not available'
+    }};
+    res.jsonp(error);
+    return;
+  }
+
   // TODO verify permission!
 
   var simulator = {status: 'LAUNCHING'};
@@ -113,19 +122,53 @@ exports.create = function(req, res) {
   simulator.machine_id = '';
   simulator.id = uuid.v4();
 
-  var sim = new Simulator(simulator);
-  sim.save(function(err) {
+  var tagName = simulator.owner.username + '_' + simulator.region + '_' + Date.now();
+  var tag = {Name: tagName};
+  var scriptName = 'empty.bash';
+  var script = fs.readFileSync(scriptName, 'utf8')
+
+  console.log(util.inspect(awsData));
+
+  cloudServices.launchSimulator(simulator.region, awsData.keyName, awsData.hardware, awsData.security, awsData.image, tag, script, function (err, machine) {
     if (err) {
+      // Create an error
       var error = {error: {
-        msg: 'Error saving simulator'
+        msg: 'Error launching a cloud instance'
       }};
       res.jsonp(error);
-    } else {
-      // send json response object to update the
-      // caller with new simulator data.
-      res.jsonp(formatResponse(simulator));
+      return;
     }
-  }); // simulator.save (simulatorInstance)
+
+    var info = machine;
+    console.log('machine: ' + info.id);
+    console.log(util.inspect(info));
+
+    simulator.machine_id = info.id;
+
+    var sim = new Simulator(simulator);
+    sim.save(function(err) {
+      if (err) {
+        var error = {error: {
+          msg: 'Error saving simulator'
+        }};
+        res.jsonp(error);
+      } else {
+
+        // send json response object to update the
+        // caller with new simulator data.
+        res.jsonp(formatResponse(simulator));
+
+        setTimeout(function() {
+          cloudServices.simulatorStatus(info, function(err, state) {
+            console.log('sim status: ' + sim.id);
+            console.log(util.inspect(state));
+            sim.machine_ip = state.ip;
+            sim.save();
+          });
+        }, 10000);
+      }
+    }); // simulator.save (simulatorInstance)
+  });
 };
 
 /////////////////////////////////////////////////
@@ -189,19 +232,62 @@ exports.update = function(req, res) {
   });*/
 };
 
+
+/////////////////////////////////////////////////
+// Terminates a simulator.
+function terminateSimulator(simulator, cb) {
+
+  var awsRegion = simulator.region;
+  var machineInfo = {region: awsRegion,
+                     id: simulator.machine_id};
+
+  cloudServices.terminateSimulator(machineInfo, function(err, info) {
+    if(err) {
+      cb(err);
+    } else {
+      simulator.status = 'TERMINATED';
+      simulator.termination_date = Date.now();
+      simulator.save(function(err) {
+        if (err) {
+          console.log('Error saving sim state after shutdown: ' + err);
+          cb(err);
+        } else {
+          var msg = 'Simulator terminated: ';
+          msg += util.inspect(info);
+          console.log(msg);
+          // notify everyone
+//          sockets.getUserSockets().notifyUser(simulation.user.id,
+//                                              'simulation_terminate',
+//                                              {data:simulation});
+          cb(null, simulator);
+        }
+      });
+    }
+  }); // terminate
+}
+
+
 /////////////////////////////////////////////////
 /// Delete a simulator.
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
 /// @return Destroy function
 exports.destroy = function(req, res) {
-
   var simulatorId = req.body.id;
 
   if (!simulatorId || simulatorId.length == 0)
   {
     var error = {error: {
       msg: 'Missing required fields'
+    }};
+    res.jsonp(error);
+    return;
+  }
+
+  if (!cloudServices) {
+    // Create an error
+    var error = {error: {
+      msg: 'Cloud services are not available'
     }};
     res.jsonp(error);
     return;
@@ -226,7 +312,20 @@ exports.destroy = function(req, res) {
       return;
     }
 
-    // Remove the simulator model from the database
+    terminateSimulator(simulator, function(err, sim) {
+        if(err) {
+          var error = {error: {
+            msg: 'Error terminating simulator'
+          }};
+          res.jsonp(error);
+          return;
+        } else {
+          res.jsonp(formatResponse(simulator.toObject()));
+        }
+    });
+
+
+/*    // Remove the simulator model from the database
     // TODO: We need to check to make sure the simulator instance has been
     // terminated
     simulator.remove(function(err) {
@@ -239,7 +338,7 @@ exports.destroy = function(req, res) {
           res.jsonp(formatResponse(simulator.toObject()));
         }
     });
-
+*/
   });
 };
 
@@ -262,7 +361,7 @@ exports.all = function(req, res) {
   var result = [];
 
   var populateSimulations = function(index, simulators, res) {
-    console.log('populating simulations ' + index);
+//    console.log('populating simulations ' + index);
     if (index == simulators.length) {
       res.jsonp(result);
       return;
@@ -274,7 +373,7 @@ exports.all = function(req, res) {
         .exec(function(err, simulations) {
           if (err) {}
           else {
-            console.log('filling simulations ' + index);
+//            console.log('filling simulations ' + index);
             result[index] = formatResponse(simulators[index].toObject());
             result[index].simulations = simulations;
             index++;
@@ -283,7 +382,7 @@ exports.all = function(req, res) {
         });
   }
 
-  var filter = {owner: req.user};
+  var filter = {owner: req.user, $where: 'this.status != "TERMINATED"'};
 
   // Get all simulator models, in creation order, for a user
   Simulator.find(filter).sort().populate('owner', 'username')
