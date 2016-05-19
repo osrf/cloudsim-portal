@@ -14,12 +14,12 @@ var util = require('util');
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
-if (process.env.AWS_ACCESS_KEY_ID) {
+if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
   console.log('using the real cloud services!');
   cloudServices = require('../../cloud_services.js');
 } else {
   console.log('process.env.AWS_ACCESS_KEY_ID not defined: using the fake cloud services');
-//    cloudServices = require('../lib/fake_cloud_services.js');
+  cloudServices = require('../../fake_cloud_services.js');
 }
 
 var aws_ssh_key = 'cloudsim';
