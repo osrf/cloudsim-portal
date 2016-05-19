@@ -42,19 +42,19 @@ Add two security groups (names are important):
 
 Inbound rules:
 
-HTTPS / TCP / 443 / Anywhere
-SSH  / TCP / 22 / Anywhere
-All ICMP / ICMP / 0-65535 / Anywhere
-Custom UDP Rule  / UDP / 1194 / Anywhere
+    HTTPS / TCP / 443 / Anywhere
+    SSH  / TCP / 22 / Anywhere
+    All ICMP / ICMP / 0-65535 / Anywhere
+    Custom UDP Rule  / UDP / 1194 / Anywhere
 
 * cloudsim-portal
 
 Inbound rules:
 
-HTTPS / TCP / 443 / Anywhere
-SSH  / TCP / 22 / Anywhere
-All ICMP / ICMP / 0-65535 / Anywhere
-Custom TCP Rule / TCP / 5050 / Anywhere
+    HTTPS / TCP / 443 / Anywhere
+    SSH  / TCP / 22 / Anywhere
+    All ICMP / ICMP / 0-65535 / Anywhere
+    Custom TCP Rule / TCP / 5050 / Anywhere
 
 
 #### Launch portal on an AWS server ####
@@ -88,7 +88,8 @@ Setup the iptables. This won't survive a reboot unless you put this in
 You need the following: nodejs (version 4 and up) and gulp
 
 * If you are running Trusty, you should use with nodesource:
-curl https://deb.nodesource.com/setup_4.x | sudo -E bash -
+
+`curl https://deb.nodesource.com/setup_4.x | sudo -E bash -`
 
 to install nodejs:
 
@@ -100,15 +101,6 @@ Install MongoDB
 
 https://docs.mongodb.com/manual/installation/
 
-some useful mongo commands:
-
-$ mongo
-
-> show dbs
-> use cloudsim-portal
-> db.users.find().pretty()
-> db.simulators.find().pretty()
-> db.simulations.find().pretty()
 
 ### Setup the portal ###
 
@@ -125,8 +117,41 @@ https://ip_address:4000 (if port 4000 is open)
 https://ip_address (if the port 4000 is redirected to 443)
 
 
-* Database configuration: Redis for now
-* How to run tests: gulp test
+Set up mongo with an admin user:
+
+    $ mongo
+
+    > show dbs
+    > use cloudsim-portal
+    > db.users.insert({"username": "admin"})
+
+
+other useful mongo commands:
+
+    > db.users.find().pretty()
+    > db.simulators.find().pretty()
+    > db.simulations.find().pretty()
+
+
+### Testing ###
+
+* How to run tests:
+
+`gulp test`
+
+This sets the `NODE_ENV` environment variable to `test` and uses fake cloud services.
+No AWS instances will be launched.
+
+* AWS dry-run
+
+AWS cloud services supports dry runs. Declare a `CLOUDSIM_DRY_RUN` variable in the `.env` file and set it to `true`. All AWS cloud services will be called with `DryRun` enabled.
+
+* Fake cloud services
+
+The difference between fake cloud services and AWS dry-run is that the fake cloud services does not actually make any services calls to the AWS provider. Instead, fake cloud service calls return immediately as if machines were successfully launched.
+
+To use fake cloud services, comment out the `AWS_ACCESS_KEY_ID` environment variable.in the `.env` file.
+
 
 ### Deployment instructions ###
 
