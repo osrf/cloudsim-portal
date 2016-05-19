@@ -10,9 +10,7 @@ var mongoose = require('mongoose'),
     fs = require('fs'),
     _ = require('lodash');
 
-
 var util = require('util');
-
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
@@ -23,7 +21,6 @@ if (process.env.AWS_ACCESS_KEY_ID) {
   console.log('process.env.AWS_ACCESS_KEY_ID not defined: using the fake cloud services');
 //    cloudServices = require('../lib/fake_cloud_services.js');
 }
-
 
 var aws_ssh_key = 'cloudsim';
 
