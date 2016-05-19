@@ -2,14 +2,14 @@
 
 This is the portal server for Cloudsim
 
-### What is this repository for? ###
+## What is this repository for? ##
 
 * A web app that manages simulation runs (create, view log)
 * Has different types of users (to create, share and start simulation runs)
 * Launches new AWS gpu instances with simulators and field computers
 * Must be run from an AWS instance when using SSL certificates
 
-### AWS Setup ###
+## AWS Setup ##
 
 You need AWS keys (AWSAccessKeyId and AWSSecretKey). Get them from the AWS
 console.
@@ -17,8 +17,8 @@ console.
 ![IMAGE](aws_keys.png) Then you must prepare your environment variables.
 Create a .env file and add the follwing but replace the xxx with your aws keys:
 
-`AWS_ACCESS_KEY_ID=XXXXXXXX
- AWS_SECRET_ACCESS_KEY=XXXXXXXXXX`
+    AWS_ACCESS_KEY_ID=XXXXXXXX
+    AWS_SECRET_ACCESS_KEY=XXXXXXXXXX
 
 These environment variables must be loaded:
 
@@ -33,7 +33,7 @@ region where you want to launch machines. That key must be called "cloudsim".
 
 If you created the key file then when ssh'ing to the machine you'll need to do:
 
-`ssh -i cloudsim.pem ubuntu@ip_address`
+    ssh -i cloudsim.pem ubuntu@ip_address
 
 
 Add two security groups (names are important):
@@ -57,17 +57,17 @@ Inbound rules:
     Custom TCP Rule / TCP / 5050 / Anywhere
 
 
-#### Launch portal on an AWS server ####
+### Launch portal on an AWS server ###
 
 Use the launch_portal.js script to create a new aws instance.
 
-`node launch_portal.js cloudsim empty.bash`
+    node launch_portal.js cloudsim empty.bash
 
 You should see the ip address printed when the machine is launched.
 
 Once the new aws instance is up and running, ssh into the machine:
 
-`ssh -i cloudsim.pem ubuntu@ip_address`
+    ssh -i cloudsim.pem ubuntu@ip_address
 
 Change the hostname to `portal`
 
@@ -80,16 +80,16 @@ bonus: echo "127.0.1.1 portal" >>  /etc/hosts
 Setup the iptables. This won't survive a reboot unless you put this in
 `/etc/rc.local`
 
-`bash port_redirect.bash`
+    bash port_redirect.bash
 
 
-#### Install the dependencies ####
+### Install the dependencies ###
 
 You need the following: nodejs (version 4 and up) and gulp
 
 * If you are running Trusty, you should use with nodesource:
 
-`curl https://deb.nodesource.com/setup_4.x | sudo -E bash -`
+    curl https://deb.nodesource.com/setup_4.x | sudo -E bash -
 
 to install nodejs:
 
@@ -102,7 +102,7 @@ Install MongoDB
 https://docs.mongodb.com/manual/installation/
 
 
-### Setup the portal ###
+## Setup the portal ##
 
 From the root directory
 
@@ -116,6 +116,8 @@ https://ip_address:4000 (if port 4000 is open)
 
 https://ip_address (if the port 4000 is redirected to 443)
 
+
+### Mongo ###
 
 Set up mongo with an admin user:
 
@@ -133,31 +135,31 @@ other useful mongo commands:
     > db.simulations.find().pretty()
 
 
-### Testing ###
+## Testing ##
 
-* How to run tests:
+### How to run tests ###
 
-`gulp test`
+    gulp test
 
 This sets the `NODE_ENV` environment variable to `test` and uses fake cloud services.
 No AWS instances will be launched.
 
-* AWS dry-run
+### AWS dry-run ###
 
 AWS cloud services supports dry runs. Declare a `CLOUDSIM_DRY_RUN` variable in the `.env` file and set it to `true`. All AWS cloud services will be called with `DryRun` enabled.
 
-* Fake cloud services
+### Fake cloud services ###
 
 The difference between fake cloud services and AWS dry-run is that the fake cloud services does not actually make any services calls to the AWS provider. Instead, fake cloud service calls return immediately as if machines were successfully launched.
 
 To use fake cloud services, comment out the `AWS_ACCESS_KEY_ID` environment variable.in the `.env` file.
 
 
-### Deployment instructions ###
+## Deployment instructions ##
 
 
-### Contribution guidelines ###
+## Contribution guidelines ##
 
-### Who do I talk to? ###
+## Who do I talk to? ##
 
 * Repo owner or admin: hugo@osrfoundation.org
