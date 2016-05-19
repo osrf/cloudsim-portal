@@ -87,8 +87,8 @@ describe('<Unit Test>', function() {
             });
         });
 
-        describe('Check One Simulator Created', function() {
-            it('should be one running Simulator', function(done) {
+        describe('Check One Simulator Launched', function() {
+            it('should be one running simulator', function(done) {
                 agent
                 .get('/simulators')
                 .end(function(err,res){
@@ -126,7 +126,7 @@ describe('<Unit Test>', function() {
         });
 
         var simId2 ='';
-        describe('Check Create Second Simulator', function() {
+        describe('Check Launch Second Simulator', function() {
             it('should be possible to create another simulator', function(done) {
                 agent
                 .post('/simulators')
@@ -147,7 +147,7 @@ describe('<Unit Test>', function() {
             });
         });
 
-        describe('Check Two Simulators Created', function() {
+        describe('Check Two Simulators Launched', function() {
             it('should be two running simulators', function(done) {
                 agent
                 .get('/simulators')
