@@ -16,13 +16,22 @@ var authenticateUser = function(req, res, next) {
   if (!userID)
     return res.status(401).send('User is not found');
 
+  // TODO grant user permission is not implemented yet so let any one
+  // who's authorized and has valid token launch a simulator
   User.loadByUsername(userID, function(err, user) {
     if (err)
       return next(err);
-    if (!user)
-      return next(new Error('Failed to load User ' + userID));
-    req.user = user;
-    next();
+    if (!user) {
+      var newUser = new User({username: userID});
+      newUser.save(function() {
+        req.user = newUser;
+        next();
+      });
+    }
+    else {
+      req.user = user;
+      next();
+    }
   });
 };
 

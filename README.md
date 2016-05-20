@@ -4,7 +4,7 @@ This is the portal server for Cloudsim
 
 ## What is this repository for? ##
 
-* A web app that manages simulation runs (create, view log)
+* A web app that manages simulators on the cloud
 * Has different types of users (to create, share and start simulation runs)
 * Launches new AWS gpu instances with simulators and field computers
 * Must be run from an AWS instance when using SSL certificates
@@ -15,7 +15,7 @@ You need AWS keys (AWSAccessKeyId and AWSSecretKey). Get them from the AWS
 console.
 
 ![IMAGE](aws_keys.png) Then you must prepare your environment variables.
-Create a .env file and add the follwing but replace the xxx with your aws keys:
+Create a `.env` file and add the follwing but replace the XXX with your aws keys:
 
     AWS_ACCESS_KEY_ID=XXXXXXXX
     AWS_SECRET_ACCESS_KEY=XXXXXXXXXX
@@ -57,7 +57,7 @@ Inbound rules:
     Custom TCP Rule / TCP / 5050 / Anywhere
 
 
-### Launch portal on an AWS server ###
+### Launch portal on the AWS server ###
 
 Use the launch_portal.js script to create a new aws instance.
 
@@ -108,8 +108,15 @@ https://docs.mongodb.com/manual/installation/
 
 From the root directory
 
-* npm install
-* gulp
+    npm install
+
+For security purposes, all sockets and REST API's are protected. Set up the public key needed to decode json web tokens. Edit and `.env` file and add the following variable. Replace XXX with the actual public key.
+
+    CLOUDSIM_AUTH_PUB_KEY=XXXXXXXX
+
+Launch the portal:
+
+    gulp
 
 gulp starts the portal http server and you should able to access it by going
 to:

@@ -11,6 +11,9 @@ let io = null
 
 const cors = require('cors')
 
+var dotenv = require('dotenv');
+dotenv.load();
+
 // Load configurations
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 console.log('ENV ' + process.env.NODE_ENV);
@@ -44,7 +47,6 @@ app.use(cors())
 io = require('socket.io')(httpServer)
 
 var socketioJwt = require('socketio-jwt');
-var dotenv = require('dotenv');
 
 var xtend = require('xtend');
 var jwt = require('jsonwebtoken');
@@ -54,12 +56,15 @@ const spawn = require('child_process').spawn
 const ansi_to_html = require('ansi-to-html')
 const ansi2html = new ansi_to_html()
 
+if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
+  console.log('*** WARNING: No cloudsim auth public key found. Did you forget to set "CLOUDSIM_AUTH_PUB_KEY"? ***');
+}
+
+
 console.log('portal server.js')
 
 
-dotenv.load();
-
-var env = {
+/*var env = {
   AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID,
   AUTH0_DOMAIN: process.env.AUTH0_DOMAIN,
 }
@@ -172,6 +177,7 @@ io
       console.log('received: ' + JSON.stringify(msg))
 		});
 	});
+*/
 
 // app.use(express.static(__dirname + '../public'));
 
@@ -203,12 +209,33 @@ apiRoutes.use(function(req, res, next) {
 
   console.log('decoding token');
 
-  var token = req.body.token;
+//  var token = req.body.token;
+  var header = req.headers['authorization'] || '';
+  var token=header.split(/\s+/).pop()||''
 
+  console.log('token: ' + token);
 
   // decode token
-  if (token || true) {
+  if (token) {
+    // verify a token
+    jwt.verify(token, process.env.CLOUDSIM_AUTH_PUB_KEY, function(err, decoded) {
 
+      console.log(util.inspect(decoded))
+
+      if (!decoded.user) {
+        console.log('Invalid token. No username provided')
+        // return an error
+        return res.status(403).send({
+            success: false,
+            msg: 'No user field in token.'
+        });
+      }
+
+      req.username = decoded.user;
+      next();
+    });
+  }
+  else if (process.env.NODE_ENV === 'test') {
     req.username = 'admin'
     next();
   }
@@ -217,7 +244,7 @@ apiRoutes.use(function(req, res, next) {
     // return an error
     return res.status(403).send({
         success: false,
-        message: 'No token provided.'
+        msg: 'No token provided.'
     });
   }
 
