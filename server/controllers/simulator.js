@@ -361,7 +361,7 @@ exports.all = function(req, res) {
   var result = [];
 
   var populateSimulations = function(index, simulators, res) {
-//    console.log('populating simulations ' + index);
+//    console.log('populating simulations ' + index + ' vs ' + simulators.length);
     if (index == simulators.length) {
       res.jsonp(result);
       return;
@@ -413,3 +413,93 @@ exports.all = function(req, res) {
   });
 */
 };
+
+/////////////////////////////////////////////////
+/// Grant user permission.
+/// @param[in] req Nodejs request object.
+/// @param[out] res Nodejs response object.
+/// @return Grant function
+exports.grant = function(req, res) {
+  var simulatorId = req.body.id;
+  var grantee = req.body.username;
+  var readOnly = req.body.read_only;
+
+  if (!simulatorId || simulatorId.length == 0)
+  {
+    var error = {error: {
+      msg: 'Missing required fields'
+    }};
+    res.jsonp(error);
+    return;
+  }
+
+  Simulator.findOne({owner: req.user, id: simulatorId}, function(err, simulator) {
+    // in case of error, respond with error msg
+    if (err) {
+      var error = {error: {
+        msg: 'Error removing simulator'
+      }};
+      res.jsonp(error);
+      return;
+    }
+
+    // If a simulator instance was not found, then return an error
+    if (!simulator) {
+      var error = {error: {
+        msg: 'Cannot find simulator'
+      }};
+      res.jsonp(error);
+      return;
+    }
+
+    // set permission using js grant.
+    console.log('grant - simulator: '  + simulatorId + ' to ' + grantee + ', readOnly: ' + readOnly);
+
+    res.jsonp(req.body);
+  });
+}
+
+/////////////////////////////////////////////////
+/// Revoke user permission.
+/// @param[in] req Nodejs request object.
+/// @param[out] res Nodejs response object.
+/// @return Grant function
+exports.revoke = function(req, res) {
+  var simulatorId = req.body.id;
+  var grantee = req.body.username;
+  var readOnly = req.body.read_only;
+
+  if (!simulatorId || simulatorId.length == 0)
+  {
+    var error = {error: {
+      msg: 'Missing required fields'
+    }};
+    res.jsonp(error);
+    return;
+  }
+
+  Simulator.findOne({owner: req.user, id: simulatorId}, function(err, simulator) {
+    // in case of error, respond with error msg
+    if (err) {
+      var error = {error: {
+        msg: 'Error removing simulator'
+      }};
+      res.jsonp(error);
+      return;
+    }
+
+    // If a simulator instance was not found, then return an error
+    if (!simulator) {
+      var error = {error: {
+        msg: 'Cannot find simulator'
+      }};
+      res.jsonp(error);
+      return;
+    }
+
+    // set permission using js grant.
+    console.log('revoke - simulator: '  + simulatorId + ' from ' + grantee);
+
+    res.jsonp(req.body);
+  });
+}
