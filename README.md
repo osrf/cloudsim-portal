@@ -82,7 +82,6 @@ Setup the iptables. This won't survive a reboot unless you put this in
 
     bash port_redirect.bash
 
-
 ### Install the dependencies ###
 
 #### nodejs ####
