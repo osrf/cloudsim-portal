@@ -218,10 +218,9 @@ apiRoutes.use(function(req, res, next) {
   // decode token
   if (token) {
     // verify a token
-    jwt.verify(token, process.env.CLOUDSIM_AUTH_PUB_KEY, function(err, decoded) {
-
+    jwt.verify(token,
+      process.env.CLOUDSIM_AUTH_PUB_KEY, function(err, decoded) {
       console.log(util.inspect(decoded))
-
       if (!decoded.user) {
         console.log('Invalid token. No username provided')
         // return an error
