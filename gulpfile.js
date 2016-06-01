@@ -55,7 +55,9 @@ gulp.task('set-test-env', function () {
 gulp.task('test', ['set-test-env'], function() {
   return gulp.src(['test/mocha/**/*.js'], {read: false})
     .pipe(mocha({
-      reporter: 'spec',
-      require: 'server/server.js'
-  }));
+      reporter: 'spec'
+    }))
+    .once('end', function () {
+      process.exit();
+    });
 });
