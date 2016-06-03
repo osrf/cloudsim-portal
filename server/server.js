@@ -15,7 +15,7 @@ var dotenv = require('dotenv');
 dotenv.load();
 
 // https server port (as specified in .env, or 4000)
-const port = process.env.PORT || 4000
+const port = process.env.CLOUDSIM_PORT || 4000
 
 // Load configurations
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
