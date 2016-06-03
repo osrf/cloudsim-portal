@@ -14,6 +14,9 @@ const cors = require('cors')
 var dotenv = require('dotenv');
 dotenv.load();
 
+// https server port (as specified in .env, or 4000)
+const port = process.env.PORT || 4000
+
 // Load configurations
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 console.log('ENV ' + process.env.NODE_ENV);
@@ -339,14 +342,6 @@ app.post('/simulation', function(req, res) {
 
 // app.post('/register', UserRoutes.register)
 // app.post('/unregister', UserRoutes.unregister)
-
-let port = 4000
-/*if (process.argv.length > 2) {
-  // console.log(process.argv[0])
-  // console.log(process.argv[1])
-  // console.log(process.argv[2])
-  port = Number(process.argv[2])
-}*/
 
 httpServer.listen(port, function(){
 
