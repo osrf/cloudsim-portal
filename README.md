@@ -50,7 +50,7 @@ Add two security groups (names are important):
     All ICMP / ICMP / 0-65535 / Anywhere
     Custom UDP Rule  / UDP / 1194 / Anywhere
 
-## Launch the cloudsim portal instance on the AWS server ##
+## Launch an instance on the AWS server for the cloudsim portal ##
 
 There are different ways to start an AWS instance to host the cloudsim portal
 
@@ -124,7 +124,7 @@ From the root directory
 
 ### Environment variable setup ###
 
-In order for the portal to launch a simulator machine, a valid AWS key pair is needed. Create a `.env` file and add the follwing but replace the XXX with your AWS keys:
+In order for the portal to launch a simulator machine, valid AWS access keys are needed. Create a `.env` file and add the follwing but replace the XXX with your AWS keys:
 
     AWS_ACCESS_KEY_ID=XXXXXXXX
     AWS_SECRET_ACCESS_KEY=XXXXXXXXXX
@@ -144,7 +144,7 @@ From the command line:
 
     gulp
 
-gulp starts the portal http server and you should able to access it by going
+gulp starts the portal http server and you should be able to access it by going
 to:
 
 https://ip_address:4000 (if port 4000 is open)
@@ -163,7 +163,7 @@ Set up mongo with an admin user:
     > db.users.insert({"username": "admin"})
 
 
-other useful mongo commands to retrieving data from collections:
+other useful mongo commands for retrieving data from collections:
 
     > db.users.find().pretty()
     > db.simulators.find().pretty()
