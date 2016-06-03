@@ -13,7 +13,7 @@ This is the portal server for Cloudsim
 
 ### AWS Setup ###
 
-You will need AWS credentials to launch a machine for hosting cloudsim portal server.
+You will need AWS credentials to launch instances on AWS.
 
 Get the AWS keys (AWSAccessKeyId and AWSSecretKey) from the AWS console.
 
@@ -24,8 +24,8 @@ region where you want to launch simulator machines. That key must be called `clo
 
 ![IMAGE](cloudsim_key.png)
 
-AWS will put the public key in the simulator machine you launched and you will
-be able to ssh into the machine by doing:
+AWS will put the public key in the simulator machine you launched so that you
+can ssh into the machine by doing:
 
     ssh -i cloudsim.pem ubuntu@ip_address
 
@@ -33,7 +33,7 @@ Add two security groups (names are important):
 
 * `cloudsim-portal`
 
-Inbound rules:
+  Inbound rules:
 
     HTTPS / TCP / 443 / Anywhere
     SSH  / TCP / 22 / Anywhere
@@ -43,7 +43,7 @@ Inbound rules:
 
 * `cloudsim-sim`
 
-Inbound rules:
+  Inbound rules:
 
     HTTPS / TCP / 443 / Anywhere
     SSH  / TCP / 22 / Anywhere
@@ -57,7 +57,7 @@ There are different ways to start an AWS instance to host the cloudsim portal
 Option 1)
 
 You can do it manually using the AWS EC2 console. Make sure to assign the
-right security group (cloudsim-portal) and choose the key pair you created.
+right security group (`cloudsim-portal`) and choose the key pair (`cloudsim`) you created.
 
 
 Option 2)
@@ -65,7 +65,10 @@ Option 2)
 This package contains a script to launch an AWS instance from the command line
 with the `cloudsim-portal` security group and the `cloudsim` key.
 
-Use the `launch_portal.js` script to create a new aws instance.
+To use this script, you will need to first setup the AWS environment variables,
+see Environment variable setup section below.
+
+Use the `launch_portal.js` script to launch a new AWS instance.
 
     node launch_portal.js cloudsim empty.bash
 
@@ -84,7 +87,7 @@ Change the hostname to `portal`
     echo "127.0.1.1 portal" >>  /etc/hosts
 
 
-Setup the iptable to redirect port 443 (HTTPS) to 4000 (portal server).
+Setup the iptable to redirect port 443 (HTTPS) to 4000 (cloudsim portal server).
 This won't survive a reboot unless you put this in
 `/etc/rc.local`
 
@@ -98,14 +101,14 @@ This won't survive a reboot unless you put this in
 
 You need the following: nodejs (version 4 and up) and gulp
 
-* If you are running Trusty, you should use with nodesource:
+If you are running Ubuntu Trusty or older distributions, you should install using nodesource:
 
     curl https://deb.nodesource.com/setup_4.x | sudo -E bash -
 
-to install nodejs:
+Otherwise, install using apt-get:
 
     sudo apt-get install -y nodejs nodejs-legacy npm redis-server mercurial
-sudo npm install -g gulp
+    sudo npm install -g gulp
 
 
 #### MongoDB ####
