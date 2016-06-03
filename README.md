@@ -9,47 +9,31 @@ This is the portal server for Cloudsim
 * Launches new AWS gpu instances with simulators and field computers
 * Must be run from an AWS instance when using SSL certificates
 
-## AWS Setup ##
+## Prerequisite ##
 
-You need AWS keys (AWSAccessKeyId and AWSSecretKey). Get them from the AWS
-console.
+### AWS Setup ###
 
-![IMAGE](aws_keys.png) Then you must prepare your environment variables.
-Create a `.env` file and add the follwing but replace the XXX with your aws keys:
+You will need AWS credentials to launch instances on AWS.
 
-    AWS_ACCESS_KEY_ID=XXXXXXXX
-    AWS_SECRET_ACCESS_KEY=XXXXXXXXXX
+Get the AWS keys (AWSAccessKeyId and AWSSecretKey) from the AWS console.
 
-These environment variables must be loaded:
+![IMAGE](aws_keys.png)
 
-* in the shell that runs the portal web app (the keys are used to launch
- simulation machines)
-* in the terminal you use to launch a new portal
-
-Another important configuration is to upload or create a "Key Pair" in each
-region where you want to launch machines. That key must be called "cloudsim".
+An important configuration is to upload or create a "Key Pair" in each
+region where you want to launch simulator machines. That key must be called `cloudsim`.
 
 ![IMAGE](cloudsim_key.png)
 
-If you created the key file then when ssh'ing to the machine you'll need to do:
+AWS will put the public key in the simulator machine you launched so that you
+can ssh into the machine by doing:
 
     ssh -i cloudsim.pem ubuntu@ip_address
 
-
 Add two security groups (names are important):
 
-* cloudsim-sim
+* `cloudsim-portal`
 
-Inbound rules:
-
-    HTTPS / TCP / 443 / Anywhere
-    SSH  / TCP / 22 / Anywhere
-    All ICMP / ICMP / 0-65535 / Anywhere
-    Custom UDP Rule  / UDP / 1194 / Anywhere
-
-* cloudsim-portal
-
-Inbound rules:
+  Inbound rules:
 
     HTTPS / TCP / 443 / Anywhere
     SSH  / TCP / 22 / Anywhere
@@ -57,13 +41,40 @@ Inbound rules:
     Custom TCP Rule / TCP / 5050 / Anywhere
 
 
-### Launch portal on the AWS server ###
+* `cloudsim-sim`
 
-Use the launch_portal.js script to create a new aws instance.
+  Inbound rules:
+
+    HTTPS / TCP / 443 / Anywhere
+    SSH  / TCP / 22 / Anywhere
+    All ICMP / ICMP / 0-65535 / Anywhere
+    Custom UDP Rule  / UDP / 1194 / Anywhere
+
+## Launch the cloudsim portal instance on the AWS server ##
+
+There are different ways to start an AWS instance to host the cloudsim portal
+
+Option 1)
+
+You can do it manually using the AWS EC2 console. Make sure to assign the
+right security group (`cloudsim-portal`) and choose the key pair (`cloudsim`) you created.
+
+
+Option 2)
+
+This package contains a script to launch an AWS instance from the command line
+with the `cloudsim-portal` security group and the `cloudsim` key.
+
+To use this script, you will need to first setup the AWS environment variables,
+see Environment variable setup section below.
+
+Use the `launch_portal.js` script to launch a new AWS instance.
 
     node launch_portal.js cloudsim empty.bash
 
 You should see the ip address printed when the machine is launched.
+
+### Configure cloudsim portal instance ###
 
 Once the new aws instance is up and running, ssh into the machine:
 
@@ -71,31 +82,33 @@ Once the new aws instance is up and running, ssh into the machine:
 
 Change the hostname to `portal`
 
-~~~
-sudo su
-echo "portal" > /etc/hostname
-bonus: echo "127.0.1.1 portal" >>  /etc/hosts
-~~~
+    sudo su
+    echo "portal" > /etc/hostname
+    echo "127.0.1.1 portal" >>  /etc/hosts
 
-Setup the iptables. This won't survive a reboot unless you put this in
+
+Setup the iptable to redirect port 443 (HTTPS) to 4000 (cloudsim portal server).
+This won't survive a reboot unless you put this in
 `/etc/rc.local`
 
-    bash port_redirect.bash
+    iptables -t nat -A PREROUTING -i ens3 -p tcp --dport 443 -j REDIRECT --to-port 4000
 
-### Install the dependencies ###
+## Installation ##
+
+### Dependencies ###
 
 #### nodejs ####
 
 You need the following: nodejs (version 4 and up) and gulp
 
-* If you are running Trusty, you should use with nodesource:
+If you are running Ubuntu Trusty or older distributions, you should install using nodesource:
 
     curl https://deb.nodesource.com/setup_4.x | sudo -E bash -
 
-to install nodejs:
+Otherwise, install using apt-get:
 
     sudo apt-get install -y nodejs nodejs-legacy npm redis-server mercurial
-sudo npm install -g gulp
+    sudo npm install -g gulp
 
 
 #### MongoDB ####
@@ -103,17 +116,31 @@ sudo npm install -g gulp
 https://docs.mongodb.com/manual/installation/
 
 
-## Setup the portal ##
+### Setup the portal ###
 
 From the root directory
 
     npm install
 
+### Environment variable setup ###
+
+In order for the portal to launch a simulator machine, a valid AWS key pair is needed. Create a `.env` file and add the follwing but replace the XXX with your AWS keys:
+
+    AWS_ACCESS_KEY_ID=XXXXXXXX
+    AWS_SECRET_ACCESS_KEY=XXXXXXXXXX
+
+These environment variables must be loaded in the shell that runs the portal web app (the keys are used to launch
+ simulation machines)
+
+
 For security purposes, all sockets and REST API's are protected. Set up the public key needed to decode json web tokens. Edit and `.env` file and add the following variable. Replace XXX with the actual public key.
 
     CLOUDSIM_AUTH_PUB_KEY=XXXXXXXX
 
-Launch the portal:
+
+### Run the portal ###
+
+From the command line:
 
     gulp
 
@@ -136,7 +163,7 @@ Set up mongo with an admin user:
     > db.users.insert({"username": "admin"})
 
 
-other useful mongo commands:
+other useful mongo commands to retrieving data from collections:
 
     > db.users.find().pretty()
     > db.simulators.find().pretty()
