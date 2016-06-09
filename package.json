@@ -1,5 +1,5 @@
 {
-  "name": "cloudloop-portal",
+  "name": "cloudsim-portal",
   "version": "1.0.0",
   "description": "This is the portal  server for Cloudsim",
   "main": "cloud_services.js",
