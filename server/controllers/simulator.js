@@ -133,7 +133,9 @@ exports.create = function(req, res) {
     if (err) {
       // Create an error
       var error = {error: {
-        msg: 'Error launching a cloud instance'
+        message: err.message,
+        error: err,
+        awsData: awsData
       }};
       res.jsonp(error);
       return;

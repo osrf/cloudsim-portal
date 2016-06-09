@@ -233,7 +233,7 @@ apiRoutes.use(function(req, res, next) {
         });
       }
       console.log(util.inspect(decoded))
-      if (!decoded.user) {
+      if (!decoded.username) {
         console.log('Invalid token. No username provided')
         // return an error
         return res.status(401).send({
@@ -242,7 +242,7 @@ apiRoutes.use(function(req, res, next) {
         });
       }
 
-      req.username = decoded.user;
+      req.username = decoded.username;
       next();
     });
   }
