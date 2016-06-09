@@ -223,11 +223,20 @@ apiRoutes.use(function(req, res, next) {
     // verify a token
     jwt.verify(token,
       process.env.CLOUDSIM_AUTH_PUB_KEY, function(err, decoded) {
+      if (err) {
+        console.log('Error: ' + err.message)
+
+        // return an error
+        return res.status(401).send({
+            success: false,
+            msg: 'Couldn\'t verify token: ' + err.message
+        });
+      }
       console.log(util.inspect(decoded))
       if (!decoded.user) {
         console.log('Invalid token. No username provided')
         // return an error
-        return res.status(403).send({
+        return res.status(401).send({
             success: false,
             msg: 'No user field in token.'
         });
@@ -244,7 +253,7 @@ apiRoutes.use(function(req, res, next) {
   else {
     // if there is no token
     // return an error
-    return res.status(403).send({
+    return res.status(401).send({
         success: false,
         msg: 'No token provided.'
     });
