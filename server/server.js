@@ -221,8 +221,7 @@ apiRoutes.use(function(req, res, next) {
   // decode token
   if (token) {
     // verify a token
-    jwt.verify(token,
-      process.env.CLOUDSIM_AUTH_PUB_KEY, function(err, decoded) {
+    jwt.verify(token, process.env.CLOUDSIM_AUTH_PUB_KEY, {algorithms: ['RS256']}, function(err, decoded) {
       if (err) {
         console.log('Error: ' + err.message)
 
