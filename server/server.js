@@ -59,8 +59,13 @@ const spawn = require('child_process').spawn
 const ansi_to_html = require('ansi-to-html')
 const ansi2html = new ansi_to_html()
 
+var auth_pub_key ='';
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
   console.log('*** WARNING: No cloudsim auth public key found. Did you forget to set "CLOUDSIM_AUTH_PUB_KEY"? ***');
+}
+else {
+  auth_pub_key = process.env.CLOUDSIM_AUTH_PUB_KEY;
+  auth_pub_key.replace(/\\n/g, "\n");
 }
 
 
@@ -215,9 +220,6 @@ apiRoutes.use(function(req, res, next) {
 //  var token = req.body.token;
   var header = req.headers['authorization'] || '';
   var token=header.split(/\s+/).pop()||''
-
-  var auth_pub_key = process.env.CLOUDSIM_AUTH_PUB_KEY;
-  auth_pub_key.replace(/\\n/g, "\n");
 
   console.log('auth: ' + auth_pub_key);
   console.log('token: ' + token);
