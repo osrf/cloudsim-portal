@@ -64,7 +64,7 @@ if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
   console.log('*** WARNING: No cloudsim auth public key found. Did you forget to set "CLOUDSIM_AUTH_PUB_KEY"? ***');
 }
 else {
-  auth_pub_key = process.env.CLOUDSIM_AUTH_PUB_KEY;
+  auth_pub_key = '' + process.env.CLOUDSIM_AUTH_PUB_KEY;
   auth_pub_key.replace(/\\n/g, "\n");
 }
 
