@@ -216,13 +216,24 @@ apiRoutes.use(function(req, res, next) {
   var header = req.headers['authorization'] || '';
   var token=header.split(/\s+/).pop()||''
 
-  console.log('auth: ' + process.env.CLOUDSIM_AUTH_PUB_KEY);
+
+  var a = "-----BEGIN PUBLIC KEY-----\\nMFowDQYJKoZIhvcNAQEBBQADSQAwRgJBAIAfUSMQ7L/ueHjn10XgBQX9AnyeQcDQ\\npfv5DNQyLtpfaSnQPKElKL0OFzG+98ILOGPbB7Ft0NzqW4KHNuNxOUcCAQU=\\n-----END PUBLIC KEY-----"
+
+  console.log('a ' + a);
+
+  console.log('a str: ' + a.replace(/\\n/g, "\n"));
+
+
+  var auth_pub_key = process.env.CLOUDSIM_AUTH_PUB_KEY;
+  auth_pub_key.replace(/\\n/g, "\n");
+
+  console.log('auth: ' + auth_pub_key);
   console.log('token: ' + token);
 
   // decode token
   if (token) {
     // verify a token
-    jwt.verify(token, process.env.CLOUDSIM_AUTH_PUB_KEY, {algorithms: ['RS256']}, function(err, decoded) {
+    jwt.verify(token, auth_pub_key, {algorithms: ['RS256']}, function(err, decoded) {
       if (err) {
         console.log('Error: ' + err.message)
 
