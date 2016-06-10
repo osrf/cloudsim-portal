@@ -58,6 +58,11 @@ var SimulatorSchema = new Schema({
         type: Schema.ObjectId,
         ref: 'User'
     },
+
+    users : [{
+      username: String,
+      read_only: Boolean
+    }]
 });
 
 //

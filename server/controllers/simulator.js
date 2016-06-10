@@ -11,6 +11,7 @@ var mongoose = require('mongoose'),
     _ = require('lodash');
 
 var util = require('util');
+//var csgrant = require('cloudsim-grant');
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
@@ -455,7 +456,34 @@ exports.grant = function(req, res) {
     // set permission using js grant.
     console.log('grant - simulator: '  + simulatorId + ' to ' + grantee + ', readOnly: ' + readOnly);
 
+    var result = _.find(simulator.users, function(o) {
+      return o.username === grantee;
+    });
+
+    if (result) {
+      result.read_only = readOnly;
+      console.log('result found')
+    }
+    else {
+      var permission = {username: grantee, read_only: readOnly};
+      simulator.users.push(permission);
+      console.log('insert new user')
+    }
+    simulator.save();
     res.jsonp(req.body);
+
+/*    csgrant.grantPermission(req.user.username, grantee, simulatorId, readOnly,
+        function(err, success, message) {
+          if (err) {
+            var error = {error: {
+              msg: message
+            }};
+            res.jsonp(error);
+            return;
+          }
+
+          res.jsonp(req.body);
+        });*/
   });
 }
 
@@ -500,6 +528,34 @@ exports.revoke = function(req, res) {
     // set permission using js grant.
     console.log('revoke - simulator: '  + simulatorId + ' from ' + grantee);
 
+    var result = _.find(simulator.users, function(o) {
+      return o.username === grantee;
+    });
+
+    if (result) {
+      result.read_only = readOnly;
+      console.log('result found')
+    }
+    else {
+      var permission = {username: grantee, read_only: readOnly};
+      simulator.users.push(permission);
+      console.log('insert new user')
+    }
+    simulator.save();
     res.jsonp(req.body);
+
+
+/*    csgrant.revokePermission(req.user.username, grantee, simulatorId, readOnly,
+        function(err, success, message) {
+          if (err) {
+            var error = {error: {
+              msg: message
+            }};
+            res.jsonp(error);
+            return;
+          }
+          res.jsonp(req.body);
+        });
+*/
   });
 }
