@@ -65,7 +65,7 @@ if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
 }
 else {
   auth_pub_key = '' + process.env.CLOUDSIM_AUTH_PUB_KEY;
-  auth_pub_key.replace(/\\n/g, "\n");
+  auth_pub_key = auth_pub_key.replace(/\\n/g, "\n");
 }
 
 
