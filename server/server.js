@@ -216,6 +216,7 @@ apiRoutes.use(function(req, res, next) {
   var header = req.headers['authorization'] || '';
   var token=header.split(/\s+/).pop()||''
 
+  console.log('auth: ' + process.env.CLOUDSIM_AUTH_PUB_KEY);
   console.log('token: ' + token);
 
   // decode token
