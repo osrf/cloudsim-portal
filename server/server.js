@@ -215,14 +215,12 @@ var apiRoutes = express.Router();
 // route middleware to verify a token
 apiRoutes.use(function(req, res, next) {
 
-  console.log('decoding token');
+  console.log('decoding token middleware');
 
-//  var token = req.body.token;
   var header = req.headers['authorization'] || '';
   var token=header.split(/\s+/).pop()||''
 
-  console.log('auth: ' + auth_pub_key);
-  console.log('token: ' + token);
+  console.log('  token: ' + token);
 
   // decode token
   if (token) {

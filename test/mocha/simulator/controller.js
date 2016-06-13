@@ -22,6 +22,13 @@ var user;
 var user2;
 var agent;
 
+
+const launchData = {
+                        region: 'us-west-1',
+                        hardware:'t2.small',
+                        machineImage: 'bozo'
+                   }
+
 describe('<Unit Test>', function() {
     describe('Simulator Controller:', function() {
         before(function(done) {
@@ -70,18 +77,21 @@ describe('<Unit Test>', function() {
                 agent
                 .post('/simulators')
                 .set('Acccept', 'application/json')
-                .send({region: 'us-west-1'})
+                .send(launchData)
                 .end(function(err,res){
                     // util.log_res(res);
                     should.not.exist(err);
                     should.exist(res);
                     res.status.should.be.equal(200);
                     res.redirect.should.equal(false);
-                    var text = JSON.parse(res.text);
-                    text.id.should.not.be.empty();
-                    simId1 = text.id;
-                    text.status.should.equal('LAUNCHING');
-                    text.region.should.equal('us-west-1');
+                    var data = JSON.parse(res.text);
+                    console.log('\n\n**************\n\n************')
+                    console.log('\n\n\ntext ' + JSON.stringify(data) + '\n\n')
+
+                    data.id.should.not.be.empty();
+                    simId1 = data.id;
+                    data.status.should.equal('LAUNCHING');
+                    data.region.should.equal('us-west-1');
                     done();
                 });
             });
@@ -128,10 +138,13 @@ describe('<Unit Test>', function() {
         var simId2 ='';
         describe('Check Launch Second Simulator', function() {
             it('should be possible to create another simulator', function(done) {
+                // let's change the region
+                const data = JSON.parse(JSON.stringify(launchData))
+                data.region = 'us-east-1'
                 agent
                 .post('/simulators')
                 .set('Acccept', 'application/json')
-                .send({region: 'us-east-1' })
+                .send(data)
                 .end(function(err,res){
                     // util.log_res(res);
                     res.status.should.be.equal(200);
