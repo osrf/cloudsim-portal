@@ -102,14 +102,17 @@ exports.create = function(req, res) {
 
   // TODO verify permission!
 
-  var simulator = {status: 'LAUNCHING'};
-  simulator.region = req.body.region;
-
-  if (!simulator.region)
+  var simulator = {status: 'LAUNCHING'}
+  simulator.region = req.body.region
+  simulator.hardware = req.body.hardware
+  simulator.image = req.body.machineImage
+  if (!simulator.region || !simulator.image || !simulator.hardware)
   {
-    var error = {error: {
-      msg: 'Missing required fields'
-    }};
+    var error = {
+      error: {
+        msg: 'Missing required fields (machineImage, region, hardware)'
+      }
+    }
     res.jsonp(error);
     return;
   }
@@ -129,7 +132,7 @@ exports.create = function(req, res) {
 
   console.log(util.inspect(awsData));
 
-  cloudServices.launchSimulator(simulator.region, awsData.keyName, awsData.hardware, awsData.security, awsData.image, tag, script, function (err, machine) {
+  cloudServices.launchSimulator(simulator.region, awsData.keyName, simulator.hardware, awsData.security, simulator.image, tag, script, function (err, machine) {
     if (err) {
       // Create an error
       var error = {error: {
