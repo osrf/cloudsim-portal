@@ -1,3 +1,5 @@
+// #/usr/bin/env node
+
 "use strict"
 
 let fs = require('fs')
@@ -39,15 +41,21 @@ var base_good = { desc: 'Trusty + nvidia (CUDA 7.5)',
                security : 'gazebo',
                image : 'ami-610c7801'}
 
+var test_good = { desc: 'xenial t2.small',
+               region : 'us-west-1',
+               keyName : aws_ssh_key,
+               hardware : 't2.small',  //  'g2.2xlarge',
+               security : 'gazebo',
+               image : 'ami-84423ae4' }//  'ami-610c7801'}
 
-let m  = base_good
+
+
+let m  = test_good
 console.log( m.desc)
 console.log('region: ' + m.region)
 
 let info = {}
-
 let tags = {Name:'simtest'}
-
 xcloud.launchSimulator (m.region, m.keyName, m.hardware, m.security, m.image, tags, script,
   function (err, machine) {
     if (err) throw err

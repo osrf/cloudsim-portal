@@ -1,5 +1,5 @@
 {
-  "name": "cloudloop-portal",
+  "name": "cloudsim-portal",
   "version": "1.0.0",
   "description": "This is the portal  server for Cloudsim",
   "main": "cloud_services.js",
@@ -18,7 +18,7 @@
     "aws-sdk": "^2.3.9",
     "body-parser": "^1.15.1",
     "browser-sync": "^2.12.7",
-    "cloudsim-grant": "0.0.4",
+    "cloudsim-grant": "*",
     "cors": "^2.7.1",
     "dotenv": "^2.0.0",
     "express": "^4.13.4",

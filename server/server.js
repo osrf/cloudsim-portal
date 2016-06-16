@@ -59,8 +59,13 @@ const spawn = require('child_process').spawn
 const ansi_to_html = require('ansi-to-html')
 const ansi2html = new ansi_to_html()
 
+var auth_pub_key ='';
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
   console.log('*** WARNING: No cloudsim auth public key found. Did you forget to set "CLOUDSIM_AUTH_PUB_KEY"? ***');
+}
+else {
+  auth_pub_key = '' + process.env.CLOUDSIM_AUTH_PUB_KEY;
+  auth_pub_key = auth_pub_key.replace(/\\n/g, "\n");
 }
 
 
@@ -210,30 +215,37 @@ var apiRoutes = express.Router();
 // route middleware to verify a token
 apiRoutes.use(function(req, res, next) {
 
-  console.log('decoding token');
+  console.log('decoding token middleware');
 
-//  var token = req.body.token;
   var header = req.headers['authorization'] || '';
   var token=header.split(/\s+/).pop()||''
 
-  console.log('token: ' + token);
+  console.log('  token: ' + token);
 
   // decode token
   if (token) {
     // verify a token
-    jwt.verify(token,
-      process.env.CLOUDSIM_AUTH_PUB_KEY, function(err, decoded) {
+    jwt.verify(token, auth_pub_key, {algorithms: ['RS256']}, function(err, decoded) {
+      if (err) {
+        console.log('Error: ' + err.message)
+
+        // return an error
+        return res.status(401).send({
+            success: false,
+            msg: 'Couldn\'t verify token: ' + err.message
+        });
+      }
       console.log(util.inspect(decoded))
-      if (!decoded.user) {
+      if (!decoded.username) {
         console.log('Invalid token. No username provided')
         // return an error
-        return res.status(403).send({
+        return res.status(401).send({
             success: false,
             msg: 'No user field in token.'
         });
       }
 
-      req.username = decoded.user;
+      req.username = decoded.username;
       next();
     });
   }
@@ -244,7 +256,7 @@ apiRoutes.use(function(req, res, next) {
   else {
     // if there is no token
     // return an error
-    return res.status(403).send({
+    return res.status(401).send({
         success: false,
         msg: 'No token provided.'
     });
