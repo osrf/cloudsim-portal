@@ -136,7 +136,7 @@ apiRoutes.use(function(req, res, next) {
       next();
     });
   }
-  else if (process.env.NODE_ENV === 'test' || true) {
+  else if (process.env.NODE_ENV === 'test') {
 
     req.username = token || adminUser;
     req.user = {};
