@@ -21,23 +21,29 @@ const port = process.env.CLOUDSIM_PORT || 4000
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 console.log('ENV ' + process.env.NODE_ENV);
 
+// Mongo
 let mongoose = require('mongoose');
-// Bootstrap db connection
 var dbName = 'mongodb://localhost/cloudsim-portal';
 if (process.env.NODE_ENV === 'test')
   dbName = dbName + '-test';
-
 console.log('Using database: ' + dbName);
 var db = mongoose.connect(dbName);
 
+// cloudsim-grant
+var adminUser = 'admin';
+var adminResource = 'simulators_list';
+const csgrant = require('cloudsim-grant');
+csgrant.init(adminUser, adminResource);
 
+// https
 const useHttps = true
 if(useHttps) {
   const keyPath = __dirname + '/key.pem'
   const certPath = __dirname + '/key-cert.pem'
   const privateKey  = fs.readFileSync(keyPath, 'utf8')
   const certificate = fs.readFileSync(certPath, 'utf8')
-  httpServer = require('https').Server({key: privateKey, cert: certificate}, app)
+  httpServer = require('https').Server(
+      {key: privateKey, cert: certificate}, app)
 }
 else {
   httpServer = require('http').Server(app)
@@ -52,7 +58,7 @@ io = require('socket.io')(httpServer)
 var socketioJwt = require('socketio-jwt');
 
 var xtend = require('xtend');
-var jwt = require('jsonwebtoken');
+//var jwt = require('jsonwebtoken');
 var UnauthorizedError = require('./UnauthorizedError');
 
 const spawn = require('child_process').spawn
@@ -61,134 +67,16 @@ const ansi2html = new ansi_to_html()
 
 var auth_pub_key ='';
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
-  console.log('*** WARNING: No cloudsim auth public key found. Did you forget to set "CLOUDSIM_AUTH_PUB_KEY"? ***');
+  console.log('*** WARNING: No cloudsim auth public key found. \
+      Did you forget to set "CLOUDSIM_AUTH_PUB_KEY"? ***');
 }
 else {
   auth_pub_key = '' + process.env.CLOUDSIM_AUTH_PUB_KEY;
   auth_pub_key = auth_pub_key.replace(/\\n/g, "\n");
+  process.env.CLOUDSIM_AUTH_PUB_KEY = auth_pub_key;
 }
-
 
 console.log('portal server.js')
-
-
-/*var env = {
-  AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID,
-  AUTH0_DOMAIN: process.env.AUTH0_DOMAIN,
-}
-
-function autho(socket) {
-    console.log('\n\nautho for new socket')
-
-    var options = {
-      // secret: Buffer(JSON.stringify(process.env.CLIENT_SECRET), 'base64'),
-      secret: Buffer(JSON.stringify("gzsecret"), 'base64'),
-      timeout: 15000 // 15 seconds to send the authentication message
-    }
-
-    var server = this.server || socket.server;
-
-    if (!server.$emit) {
-      //then is socket.io 1.0
-      var Namespace = Object.getPrototypeOf(server.sockets).constructor;
-      if (!~Namespace.events.indexOf('authenticated')) {
-        Namespace.events.push('authenticated');
-      }
-    }
-    if(options.required){
-      var auth_timeout = setTimeout(function () {
-        socket.disconnect('unauthorized');
-      }, options.timeout || 5000);
-    }
-
-    socket.on('authenticate', function (data) {
-      console.log('authenticate... token[' + data.token + ']')
-      if(options.required){
-        clearTimeout(auth_timeout);
-      }
-      // error handler
-      var onError = function(err, code) {
-          if (err) {
-            code = code || 'unknown';
-            var error = new UnauthorizedError(code, {
-              message: (Object.prototype.toString.call(err) === '[object Object]' && err.message) ? err.message : err
-            });
-            socket.emit('unauthorized', error, function() {
-              socket.disconnect('unauthorized');
-            });
-            return; // stop logic, socket will be close on next tick
-          }
-      };
-      if(typeof data.token !== "string") {
-        return onError({message: 'invalid token datatype'}, 'invalid_token');
-      }
-
-      var onJwtVerificationReady = function(err, decoded) {
-        console.log('after token verification')
-        // success handler
-        var onSuccess = function() {
-          console.log('on success decoded: ' + JSON.stringify(decoded))
-          socket.decoded_token = decoded;
-          socket.emit('authenticated');
-          if (server.$emit) {
-            server.$emit('authenticated', socket);
-          } else {
-            //try getting the current namespace otherwise fallback to all sockets.
-            var namespace = (server.nsps && socket.nsp &&
-                             server.nsps[socket.nsp.name]) ||
-                            server.sockets;
-
-            // explicit namespace
-            namespace.emit('authenticated', socket);
-          }
-        };
-
-        console.log('BYPASS!!')
-        return onSuccess()
-
-        if (err) {
-          console.log('error during validation');
-          return onError(err, 'invalid_token');
-        }
-
-        if(options.additional_auth && typeof options.additional_auth === 'function') {
-          options.additional_auth(decoded, onSuccess, onError);
-        } else {
-          onSuccess();
-        }
-      };
-
-      var onSecretReady = function(err, secret) {
-        if (err || !secret) {
-          return onError(err, 'invalid_secret');
-        }
-        console.log('secret: ' + secret)
-        jwt.verify(data.token, secret, options, onJwtVerificationReady);
-
-      };
-
-      // console.log('call getSecret from socket.on("authenticate")')
-      // getSecret(socket.request, options.secret, data.token, onSecretReady);
-      console.log('onSecretReady')
-      onSecretReady(null, options.secret)
-    });
-  }
-
-io
-  .on('connection', autho )
-  .on('authenticated', function(socket){
-    console.log('connected & authenticated: ' + JSON.stringify(socket.decoded_token));
-    let gzlauncher = {proc:null, output:'', state: 'ready', cmdline:''}
-
-    socket.on('gz-simulatorlauncher', function(msg) {
-
-      console.log('received: ' + JSON.stringify(msg))
-		});
-	});
-*/
-
-// app.use(express.static(__dirname + '../public'));
-
 
 // Bootstrap models
 var models_path = __dirname + '/models';
@@ -215,17 +103,16 @@ var apiRoutes = express.Router();
 // route middleware to verify a token
 apiRoutes.use(function(req, res, next) {
 
-  console.log('decoding token middleware');
-
   var header = req.headers['authorization'] || '';
   var token=header.split(/\s+/).pop()||''
 
-  console.log('  token: ' + token);
+  // console.log('  token: ' + token);
 
   // decode token
-  if (token) {
+  if (token && process.env.NODE_ENV !== 'test') {
+
+    csgrant.verifyToken(token, (err, decoded) => {
     // verify a token
-    jwt.verify(token, auth_pub_key, {algorithms: ['RS256']}, function(err, decoded) {
       if (err) {
         console.log('Error: ' + err.message)
 
@@ -250,7 +137,10 @@ apiRoutes.use(function(req, res, next) {
     });
   }
   else if (process.env.NODE_ENV === 'test' || true) {
-    req.username = 'admin'
+
+    req.username = token || adminUser;
+    req.user = {};
+    req.user.username = req.username;
     next();
   }
   else {
@@ -261,34 +151,6 @@ apiRoutes.use(function(req, res, next) {
         msg: 'No token provided.'
     });
   }
-
-/*  // check header or url parameters or post parameters for token
-  var token = req.body.token || req.query.token || req.headers['x-access-token'];
-
-  // decode token
-  if (token) {
-
-    // verifies secret and checks exp
-    jwt.verify(token, app.get('superSecret'), function(err, decoded) {
-      if (err) {
-        return res.json({ success: false, message: 'Failed to authenticate token.' });
-      } else {
-        // if everything is good, save to request for use in other routes
-        req.decoded = decoded;
-        next();
-      }
-    });
-
-  } else {
-
-    // if there is no token
-    // return an error
-    return res.status(403).send({
-        success: false,
-        message: 'No token provided.'
-    });
-
-  }*/
 });
 
 // Bootstrap routes
@@ -320,43 +182,7 @@ app.use('/', apiRoutes);
 // Expose app
 exports = module.exports = app;
 
-
-/*
-app.get('/', function (req, res) {
-  // res.sendFile(__dirname + '/../public/index.html')
-  let s = `
-    <h1>Cloudloop portal running</h1>
-`
-  res.end(s)
-})
-
-
-let sims = []
-app.get('/simulations', function (req, res) {
-
-  console.log('body: ' + util.inspect(req.body))
-  let s = `
-    [{name:'walking', id:'1', score:'1.1'},
-     {name:'manipulation', id:'2', score:'2.2'},
-     {name:'navigation', id:'3', score:'3.3'}]`
-
-  console.log('/simulations' +  s)
-  res.end(s)
-})
-
-app.post('/simulation', function(req, res) {
-
-  console.log('body: ' + util.inspect(req.body))
-  console.log('query: ' + util.inspect(req.query))
-
-  res.end('{"success":"true"}')
-})*/
-
-// app.post('/register', UserRoutes.register)
-// app.post('/unregister', UserRoutes.unregister)
-
 httpServer.listen(port, function(){
-
   console.log('ssl: ' + useHttps)
-	console.log('listening on *:' + port);
+  console.log('listening on *:' + port);
 });

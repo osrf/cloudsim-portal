@@ -11,7 +11,7 @@ var User = mongoose.model('User');
 var authenticateUser = function(req, res, next) {
 
   var userID = req.username;
-  console.log('sim authenticate user: ' + userID);
+  // console.log('sim authenticate user: ' + userID);
 
   if (!userID)
     return res.status(401).send('User is not found');
