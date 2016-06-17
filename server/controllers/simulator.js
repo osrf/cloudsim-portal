@@ -123,7 +123,8 @@ exports.create = function(req, res) {
   simulator.machine_id = '';
   simulator.id = uuid.v4();
 
-  // check permission - only admins can create resources
+  // check permission - only admins (users with write access to adminResource)
+  // can create resources
   csgrant.isAuthorized(req.user.username, adminResource, false,
       (err, authorized) => {
     if (err) {
