@@ -16,7 +16,7 @@ if( !process.env.AWS_ACCESS_KEY_ID) {
 if (process.argv.length != 4) {
   console.log('Wrong # of arguments!')
   console.log('  should be: aws_ssh_keyname script')
-  console.log('  ex: node launch_sim.js hugo_osrf src_start.bash\n')
+  console.log('  ex: node launch_sim.js cloudsim src_start.bash\n')
   console.log('actual args: ', process.argv.length)
   process.argv.forEach((val, index, array) => {
     console.log(' ', `${index}: ${val}`);
@@ -38,19 +38,28 @@ var base_good = { desc: 'Trusty + nvidia (CUDA 7.5)',
                region : 'us-west-1',
                keyName : aws_ssh_key,
                hardware : 'g2.2xlarge',
-               security : 'gazebo',
+               security : 'cloudsim-sim',
                image : 'ami-610c7801'}
 
-var test_good = { desc: 'xenial t2.small',
+var test_small = { desc: 'xenial t2.small',
                region : 'us-west-1',
                keyName : aws_ssh_key,
                hardware : 't2.small',  //  'g2.2xlarge',
-               security : 'gazebo',
+               security : 'cloudsim-sim',
                image : 'ami-84423ae4' }//  'ami-610c7801'}
 
 
+const test_gpu = {
+  desc: 'cloudsim-sim-gpu-gazebo 0.1',
+  region : 'us-west-1',
+  keyName : aws_ssh_key,
+  hardware : 'g2.2xlarge',
+  security : 'cloudsim-sim',
+  image : 'ami-6fb4f10f'
+}
 
-let m  = test_good
+
+let m  = test_gpu
 console.log( m.desc)
 console.log('region: ' + m.region)
 
