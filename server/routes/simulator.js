@@ -62,10 +62,6 @@ module.exports = function(router) {
   /// Return properties for one simulation
   router.delete('/simulators/permissions', authenticateUser, Simulators.revoke);
 
-  /// PUT /simulators/:simulationId
-  /// Modify one simulation
-  // router.put('/simulators/:simulatorId', authenticateUser, Simulators.update);
-
   /// Finish with setting up the simulationId param
   router.param('simulatorId', Simulators.simulatorId);
 };

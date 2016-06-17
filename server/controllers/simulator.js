@@ -196,15 +196,6 @@ exports.create = function(req, res) {
 };
 
 /////////////////////////////////////////////////
-/// Update a simulator
-/// @param[in] req Nodejs request object.
-/// @param[out] res Nodejs response object
-/// @return Simulator update function.
-exports.update = function(req, res) {
-};
-
-
-/////////////////////////////////////////////////
 // Terminates a simulator.
 function terminateSimulator(simulator, cb) {
 
