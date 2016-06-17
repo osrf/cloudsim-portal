@@ -1,24 +1,21 @@
 #!/usr/bin/env bash
 
-#
 # This script creates a bash file that launches a docker container
 # The container runs a webservice through which gzserver can be
 # controlled
-#
 
 repo_dir="/home/ubuntu/code/src_cloud_simulator/docker"
 
 date > $repo_dir/cloudsim.log
 echo "writing upstart.bash file" >> $repo_dir/cloudsim.log
 
-#
 # Write the upstart.bash script. This happens as part of the cloud-init
 # when the ec2 instance is launched. However it is too early to launch
 # the container because the daemon is not running yet.
 #
 # A custom upstart service running on the host will execute the script
 # when it starts.
-#
+
 cat <<DELIM > $repo_dir/upstart.bash
 #!/usr/bin/env bash
 
