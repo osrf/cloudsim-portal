@@ -55,7 +55,7 @@ const test_gpu = {
   keyName : aws_ssh_key,
   hardware : 'g2.2xlarge',
   security : 'cloudsim-sim',
-  image : 'ami-6fb4f10f'
+  image : 'ami-3d3f7b5d'
 }
 
 
