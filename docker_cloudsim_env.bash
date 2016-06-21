@@ -6,7 +6,7 @@
 
 directory="/home/ubuntu/code/src_cloud_simulator/docker"
 fullpath="$directory/setup_cloudsim_sim.bash"
-logpath="$directory/setup_cloudsim_log.log"
+logpath="$directory/cloudsim.log"
 
 date > $logpath
 echo "writing $fullpath file" >> $logpath
@@ -21,9 +21,14 @@ echo "writing $fullpath file" >> $logpath
 cat <<DELIM > $fullpath
 #!/usr/bin/env bash
 
+# authentication server public key, to verify users
 export CLOUDSIM_AUTH_PUB_KEY="-----BEGIN PUBLIC KEY-----\nMFowDQYJKoZIhvcNAQEBBQADSQAwRgJBAIAfUSMQ7L/ueHjn10XgBQX9AnyeQcDQ\npfv5DNQyLtpfaSnQPKElKL0OFzG+98ILOGPbB7Ft0NzqW4KHNuNxOUcCAQU=\n-----END PUBLIC KEY-----"
 
-export ADMIN_USER="hugo@osrfoundation.org"
+# admin user that can launch simulations
+export ADMIN_USER="admin"
+
+# the docker container to run
+export container_name="cloudsim"
 
 date >> $logpath
 echo "$fullpath data loaded" >> $logpath
