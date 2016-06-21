@@ -11,6 +11,7 @@ var mongoose = require('mongoose'),
     _ = require('lodash');
 
 var util = require('util');
+var csgrant = require('cloudsim-grant');
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
@@ -18,10 +19,12 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
   console.log('using the real cloud services!');
   cloudServices = require('../../cloud_services.js');
 } else {
-  console.log('process.env.AWS_ACCESS_KEY_ID not defined: using the fake cloud services');
+  console.log(
+    'process.env.AWS_ACCESS_KEY_ID not defined: using the fake cloud services');
   cloudServices = require('../../fake_cloud_services.js');
 }
 
+var adminResource = 'simulators_list';
 var aws_ssh_key = 'cloudsim';
 
 ////////////////////////////////////
@@ -67,7 +70,6 @@ exports.simulatorId = function(req, res, next, id) {
         msg: 'Cannot find simulator'
       }};
       res.jsonp(error);
-//        return next(new Error('Failed to load simulator ' + id));
     }
 
     // Add the new simulator to the request object
@@ -87,10 +89,7 @@ exports.simulatorId = function(req, res, next, id) {
 /// @return Simulator create function.
 exports.create = function(req, res) {
 
-  // Create a new simulator instance based on the content of the
-  // request
-  console.log(util.inspect(req.body));
-
+  // Create a new simulator instance based on the content of the request
   if (!cloudServices) {
     // Create an error
     var error = {error: {
@@ -100,8 +99,7 @@ exports.create = function(req, res) {
     return;
   }
 
-  // TODO verify permission!
-
+  // create the simulator data
   var simulator = {status: 'LAUNCHING'}
   simulator.region = req.body.region
   simulator.hardware = req.body.hardware
@@ -125,118 +123,78 @@ exports.create = function(req, res) {
   simulator.machine_id = '';
   simulator.id = uuid.v4();
 
-  var tagName = simulator.owner.username + '_' + simulator.region + '_' + Date.now();
-  var tag = {Name: tagName};
-  var scriptName = 'empty.bash';
-  var script = fs.readFileSync(scriptName, 'utf8')
-
-  console.log(util.inspect(awsData));
-
-  cloudServices.launchSimulator(simulator.region, awsData.keyName, simulator.hardware, awsData.security, simulator.image, tag, script, function (err, machine) {
+  // check permission - only admins (users with write access to adminResource)
+  // can create resources
+  csgrant.isAuthorized(req.user.username, adminResource, false,
+      (err, authorized) => {
     if (err) {
-      // Create an error
-      var error = {error: {
-        message: err.message,
-        error: err,
-        awsData: awsData
-      }};
-      res.jsonp(error);
-      return;
+      return res.jsonp({success: false, error: err})
     }
-
-    var info = machine;
-    console.log('machine: ' + info.id);
-    console.log(util.inspect(info));
-
-    simulator.machine_id = info.id;
-
-    var sim = new Simulator(simulator);
-    sim.save(function(err) {
+    if (!authorized) {
+      const msg = 'insufficient permission for user "'
+          + req.user.username + '"';
+      return res.jsonp({success: false, error: msg});
+    }
+    // add resource to csgrant
+    csgrant.createResource(req.user.username, simulator.id, {},
+        (err, data) => {
       if (err) {
-        var error = {error: {
-          msg: 'Error saving simulator'
-        }};
-        res.jsonp(error);
-      } else {
-
-        // send json response object to update the
-        // caller with new simulator data.
-        res.jsonp(formatResponse(simulator));
-
-        setTimeout(function() {
-          cloudServices.simulatorStatus(info, function(err, state) {
-            console.log('sim status: ' + sim.id);
-            console.log(util.inspect(state));
-            sim.machine_ip = state.ip;
-            sim.save();
-          });
-        }, 10000);
+        res.jsonp(error(err));
+        return;
       }
-    }); // simulator.save (simulatorInstance)
+
+      // launch the simulator!
+      var tagName = simulator.owner.username + '_' + simulator.region + '_'
+          + Date.now();
+      var tag = {Name: tagName};
+      var scriptName = 'empty.bash';
+      var script = fs.readFileSync(scriptName, 'utf8')
+
+      cloudServices.launchSimulator(simulator.region, awsData.keyName,
+          simulator.hardware, awsData.security, simulator.image, tag, script,
+          function (err, machine) {
+        if (err) {
+          // Create an error
+          var error = {error: {
+            message: err.message,
+            error: err,
+            awsData: awsData
+          }};
+          res.jsonp(error);
+          return;
+        }
+
+        var info = machine;
+        simulator.machine_id = info.id;
+
+        var sim = new Simulator(simulator);
+        sim.save(function(err) {
+          if (err) {
+            var error = {error: {
+              msg: 'Error saving simulator'
+            }};
+            res.jsonp(error);
+          } else {
+
+            // send json response object to update the
+            // caller with new simulator data.
+            res.jsonp(formatResponse(simulator));
+
+            setTimeout(function() {
+              cloudServices.simulatorStatus(info, function(err, state) {
+                sim.machine_ip = state.ip;
+                sim.save();
+              });
+            }, 10000);
+          }
+        }); // simulator.save (simulatorInstance)
+      });
+
+
+    });
   });
+
 };
-
-/////////////////////////////////////////////////
-/// Update a simulator
-/// @param[in] req Nodejs request object.
-/// @param[out] res Nodejs response object
-/// @return Simulator update function.
-exports.update = function(req, res) {
-
-  // TODO verify permission!
-
-/*  // Get the simulator from the request
-  var simulator = req.simulator;
-
-  if (simulator.state === 'Terminated') {
-    // don't rewrite history, just return.
-    res.jsonp(simulator);
-    return;
-  }
-
-  // Check if the update operation is to terminate a simulator
- if (req.body.state !== simulator.state &&
-    req.body.state === 'Terminated') {
-    exports.terminate(req, res);
-    return;
-  }
-
-  // Check to make sure the region is not modified.
-  if (req.body.region && simulator.region !== req.body.region) {
-    // Create an error message.
-    var error = {error: {
-        msg: 'Cannot change the region of a running simulator',
-        id: req.simulator.sim_id
-    }};
-
-    // Can't change the world.
-    res.jsonp(error);
-    return;
-  }
-
-  // use the lodash library to populate each
-  // simulator attribute with the values in the
-  // request body
-  simulator = _.extend(simulator, req.body);
-
-  // Save the updated simulator to the database
-  simulator.save(function(err) {
-    if (err) {
-      // Create an error message.
-      var error = {error: {
-          msg: 'Cannot update simulator',
-          id: req.simulator.sim_id
-      }};
-      res.jsonp(error);
-    } else {
-        res.jsonp(simulator);
-//            sockets.getUserSockets().notifyUser(req.user.id,
-//                                            'simulator_update',
-//                                             {data:simulator});
-    }
-  });*/
-};
-
 
 /////////////////////////////////////////////////
 // Terminates a simulator.
@@ -298,7 +256,8 @@ exports.destroy = function(req, res) {
     return;
   }
 
-  Simulator.findOne({owner: req.user, id: simulatorId}, function(err, simulator) {
+  Simulator.findOne({id: simulatorId},
+      function(err, simulator) {
     // in case of error, hand it over to the next middleware
     if (err) {
       var error = {error: {
@@ -317,33 +276,41 @@ exports.destroy = function(req, res) {
       return;
     }
 
-    terminateSimulator(simulator, function(err, sim) {
-        if(err) {
-          var error = {error: {
-            msg: 'Error terminating simulator'
-          }};
-          res.jsonp(error);
-          return;
-        } else {
-          res.jsonp(formatResponse(simulator.toObject()));
-        }
-    });
+    // check permission
+    csgrant.isAuthorized(req.user.username, simulator.id, false,
+        (err, authorized) => {
+      if (err) {
+        return res.jsonp({success: false, error: err})
+      }
+      if (!authorized) {
+        const msg = 'insufficient permission for user "'
+            + req.user.username + '"'
+        return res.jsonp({success: false, error: msg})
+      }
 
+      // delete resource from csgrant?
+      // keep the resource since we only mark it as terminated.
+      // user should still be able to see it using /simulators/:id
+      // csgrant.deleteResource(req.user.username, simulator.id, (err, data) => {
+      // if (err) {
+      //   return res.jsonp({success: false, error: err})
+      // }
 
-/*    // Remove the simulator model from the database
-    // TODO: We need to check to make sure the simulator instance has been
-    // terminated
-    simulator.remove(function(err) {
-        if (err) {
-          var error = {error: {
-            msg: 'Error removing simulator'
-          }};
-          res.jsonp(error);
-        } else {
-          res.jsonp(formatResponse(simulator.toObject()));
-        }
-    });
-*/
+        // finally terminate the simulator
+        terminateSimulator(simulator, function(err, sim) {
+            if (err) {
+              var error = {error: {
+                msg: 'Error terminating simulator'
+              }};
+              res.jsonp(error);
+              return;
+            } else {
+              res.jsonp(formatResponse(simulator.toObject()));
+            }
+        });
+      // })
+    })
+
   });
 };
 
@@ -353,7 +320,22 @@ exports.destroy = function(req, res) {
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
 exports.show = function(req, res) {
-  res.jsonp(formatResponse(req.simulator.toObject()));
+
+  // check permission
+  csgrant.isAuthorized(req.user.username, req.simulator.id, true,
+      (err, authorized) => {
+    if (err) {
+      return res.jsonp({success: false, error: err})
+    }
+
+    if (!authorized) {
+      const msg = 'insufficient permission for user "'
+          + req.user.username + '"'
+      return res.jsonp({success: false, error: msg})
+    }
+
+    res.jsonp(formatResponse(req.simulator.toObject()));
+  });
 };
 
 /////////////////////////////////////////////////
@@ -365,58 +347,85 @@ exports.all = function(req, res) {
 
   var result = [];
 
-  var populateSimulations = function(index, simulators, res) {
-//    console.log('populating simulations ' + index + ' vs ' + simulators.length);
+  var populateSimulations = function(index, simulators, cb) {
     if (index == simulators.length) {
-      res.jsonp(result);
-      return;
+      return cb(null, result);
     }
 
     var sim = simulators[index];
-    var filter = {owner: req.user, simulator: sim};
+    var filter = {simulator: sim};
     Simulation.find(filter)
         .exec(function(err, simulations) {
           if (err) {}
           else {
-//            console.log('filling simulations ' + index);
             result[index] = formatResponse(simulators[index].toObject());
             result[index].simulations = simulations;
             index++;
-            populateSimulations(index, simulators, res);
+            populateSimulations(index, simulators, cb);
           }
         });
   }
 
-  var filter = {owner: req.user, $where: 'this.status != "TERMINATED"'};
 
-  // Get all simulator models, in creation order, for a user
+  // filter simulators based on permission
+  var filtered = [];
+  var filterSimulators = function(s, simList, cb) {
+    if (s == simList.length) {
+      return cb(null, filtered);
+    }
+
+    // check permission - get simulators that the user has read permission to
+    csgrant.isAuthorized(req.user.username, simList[s].id, true,
+        (err, authorized) => {
+      if (err) {
+        return cb(err, filtered);
+      }
+
+      if (authorized) {
+        filtered.push(simList[s]);
+      }
+
+      s++;
+      filterSimulators(s, simList, cb);
+    });
+  }
+
+  var filter = {$where: 'this.status != "TERMINATED"'};
+
+  // Get all simulators
   Simulator.find(filter).sort().populate('owner', 'username')
     .exec(function(err, simulators) {
       if (err) {
-          var error = {error: {
-            msg: 'Error finding simulators'
-          }};
-          res.jsonp(error);
+        var error = {error: {
+          msg: 'Error finding simulators'
+        }};
+        res.jsonp(error);
       } else {
-        populateSimulations(0, simulators, res)
+
+        // filter based on user permission
+        filterSimulators(0, simulators, function(err, f){
+          if (err) {
+            var error = {error: {
+              msg: 'Error filtering simulators'
+            }};
+            res.jsonp(error);
+            return;
+          }
+
+          // populate with simulations data and send response
+          populateSimulations(0, f, function(err, result) {
+            if (err) {
+              var error = {error: {
+                msg: 'Error finding simulations'
+              }};
+              res.jsonp(error);
+            } else {
+              res.jsonp(result);
+            }
+          });
+        });
       }
   });
-
-/*  var filter = {owner: req.user}
-
-  // Get all simulator models, in creation order, for a user
-  Simulation.find(filter).sort().populate('owner', 'username').populate('simulator')
-    .exec(function(err, simulations) {
-      if (err) {
-          var error = {error: {
-            msg: 'Error finding simulations'
-          }};
-          res.jsonp(error);
-      } else {
-        res.jsonp(simulations);
-      }
-  });
-*/
 };
 
 /////////////////////////////////////////////////
@@ -438,7 +447,8 @@ exports.grant = function(req, res) {
     return;
   }
 
-  Simulator.findOne({owner: req.user, id: simulatorId}, function(err, simulator) {
+  Simulator.findOne({id: simulatorId},
+      function(err, simulator) {
     // in case of error, respond with error msg
     if (err) {
       var error = {error: {
@@ -449,7 +459,7 @@ exports.grant = function(req, res) {
     }
 
     // If a simulator instance was not found, then return an error
-    if (!simulator) {
+    if (!simulator && simulatorId !== adminResource) {
       var error = {error: {
         msg: 'Cannot find simulator'
       }};
@@ -457,10 +467,55 @@ exports.grant = function(req, res) {
       return;
     }
 
-    // set permission using js grant.
-    console.log('grant - simulator: '  + simulatorId + ' to ' + grantee + ', readOnly: ' + readOnly);
+    // check permission - only user with write access can grant permission
+    csgrant.isAuthorized(req.user.username, simulatorId, false,
+        (err, authorized) => {
+      if (err) {
+        return res.jsonp({success: false, error: err})
+      }
+      if (!authorized) {
+        const msg = 'insufficient permission for user "'
+            + req.user.username + '"'
+        return res.jsonp({success: false, error: msg})
+      }
 
-    res.jsonp(req.body);
+      // grant the permission
+      csgrant.grantPermission(req.user.username, grantee, simulatorId, readOnly,
+        function(err, success, message) {
+          if (err) {
+            var error = {error: {
+              msg: message
+            }};
+            res.jsonp(error);
+            return;
+          }
+
+          // update simulator user permission list
+          if (success && simulator) {
+
+            var result = simulator.users.map(
+                function(e){return e.username}).indexOf(grantee);
+
+            if (result >= 0) {
+              simulator.users[result].read_only = readOnly;
+              // console.log('update user in permission list')
+            }
+            else {
+              var permission = {username: grantee, read_only: readOnly};
+              simulator.users.push(permission);
+              // console.log('insert new user to permission list')
+            }
+
+            simulator.save();
+          }
+
+          req.body.success = success;
+          // console.log('grant grantor: ' + req.user.username + ', grantee: '
+          //     + grantee + ', readOnly: ' + readOnly + ', simulator: '
+          //     + simulatorId);
+          res.jsonp(req.body);
+      });
+    });
   });
 }
 
@@ -474,7 +529,7 @@ exports.revoke = function(req, res) {
   var grantee = req.body.username;
   var readOnly = req.body.read_only;
 
-  if (!simulatorId || simulatorId.length == 0)
+  if (!simulatorId || simulatorId.length === 0)
   {
     var error = {error: {
       msg: 'Missing required fields'
@@ -483,7 +538,7 @@ exports.revoke = function(req, res) {
     return;
   }
 
-  Simulator.findOne({owner: req.user, id: simulatorId}, function(err, simulator) {
+  Simulator.findOne({id: simulatorId}, function(err, simulator) {
     // in case of error, respond with error msg
     if (err) {
       var error = {error: {
@@ -494,7 +549,7 @@ exports.revoke = function(req, res) {
     }
 
     // If a simulator instance was not found, then return an error
-    if (!simulator) {
+    if (!simulator && simulatorId !== adminResource) {
       var error = {error: {
         msg: 'Cannot find simulator'
       }};
@@ -502,9 +557,48 @@ exports.revoke = function(req, res) {
       return;
     }
 
-    // set permission using js grant.
-    console.log('revoke - simulator: '  + simulatorId + ' from ' + grantee);
+    // check permission - only user with write access can revoke permission
+    csgrant.isAuthorized(req.user.username, simulatorId, false,
+        (err, authorized) => {
+      if (err) {
+        return res.jsonp({success: false, error: err})
+      }
+      if (!authorized) {
+        const msg = 'insufficient permission for user "'
+            + req.user.username + '"'
+        return res.jsonp({success: false, error: msg})
+      }
 
-    res.jsonp(req.body);
+      csgrant.revokePermission(req.user.username, grantee, simulatorId,
+          readOnly, function(err, success, message) {
+        if (err) {
+          var error = {error: {
+            msg: message
+          }};
+          res.jsonp(error);
+          return;
+        }
+
+        // update simulator user permission list
+        if (success && simulator) {
+
+          var result = simulator.users.map(
+              function(e){return e.username}).indexOf(grantee);
+
+          if (result >= 0) {
+            simulator.users.splice(result, 1)
+            simulator.save();
+            // console.log('removing user from permission list')
+          }
+        }
+
+        // console.log('revoke grantor: ' + req.user.username + ', grantee: '
+        //     + grantee + ', readOnly: ' + readOnly + ', simulator: '
+        //     + simulatorId);
+        req.body.success = success;
+        res.jsonp(req.body);
+      });
+    });
+
   });
 }

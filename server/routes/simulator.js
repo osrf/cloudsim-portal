@@ -11,7 +11,7 @@ var User = mongoose.model('User');
 var authenticateUser = function(req, res, next) {
 
   var userID = req.username;
-  console.log('sim authenticate user: ' + userID);
+  // console.log('sim authenticate user: ' + userID);
 
   if (!userID)
     return res.status(401).send('User is not found');
@@ -61,10 +61,6 @@ module.exports = function(router) {
   /// GET /simulators/:simulationId
   /// Return properties for one simulation
   router.delete('/simulators/permissions', authenticateUser, Simulators.revoke);
-
-  /// PUT /simulators/:simulationId
-  /// Modify one simulation
-  // router.put('/simulators/:simulatorId', authenticateUser, Simulators.update);
 
   /// Finish with setting up the simulationId param
   router.param('simulatorId', Simulators.simulatorId);
