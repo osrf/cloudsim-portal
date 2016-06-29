@@ -19,6 +19,10 @@ var user;
 var user2;
 var agent;
 
+
+// for using self-signed certificates (https) with Node socket.io-client
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 // socket io client
 var io = require('socket.io-client');
 var socketAddress = 'https://localhost:4000';
