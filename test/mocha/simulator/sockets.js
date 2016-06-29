@@ -80,7 +80,7 @@ describe('<Unit Test>', function() {
     describe('Check Socket Connection', function() {
       it('should be able to connect via websockets', function(done) {
         var client = io.connect(socketAddress, {query: 'token=admin',
-            transports: ['websocket']});
+            transports: ['websocket'], rejectUnauthorized: false});
         client.on('connect', function(socket) {
           done();
         });
