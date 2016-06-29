@@ -19,7 +19,6 @@ var user;
 var user2;
 var agent;
 
-
 // for using self-signed certificates (https) with Node socket.io-client
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 require('https').globalAgent.options.rejectUnauthorized = false;
