@@ -15,6 +15,9 @@ var util = require('util');
 var should = require('should');
 var supertest = require('supertest');
 
+// for using self-signed certificates (https) with Node socket.io-client
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 var user;
 var user2;
 var agent;
