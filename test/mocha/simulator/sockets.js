@@ -78,15 +78,16 @@ describe('<Unit Test>', function() {
 
     describe('Check Socket Connection', function() {
       it('should be able to connect via websockets', function(done) {
-        var client = io.connect(socketAddress, {query: 'token=admin'});
+        var client = io.connect(socketAddress, {query: 'token=admin',
+            transports: ['websocket']});
         client.on('connect', function(socket) {
           done();
         });
 
-/*        client.on('connect_error',  function(err){
+        client.on('connect_error',  function(err){
           console.log('connect error ' + util.inspect(err));
           should.fail('should have no connection errors');
-        });*/
+        });
       });
     });
 
