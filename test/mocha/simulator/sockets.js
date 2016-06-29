@@ -79,7 +79,8 @@ describe('<Unit Test>', function() {
           done();
         });
 
-        client.on('connect_error',  function(){
+        client.on('connect_error',  function(err){
+          console.log('connect error ' + util.inspect(err));
           should.fail('should have no connection errors');
         });
       });
