@@ -9,7 +9,6 @@ require('../../../server/server.js')
 var mongoose = require('mongoose'),
     User = mongoose.model('User'),
     Simulator = mongoose.model('Simulator'),
-    User = mongoose.model('User'),
     app = require('../../../server/server')
 
 var util = require('util');
@@ -161,16 +160,26 @@ describe('<Unit Test>', function() {
           res.redirect.should.equal(false);
           var sims = JSON.parse(res.text);
           sims.length.should.be.exactly(2);
-          sims[0].owner.username.should.equal('admin');
-          sims[0].id.should.not.be.empty();
-          sims[0].id.should.equal(simId1);
-          sims[0].status.should.equal('LAUNCHING');
-          sims[0].region.should.equal('us-west-1');
-          sims[1].owner.username.should.equal('admin');
-          sims[1].id.should.not.be.empty();
-          sims[1].id.should.equal(simId2);
-          sims[1].status.should.equal('LAUNCHING');
-          sims[1].region.should.equal('us-east-1');
+
+          var simId1Idx = sims.map(
+             function(e){return e.id}).indexOf(simId1);
+          var simId2Idx = sims.map(
+             function(e){return e.id}).indexOf(simId2);
+          simId1Idx.should.be.greaterThanOrEqual(0);
+          simId2Idx.should.be.greaterThanOrEqual(0);
+          simId1Idx.should.not.equal(simId2Idx);
+
+          sims[simId1Idx].owner.username.should.equal('admin');
+          sims[simId1Idx].id.should.not.be.empty();
+          sims[simId1Idx].id.should.equal(simId1);
+          sims[simId1Idx].status.should.equal('LAUNCHING');
+          sims[simId1Idx].region.should.equal('us-west-1');
+
+          sims[simId2Idx].owner.username.should.equal('admin');
+          sims[simId2Idx].id.should.not.be.empty();
+          sims[simId2Idx].id.should.equal(simId2);
+          sims[simId2Idx].status.should.equal('LAUNCHING');
+          sims[simId2Idx].region.should.equal('us-east-1');
           done();
         });
       });
@@ -361,16 +370,25 @@ describe('<Unit Test>', function() {
           res.redirect.should.equal(false);
           var sims = JSON.parse(res.text);
           sims.length.should.be.exactly(2);
-          sims[0].id.should.not.be.empty();
-          sims[0].id.should.equal(simId2);
-          sims[0].users.length.should.be.exactly(1);
-          sims[0].users[0].username.should.equal('user2');
-          sims[0].users[0].read_only.should.equal(true);
-          sims[1].id.should.not.be.empty();
-          sims[1].id.should.equal(simId3);
-          sims[1].users.length.should.be.exactly(1);
-          sims[1].users[0].username.should.equal('user2');
-          sims[1].users[0].read_only.should.equal(false);
+
+          var simId2Idx = sims.map(
+             function(e){return e.id}).indexOf(simId2);
+          var simId3Idx = sims.map(
+             function(e){return e.id}).indexOf(simId3);
+          simId2Idx.should.be.greaterThanOrEqual(0);
+          simId3Idx.should.be.greaterThanOrEqual(0);
+          simId2Idx.should.not.equal(simId3Idx);
+
+          sims[simId2Idx].id.should.not.be.empty();
+          sims[simId2Idx].id.should.equal(simId2);
+          sims[simId2Idx].users.length.should.be.exactly(1);
+          sims[simId2Idx].users[0].username.should.equal('user2');
+          sims[simId2Idx].users[0].read_only.should.equal(true);
+          sims[simId3Idx].id.should.not.be.empty();
+          sims[simId3Idx].id.should.equal(simId3);
+          sims[simId3Idx].users.length.should.be.exactly(1);
+          sims[simId3Idx].users[0].username.should.equal('user2');
+          sims[simId3Idx].users[0].read_only.should.equal(false);
           done();
         });
       });
@@ -470,14 +488,23 @@ describe('<Unit Test>', function() {
           res.redirect.should.equal(false);
           var sims = JSON.parse(res.text);
           sims.length.should.be.exactly(2);
-          sims[0].id.should.equal(simId2);
-          sims[0].users.length.should.be.exactly(1);
-          sims[0].users[0].username.should.equal('user2');
-          sims[0].users[0].read_only.should.equal(true);
-          sims[1].id.should.equal(simId4);
-          sims[1].users.length.should.be.exactly(1);
-          sims[1].users[0].username.should.equal('user2');
-          sims[1].users[0].read_only.should.equal(true);
+
+          var simId2Idx = sims.map(
+             function(e){return e.id}).indexOf(simId2);
+          var simId4Idx = sims.map(
+             function(e){return e.id}).indexOf(simId4);
+          simId2Idx.should.be.greaterThanOrEqual(0);
+          simId4Idx.should.be.greaterThanOrEqual(0);
+          simId2Idx.should.not.equal(simId4Idx);
+
+          sims[simId2Idx].id.should.equal(simId2);
+          sims[simId2Idx].users.length.should.be.exactly(1);
+          sims[simId2Idx].users[0].username.should.equal('user2');
+          sims[simId2Idx].users[0].read_only.should.equal(true);
+          sims[simId4Idx].id.should.equal(simId4);
+          sims[simId4Idx].users.length.should.be.exactly(1);
+          sims[simId4Idx].users[0].username.should.equal('user2');
+          sims[simId4Idx].users[0].read_only.should.equal(true);
           done();
         });
       });
@@ -657,6 +684,8 @@ describe('<Unit Test>', function() {
     after(function(done) {
       user.remove();
       user2.remove();
+
+      Simulator.remove().exec();
       done();
     });
   });

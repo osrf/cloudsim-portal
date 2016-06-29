@@ -7,7 +7,6 @@ let fs = require('fs')
 let bodyParser = require('body-parser')
 
 let httpServer = null
-let io = null
 
 const cors = require('cors')
 
@@ -53,17 +52,20 @@ else {
 app.use(bodyParser.json())
 app.use(cors())
 
-io = require('socket.io')(httpServer)
+// socket io
+let io = require('socket.io')(httpServer)
+let userSockets = require('./sockets')
+userSockets.init(io);
 
-var socketioJwt = require('socketio-jwt');
+//var socketioJwt = require('socketio-jwt');
 
-var xtend = require('xtend');
-//var jwt = require('jsonwebtoken');
-var UnauthorizedError = require('./UnauthorizedError');
+// var xtend = require('xtend');
+// var jwt = require('jsonwebtoken');
+// var UnauthorizedError = require('./UnauthorizedError');
 
-const spawn = require('child_process').spawn
-const ansi_to_html = require('ansi-to-html')
-const ansi2html = new ansi_to_html()
+// const spawn = require('child_process').spawn
+// const ansi_to_html = require('ansi-to-html')
+// const ansi2html = new ansi_to_html()
 
 var auth_pub_key ='';
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
@@ -177,6 +179,10 @@ walk(routes_path);
 
 // apply the routes to our application with the prefix /api
 app.use('/', apiRoutes);
+
+
+var Simulators = require('./controllers/simulator');
+Simulators.initInstanceStatus();
 
 
 // Expose app

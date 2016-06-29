@@ -227,3 +227,56 @@ exports.setupPublicKey = function (keyname, keydata, region, cb) {
         }
     });
 };
+
+
+/////////////////////////////////////////////////////////
+// Get the status of all running instances
+// @params[in] machineIds an array of machine ids
+// @param[in] cb Callback function to use when this function is complete.
+exports.simulatorStatuses = function (machineInfo, cb) {
+
+  if (!machineInfo.machineIds) {
+    var error = {'message': 'null machineIds'};
+    cb(error, null);
+  }
+
+  if (machineInfo.machineIds.length === 0)
+    cb(null, null);
+
+  var params = {
+      DryRun: dryRun,
+      InstanceIds: machineInfo.machineIds,
+      IncludeAllInstances: true
+  };
+
+  AWS.config.region = machineInfo.region;
+  var ec2 = new AWS.EC2();
+
+  var awsData ={};
+  awsData.InstanceStatuses = [];
+
+  var getAWSStatusData = function() {
+    ec2.describeInstanceStatus(params, function(err, data) {
+      if (err) {
+        cb(err);
+      }
+      else {
+        if (data.InstanceStatuses && data.InstanceStatuses.length > 0) {
+          awsData.InstanceStatuses =
+              awsData.InstanceStatuses.concat(data.InstanceStatuses);
+        }
+        if (data.NextToken) {
+          params.NextToken = data.NextToken;
+          getAWSStatusData();
+        }
+        else {
+          // console.log(util.inspect(awsData))
+          cb(null, awsData);
+          return;
+        }
+      }
+    });
+  }
+
+  getAWSStatusData();
+};

@@ -15,9 +15,11 @@ var csgrant = require('cloudsim-grant');
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
+var useFakeCloudServices = true;
 if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
   console.log('using the real cloud services!');
   cloudServices = require('../../cloud_services.js');
+  useFakeCloudServices = false;
 } else {
   console.log(
     'process.env.AWS_ACCESS_KEY_ID not defined: using the fake cloud services');
@@ -26,6 +28,21 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
 
 var adminResource = 'simulators_list';
 var aws_ssh_key = 'cloudsim';
+
+var sockets = require('../sockets.js');
+
+var instanceList = [];
+// status update frequency in ms
+//var instanceStatusUpdateInterval = 30000;
+var instanceStatusUpdateInterval = 5000;
+var instanceIpUpdateInterval = 10000;
+
+if (process.env.NODE_ENV === 'test') {
+  instanceStatusUpdateInterval = 1;
+  instanceIpUpdateInterval = 1;
+}
+//var terminatingInstanceList = [];
+
 
 ////////////////////////////////////
 // The AWS server information
@@ -41,11 +58,25 @@ var awsData = { desc: 'Trusty + nvidia (CUDA 7.5)',
 
 /////////////////////////////////////////////////
 /// format json response object
-var formatResponse = function(simulator)
-{
+var formatResponse = function(simulator) {
   delete simulator._id;
   delete simulator.__v;
   return simulator;
+}
+
+var notifyStatusBySockets = function(simulator, event) {
+
+  if (!simulator.owner || !simulator.owner.username)
+    return;
+
+  var socketUser = simulator.owner.username;
+
+  // notify owner and users
+  sockets.getUserSockets().notifyUser(socketUser, event, simulator);
+  for (var i = 0; i < simulator.users.length; ++i) {
+    sockets.getUserSockets().notifyUser(
+        simulator.users[i].username, event, simulator);
+  }
 }
 
 /////////////////////////////////////////////////
@@ -57,7 +88,7 @@ var formatResponse = function(simulator)
 /// @return Simulator instance retrieval function.
 exports.simulatorId = function(req, res, next, id) {
 
-  console.log('simulator param ' + id);
+  // console.log('simulator param ' + id);
 
   Simulator.load(id, function(err, simulator) {
     // in case of error, hand it over to the next middleware
@@ -180,12 +211,22 @@ exports.create = function(req, res) {
             // caller with new simulator data.
             res.jsonp(formatResponse(simulator));
 
+            // notify via sockets
+            notifyStatusBySockets(sim, 'simulator_launch');
+
             setTimeout(function() {
               cloudServices.simulatorStatus(info, function(err, state) {
                 sim.machine_ip = state.ip;
                 sim.save();
+
+                // add to monitor list
+                instanceList.push(sim.machine_id);
+
+                // notify via sockets
+                notifyStatusBySockets(sim, 'simulator_status');
+
               });
-            }, 10000);
+            }, instanceIpUpdateInterval);
           }
         }); // simulator.save (simulatorInstance)
       });
@@ -208,7 +249,7 @@ function terminateSimulator(simulator, cb) {
     if(err) {
       cb(err);
     } else {
-      simulator.status = 'TERMINATED';
+      simulator.status = 'TERMINATING';
       simulator.termination_date = Date.now();
       simulator.save(function(err) {
         if (err) {
@@ -217,11 +258,17 @@ function terminateSimulator(simulator, cb) {
         } else {
           var msg = 'Simulator terminated: ';
           msg += util.inspect(info);
-          console.log(msg);
-          // notify everyone
-//          sockets.getUserSockets().notifyUser(simulation.user.id,
-//                                              'simulation_terminate',
-//                                              {data:simulation});
+          // console.log(msg);
+
+          // notify via sockets
+          notifyStatusBySockets(simulator, 'simulator_terminate');
+
+/*          // remove from monitor list
+          instanceList.splice(
+              instanceList.indexOf(simulator.machine_id), 1);
+          if (terminatingInstanceList.indexOf(simulator.machine_id) < 0)
+            terminatingInstanceList.push(simulator.machine_id);*/
+
           cb(null, simulator);
         }
       });
@@ -256,7 +303,7 @@ exports.destroy = function(req, res) {
     return;
   }
 
-  Simulator.findOne({id: simulatorId},
+  Simulator.findOne({id: simulatorId}).populate('owner', 'username').exec(
       function(err, simulator) {
     // in case of error, hand it over to the next middleware
     if (err) {
@@ -447,7 +494,7 @@ exports.grant = function(req, res) {
     return;
   }
 
-  Simulator.findOne({id: simulatorId},
+  Simulator.findOne({id: simulatorId}).populate('owner', 'username').exec(
       function(err, simulator) {
     // in case of error, respond with error msg
     if (err) {
@@ -538,7 +585,8 @@ exports.revoke = function(req, res) {
     return;
   }
 
-  Simulator.findOne({id: simulatorId}, function(err, simulator) {
+  Simulator.findOne({id: simulatorId}).populate('owner', 'username').exec(
+      function(err, simulator) {
     // in case of error, respond with error msg
     if (err) {
       var error = {error: {
@@ -601,4 +649,99 @@ exports.revoke = function(req, res) {
     });
 
   });
+}
+
+/////////////////////////////////////////////////
+var updateInstanceStatus = function() {
+
+  if (instanceList.length === 0)
+    return;
+
+  var info = {};
+
+  // get region for awsData for now
+  info.region = awsData.region;
+  info.machineIds = instanceList;
+
+  cloudServices.simulatorStatuses(info, function (err, data) {
+    if (err) {
+      console.log(util.inspect(err))
+      return;
+    }
+
+    if (data) {
+      // console.log('====');
+      // console.log(util.inspect(data.InstanceStatuses));
+
+      var filter = {$where: 'this.status != "TERMINATED"'};
+      Simulator.find(filter).populate('owner', 'username').exec(
+          function(err, simulators) {
+
+      // console.log(util.inspect(data));
+        if (simulators.length === 0)
+          return;
+
+        for (var i = 0; i < data.InstanceStatuses.length; ++i) {
+          var status = data.InstanceStatuses[i];
+          var instanceId = status.InstanceId;
+
+          var idx = simulators.map(
+              function(e){return e.machine_id}).indexOf(instanceId);
+
+          if (idx >= 0) {
+            var sim = simulators[idx];
+            var state = status.InstanceState.Name;
+            var oldSimStatus = sim.status;
+
+            if (state === 'pending')
+              sim.status = 'LAUNCHING';
+            else if (state === 'running')
+              sim.status = 'RUNNING';
+            else if (state === 'shutting-down' || state === 'stopping')
+              sim.status = 'TERMINATING';
+            else
+            {
+              if (state === 'terminated' || state === 'stopped')
+                sim.status = 'TERMINATED';
+              else {
+                console.log('unknown state ' + state);
+                sim.status = 'UNKNOWN';
+              }
+              // remove from monitor list
+              instanceList.splice(instanceList.indexOf(sim.machine_id));
+            }
+
+            // console.log('new status ' + sim.status);
+            if (oldSimStatus !== sim.status)
+              sim.save();
+
+            // notify via sockets
+            notifyStatusBySockets(sim, 'simulator_status');
+          }
+        }
+      });
+    }
+  });
+}
+
+/////////////////////////////////////////////////
+exports.initInstanceStatus = function() {
+
+  // clear the array
+  instanceList = [];
+
+  var filter = {$where: 'this.status != "TERMINATED"'};
+  Simulator.find(filter, function(err, simulators) {
+    for (var i = 0; i < simulators.length; ++i) {
+      if (simulators[i].machine_id) {
+        // don't add fake data if using real aws service
+        if (!useFakeCloudServices &&
+            simulators[i].machine_id.indexOf('fake') < 0)
+          instanceList.push(simulators[i].machine_id);
+      }
+    }
+  });
+
+  console.log('init instance status update');
+  setInterval(updateInstanceStatus, instanceStatusUpdateInterval);
 }
