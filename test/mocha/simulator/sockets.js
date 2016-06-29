@@ -19,16 +19,9 @@ var user;
 var user2;
 var agent;
 
-// for using self-signed certificates (https) with Node socket.io-client
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-require('https').globalAgent.options.rejectUnauthorized = false;
-
 // socket io client
 var io = require('socket.io-client');
 var socketAddress = 'https://localhost:4000';
-var options ={
-  transports: ['websocket']
-};
 
 const launchData = {
                      region: 'us-west-1',
@@ -98,7 +91,8 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io client
-        var client = io.connect(socketAddress, {query: 'token=admin'});
+        var client = io.connect(socketAddress, {query: 'token=admin',
+            transports: ['websocket'], rejectUnauthorized: false});
 
         // check launch event
         client.on('simulator_launch', function(simulator) {
@@ -136,7 +130,8 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io client
-        var client = io.connect(socketAddress, {query: 'token=admin'});
+        var client = io.connect(socketAddress, {query: 'token=admin',
+            transports: ['websocket'], rejectUnauthorized: false});
 
         // check status event
         client.on('simulator_status', function(simulator) {
@@ -161,8 +156,10 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io clients with same username
-        var client = io.connect(socketAddress, {query: 'token=admin'});
-        var client2 = io.connect(socketAddress, {query: 'token=admin'});
+        var client = io.connect(socketAddress, {query: 'token=admin',
+            transports: ['websocket'], rejectUnauthorized: false});
+        var client2 = io.connect(socketAddress, {query: 'token=admin',
+            transports: ['websocket'], rejectUnauthorized: false});
 
         var counter = 0;
         var counter2 = 0;
@@ -208,8 +205,10 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io client
-        var adminClient = io.connect(socketAddress, {query: 'token=admin'});
-        var user2Client = io.connect(socketAddress, {query: 'token=user2'});
+        var adminClient = io.connect(socketAddress, {query: 'token=admin',
+            transports: ['websocket'], rejectUnauthorized: false});
+        var user2Client = io.connect(socketAddress, {query: 'token=user2',
+            transports: ['websocket'], rejectUnauthorized: false});
 
         // check status event
         var counter = 0;
@@ -248,9 +247,11 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io client
-        var adminClient = io.connect(socketAddress, {query: 'token=admin'});
+        var adminClient = io.connect(socketAddress, {query: 'token=admin',
+            transports: ['websocket'], rejectUnauthorized: false});
         // user will be granted read access
-        var user2Client = io.connect(socketAddress, {query: 'token=user2'});
+        var user2Client = io.connect(socketAddress, {query: 'token=user2',
+            transports: ['websocket'], rejectUnauthorized: false});
 
         var counter = 0;
         var counter2 = 0;
@@ -317,9 +318,12 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io clients
-        var adminClient = io.connect(socketAddress, {query: 'token=admin'});
-        var user2Client = io.connect(socketAddress, {query: 'token=user2'});
-        var user3Client = io.connect(socketAddress, {query: 'token=user3'});
+        var adminClient = io.connect(socketAddress, {query: 'token=admin',
+            transports: ['websocket'], rejectUnauthorized: false});
+        var user2Client = io.connect(socketAddress, {query: 'token=user2',
+            transports: ['websocket'], rejectUnauthorized: false});
+        var user3Client = io.connect(socketAddress, {query: 'token=user3',
+            transports: ['websocket'], rejectUnauthorized: false});
 
         var counter = 0;
         var counter2 = 0;
@@ -402,9 +406,12 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io clients
-        var adminClient = io.connect(socketAddress, {query: 'token=admin'});
-        var user2Client = io.connect(socketAddress, {query: 'token=user2'});
-        var user3Client = io.connect(socketAddress, {query: 'token=user3'});
+        var adminClient = io.connect(socketAddress, {query: 'token=admin',
+            transports: ['websocket'], rejectUnauthorized: false});
+        var user2Client = io.connect(socketAddress, {query: 'token=user2',
+            transports: ['websocket'], rejectUnauthorized: false});
+        var user3Client = io.connect(socketAddress, {query: 'token=user3',
+            transports: ['websocket'], rejectUnauthorized: false});
 
         var counter = 0;
         var counter2 = 0;
@@ -436,9 +443,11 @@ describe('<Unit Test>', function() {
           checkDone();
         });
 
+        var revoked = false;
         // user3 has write permission to simId1 so should get status updates
         user3Client.on('simulator_status', function(simulator) {
-          should.fail('should not receive status updates');
+          if (revoked)
+            should.fail('should not receive status updates');
         });
 
         adminClient.on('connect_error',  function(){
@@ -458,7 +467,7 @@ describe('<Unit Test>', function() {
               agent
               .delete('/simulators/permissions')
               .set('Acccept', 'application/json')
-              .send({id: simId4, username: 'user3', read_only: false})
+              .send({id: simId1, username: 'user3', read_only: false})
               .end(function(err,res){
                 res.status.should.be.equal(200);
                 res.redirect.should.equal(false);
@@ -467,6 +476,7 @@ describe('<Unit Test>', function() {
                 text.id.should.equal(simId1);
                 text.username.should.equal('user3');
                 text.read_only.should.equal(false);
+                revoked = true;
               });
             });
           });
@@ -482,8 +492,10 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io client
-        var adminClient = io.connect(socketAddress, {query: 'token=admin'});
-        var user2Client = io.connect(socketAddress, {query: 'token=user2'});
+        var adminClient = io.connect(socketAddress, {query: 'token=admin',
+            transports: ['websocket'], rejectUnauthorized: false});
+        var user2Client = io.connect(socketAddress, {query: 'token=user2',
+            transports: ['websocket'], rejectUnauthorized: false});
 
         var adminSim2Launch = false;
         var adminSim1Counter = 0;
@@ -566,8 +578,10 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io client
-        var adminClient = io.connect(socketAddress, {query: 'token=admin'});
-        var user2Client = io.connect(socketAddress, {query: 'token=user2'});
+        var adminClient = io.connect(socketAddress, {query: 'token=admin',
+            transports: ['websocket'], rejectUnauthorized: false});
+        var user2Client = io.connect(socketAddress, {query: 'token=user2',
+            transports: ['websocket'], rejectUnauthorized: false});
 
         var adminEvent =false;
         var user2Event =false;
