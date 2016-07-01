@@ -112,7 +112,7 @@ describe('<Unit Test>', function() {
           // post to simulators to launch
           agent
           .post('/simulators')
-          .set('Acccept', 'application/json')
+          .set('Accept', 'application/json')
           .send(launchData)
           .end(function(err,res){
             should.not.exist(err);
@@ -294,7 +294,7 @@ describe('<Unit Test>', function() {
           user2Client.on('connect', function(socket) {
             agent
             .post('/simulators/permissions')
-            .set('Acccept', 'application/json')
+            .set('Accept', 'application/json')
             .send({id: simId1, username: 'user2', read_only: true})
             .end(function(err,res){
               res.status.should.be.equal(200);
@@ -381,7 +381,7 @@ describe('<Unit Test>', function() {
             user3Client.on('connect', function(socket) {
               agent
               .post('/simulators/permissions')
-              .set('Acccept', 'application/json')
+              .set('Accept', 'application/json')
               .send({id: simId1, username: 'user3', read_only: false})
               .end(function(err,res){
                 res.status.should.be.equal(200);
@@ -445,6 +445,7 @@ describe('<Unit Test>', function() {
 
         var revoked = false;
         // user3 has write permission to simId1 so should get status updates
+        // until the permission is revoked.
         user3Client.on('simulator_status', function(simulator) {
           if (revoked)
             should.fail('should not receive status updates');
@@ -466,7 +467,7 @@ describe('<Unit Test>', function() {
             user3Client.on('connect', function(socket) {
               agent
               .delete('/simulators/permissions')
-              .set('Acccept', 'application/json')
+              .set('Accept', 'application/json')
               .send({id: simId1, username: 'user3', read_only: false})
               .end(function(err,res){
                 res.status.should.be.equal(200);
@@ -503,7 +504,7 @@ describe('<Unit Test>', function() {
         var user2Sim1Counter = 0;
 
         // admin should receive launch event for simId2 and status events for
-        // simId2 and simId2
+        // simId1 and simId2
         // user2 should not receive launch event for simId2 and only receive
         // status events for simId1
         var checkDone = function() {
@@ -526,7 +527,7 @@ describe('<Unit Test>', function() {
 
         // user2 should not get any events about the new simulator
         user2Client.on('simulator_launch', function(simulator) {
-          should.fail('should have no connection errors');
+          should.fail('should not receive a launch event without permission');
         });
 
         // check status event
@@ -559,7 +560,7 @@ describe('<Unit Test>', function() {
           user2Client.on('connect', function(socket) {
             agent
             .post('/simulators')
-            .set('Acccept', 'application/json')
+            .set('Accept', 'application/json')
             .send(launchData)
             .end(function(err,res){
               should.not.exist(err);
@@ -641,7 +642,7 @@ describe('<Unit Test>', function() {
             agent
             .delete('/simulators')
             .send({id: simId1})
-            .set('Acccept', 'application/json')
+            .set('Accept', 'application/json')
             .end(function(err,res){
               res.status.should.be.equal(200);
               res.redirect.should.equal(false);
