@@ -49,8 +49,17 @@ var test_small = { desc: 'xenial t2.small',
                image : 'ami-84423ae4' }//  'ami-610c7801'}
 
 
-const test_gpu = {
+const test_gpu_0_1 = {
   desc: 'cloudsim-sim-gpu-gazebo 0.1',
+  region : 'us-west-1',
+  keyName : aws_ssh_key,
+  hardware : 'g2.2xlarge',
+  security : 'cloudsim-sim',
+  image : 'ami-6fb4f10f'
+}
+
+const test_gpu_0_2 = {
+  desc: 'cloudsim-sim-gpu-gazebo 0.2',
   region : 'us-west-1',
   keyName : aws_ssh_key,
   hardware : 'g2.2xlarge',
@@ -59,13 +68,17 @@ const test_gpu = {
 }
 
 
-let m  = test_gpu
-console.log( m.desc)
-console.log('region: ' + m.region)
+let machine  = test_gpu_0_2
+console.log( machine.desc)
+console.log('region: ' + machine.region)
 
 let info = {}
 let tags = {Name:'simtest'}
-xcloud.launchSimulator (m.region, m.keyName, m.hardware, m.security, m.image, tags, script,
+xcloud.launchSimulator (machine.region,
+                        machine.keyName,
+                        machine.hardware,
+                        machine.security,
+                        machine.image, tags, script,
   function (err, machine) {
     if (err) throw err
     info = machine

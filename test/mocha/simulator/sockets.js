@@ -21,7 +21,8 @@ var agent;
 
 // socket io client
 var io = require('socket.io-client');
-var socketAddress = 'https://localhost:4000';
+const port = process.env.CLOUDSIM_PORT || 4000
+const socketAddress = 'https://localhost:' + port;
 
 const launchData = {
                      region: 'us-west-1',
