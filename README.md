@@ -168,6 +168,7 @@ other useful mongo commands for retrieving data from collections:
     > db.users.find().pretty()
     > db.simulators.find().pretty()
     > db.simulations.find().pretty()
+    > db.simulators.remove({})
 
 
 ## Testing ##
