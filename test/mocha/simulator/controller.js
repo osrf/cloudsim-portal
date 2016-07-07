@@ -81,7 +81,6 @@ describe('<Unit Test>', function() {
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var data = JSON.parse(res.text);
-console.log(JSON.stringify(data,'gogogo'))
           data.id.should.not.be.empty();
           simId1 = data.id;
           data.status.should.equal('LAUNCHING');
