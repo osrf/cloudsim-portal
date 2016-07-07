@@ -99,7 +99,7 @@ SimulatorSchema.statics.load = function(id, cb) {
 SimulatorSchema.statics.getRunningSimulators = function(cb) {
     this.find({
         $where: 'this.status != "TERMINATED"'
-    }).populate('user', 'username').exec(function (err, sims) {
+    }).populate('owner', 'username').exec(function (err, sims) {
         cb(err, sims);
     });
 };
