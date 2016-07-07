@@ -225,10 +225,10 @@ exports.create = function(req, res) {
               cloudServices.simulatorStatus(info, function(err, state) {
                 sim.machine_ip = state.ip;
                 sim.save();
-
                 // add to monitor list
                 instanceList.push(sim.machine_id);
 
+                console.log('instance update: ' + JSON.stringify(sim))
                 // notify via sockets
                 notifyStatusBySockets(sim, 'simulator_status');
 
