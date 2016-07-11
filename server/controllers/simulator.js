@@ -228,7 +228,8 @@ exports.create = function(req, res) {
                 // add to monitor list
                 instanceList.push(sim.machine_id);
 
-                console.log('instance update: ' + JSON.stringify(sim))
+                // console.log('instance update: ' + JSON.stringify(sim))
+
                 // notify via sockets
                 notifyStatusBySockets(sim, 'simulator_status');
 
