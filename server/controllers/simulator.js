@@ -119,7 +119,7 @@ exports.simulatorId = function(req, res, next, id) {
 /// @param[out] res Nodejs response object.
 /// @return Simulator create function.
 exports.create = function(req, res) {
-  console.log('simulator controller create')
+  // console.log('simulator controller create')
   // Create a new simulator instance based on the content of the request
   if (!cloudServices) {
     // Create an error
