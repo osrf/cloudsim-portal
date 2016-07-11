@@ -1,9 +1,7 @@
 'use strict';
 
-var jwt = require('jsonwebtoken');
+const csgrant = require('cloudsim-grant')
 var util = require('util');
-
-var socket_pub_key = process.env.CLOUDSIM_AUTH_PUB_KEY;
 var adminUser = 'admin';
 
 ///////////////////////////////////////////////
@@ -80,8 +78,7 @@ exports.init = function(io) {
         next();
     }
     else if (token) {
-      jwt.verify(token, socket_pub_key, {algorithms: ['RS256']},
-          function(err, decoded) {
+        csgrant.verifyToken(token, function(err, decoded) {
 
         var unauthorizedAccess = function(error) {
           socket.emit('unauthorized', error, function() {

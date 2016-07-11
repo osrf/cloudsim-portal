@@ -119,13 +119,14 @@ exports.simulatorId = function(req, res, next, id) {
 /// @param[out] res Nodejs response object.
 /// @return Simulator create function.
 exports.create = function(req, res) {
-
+  // console.log('simulator controller create')
   // Create a new simulator instance based on the content of the request
   if (!cloudServices) {
     // Create an error
     var error = {error: {
       msg: 'Cloud services are not available'
     }};
+    console.log(error.msg)
     res.jsonp(error);
     return;
   }
@@ -142,6 +143,7 @@ exports.create = function(req, res) {
         msg: 'Missing required fields (machineImage, region, hardware)'
       }
     }
+    console.log(error.msg)
     res.jsonp(error);
     return;
   }
@@ -159,17 +161,20 @@ exports.create = function(req, res) {
   csgrant.isAuthorized(req.user.username, adminResource, false,
       (err, authorized) => {
     if (err) {
+      console.log('is authorized error:' + err)
       return res.jsonp({success: false, error: err})
     }
     if (!authorized) {
       const msg = 'insufficient permission for user "'
           + req.user.username + '"';
+      console.log(msg)
       return res.jsonp({success: false, error: msg});
     }
     // add resource to csgrant
     csgrant.createResource(req.user.username, simulator.id, {},
         (err, data) => {
       if (err) {
+        console.log('create resource error:' + err)
         res.jsonp(error(err));
         return;
       }
@@ -191,6 +196,7 @@ exports.create = function(req, res) {
             error: err,
             awsData: awsData
           }};
+          console.log(error.msg)
           res.jsonp(error);
           return;
         }
@@ -204,6 +210,7 @@ exports.create = function(req, res) {
             var error = {error: {
               msg: 'Error saving simulator'
             }};
+            console.log(error.msg)
             res.jsonp(error);
           } else {
 
@@ -218,10 +225,10 @@ exports.create = function(req, res) {
               cloudServices.simulatorStatus(info, function(err, state) {
                 sim.machine_ip = state.ip;
                 sim.save();
-
                 // add to monitor list
                 instanceList.push(sim.machine_id);
 
+                console.log('instance update: ' + JSON.stringify(sim))
                 // notify via sockets
                 notifyStatusBySockets(sim, 'simulator_status');
 
@@ -230,11 +237,8 @@ exports.create = function(req, res) {
           }
         }); // simulator.save (simulatorInstance)
       });
-
-
     });
   });
-
 };
 
 /////////////////////////////////////////////////
