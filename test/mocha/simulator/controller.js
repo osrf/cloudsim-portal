@@ -238,6 +238,43 @@ describe('<Unit Test>', function() {
       });
     });
 
+    describe('Check Get All Simulators Including Terminated Ones', function() {
+      it('should be able to see running and terminated simulators',
+          function(done) {
+        agent
+        .get('/simulators')
+        .send({all: true})
+        .set('Acccept', 'application/json')
+        .end(function(err,res){
+          res.status.should.be.equal(200);
+          res.redirect.should.equal(false);
+          var sims = JSON.parse(res.text);
+          sims.length.should.be.exactly(2);
+
+          var simId1Idx = sims.map(
+             function(e){return e.id}).indexOf(simId1);
+          var simId2Idx = sims.map(
+             function(e){return e.id}).indexOf(simId2);
+          simId1Idx.should.be.greaterThanOrEqual(0);
+          simId2Idx.should.be.greaterThanOrEqual(0);
+          simId1Idx.should.not.equal(simId2Idx);
+
+          sims[simId1Idx].owner.username.should.equal('admin');
+          sims[simId1Idx].id.should.not.be.empty();
+          sims[simId1Idx].id.should.equal(simId1);
+          sims[simId1Idx].status.should.equal('TERMINATED');
+          sims[simId1Idx].region.should.equal('us-west-1');
+
+          sims[simId2Idx].owner.username.should.equal('admin');
+          sims[simId2Idx].id.should.not.be.empty();
+          sims[simId2Idx].id.should.equal(simId2);
+          sims[simId2Idx].status.should.equal('LAUNCHING');
+          sims[simId2Idx].region.should.equal('us-east-1');
+          done();
+        });
+      });
+    });
+
     // create simId3 for permission test
     var simId3 ='';
     describe('Check Launch Third Simulator', function() {

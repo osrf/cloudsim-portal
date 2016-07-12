@@ -396,6 +396,7 @@ exports.show = function(req, res) {
 /// @return Function to get all simulator instances for a user.
 exports.all = function(req, res) {
 
+  var all = req.body.all || false;
   var result = [];
 
   var populateSimulations = function(index, simulators, cb) {
@@ -441,7 +442,9 @@ exports.all = function(req, res) {
     });
   }
 
-  var filter = {$where: 'this.status != "TERMINATED"'};
+  var filter = {};
+  if (!all)
+    filter = {$where: 'this.status != "TERMINATED"'};
 
   // Get all simulators
   Simulator.find(filter).sort().populate('owner', 'username')
