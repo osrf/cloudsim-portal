@@ -264,6 +264,79 @@ describe('<Unit Test>', function() {
       });
     });
 
+    // verify admin permission query for launching simulator
+    describe('Check Admin Permission to Launch Simulator', function() {
+      it('should be for admins to access root resource', function(done) {
+        agent
+        .get('/users/permissions')
+        .set('Acccept', 'application/json')
+        .send({})
+        .end(function(err,res){
+          res.status.should.be.equal(200);
+          res.redirect.should.equal(false);
+          var text = JSON.parse(res.text);
+          text.success.should.equal(true);
+          done();
+        });
+      });
+    });
+
+    // verify admin permission query for accessing simulator
+    describe('Check Admin Permission to Access Simulator', function() {
+      it('should be possible for admins to access simulator',
+          function(done) {
+        agent
+        .get('/users/permissions')
+        .set('Acccept', 'application/json')
+        .send({id:simId2})
+        .end(function(err,res){
+          res.status.should.be.equal(200);
+          res.redirect.should.equal(false);
+          var text = JSON.parse(res.text);
+          text.success.should.equal(true);
+          done();
+        });
+      });
+    });
+
+    // verify user permission query for launching simulator
+    describe('Check User Permission to Launch Simulator', function() {
+      it('should not be possible for user to access root resource',
+          function(done) {
+        agent
+        .get('/users/permissions')
+        .set('authorization', 'user2')
+        .set('Acccept', 'application/json')
+        .send({})
+        .end(function(err,res){
+          res.status.should.be.equal(200);
+          res.redirect.should.equal(false);
+          var text = JSON.parse(res.text);
+          text.success.should.equal(false);
+          done();
+        });
+      });
+    });
+
+    // verify user permission query for accessing simulator
+    describe('Check User Permission to Access Simulator', function() {
+      it('should not have access to simulator without permission',
+          function(done) {
+        agent
+        .get('/users/permissions')
+        .set('authorization', 'user2')
+        .set('Acccept', 'application/json')
+        .send({id:simId3})
+        .end(function(err,res){
+          res.status.should.be.equal(200);
+          res.redirect.should.equal(false);
+          var text = JSON.parse(res.text);
+          text.success.should.equal(false);
+          done();
+        });
+      });
+    });
+
     // user2 has no read/write permission to any simulators
     describe('Check Get Simulator without Read Permission', function() {
       it('should not be able to see any running simulators',
@@ -295,6 +368,26 @@ describe('<Unit Test>', function() {
           text.id.should.equal(simId2);
           text.username.should.equal(user2.username);
           text.read_only.should.equal(true);
+          done();
+        });
+      });
+    });
+
+    // verify user permission query for accessing simulator after being granted
+    // permision
+    describe('Check User Permission to Access Simulator', function() {
+      it('should have access to simulator with permission',
+          function(done) {
+        agent
+        .get('/users/permissions')
+        .set('authorization', 'user2')
+        .set('Acccept', 'application/json')
+        .send({id:simId2})
+        .end(function(err,res){
+          res.status.should.be.equal(200);
+          res.redirect.should.equal(false);
+          var text = JSON.parse(res.text);
+          text.success.should.equal(true);
           done();
         });
       });
@@ -631,7 +724,6 @@ describe('<Unit Test>', function() {
       it('should be able to revoke write permission', function(done) {
         agent
         .delete('/simulators/permissions')
-        .set('authorization', 'user2')
         .set('Acccept', 'application/json')
         .send({id: simId2, username: user2.username, read_only: false})
         .end(function(err,res){

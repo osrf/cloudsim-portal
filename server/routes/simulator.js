@@ -53,14 +53,15 @@ module.exports = function(router) {
   /// Return properties for one simulation
   router.get('/simulators/:simulatorId', authenticateUser, Simulators.show);
 
-
-  /// GET /simulators/:simulationId
-  /// Return properties for one simulation
+  /// grant user permission to a simulator
   router.post('/simulators/permissions', authenticateUser, Simulators.grant);
 
-  /// GET /simulators/:simulationId
-  /// Return properties for one simulation
+  /// Revoke user permission to a simulator
   router.delete('/simulators/permissions', authenticateUser, Simulators.revoke);
+
+  /// query user permissions for a simulator
+  router.get('/users/permissions', authenticateUser,
+      Simulators.permissions);
 
   /// Finish with setting up the simulationId param
   router.param('simulatorId', Simulators.simulatorId);

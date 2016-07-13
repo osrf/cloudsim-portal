@@ -481,6 +481,30 @@ exports.all = function(req, res) {
 };
 
 /////////////////////////////////////////////////
+/// Get user permission on a simulator.
+/// @param[in] req Nodejs request object.
+/// @param[out] res Nodejs response object.
+/// @return user permission function
+exports.permissions = function(req, res) {
+  var responseObj = {};
+  var simulatorId = req.body.id || adminResource;
+
+  // check read permission
+  csgrant.isAuthorized(req.user.username, simulatorId, true,
+      (err, authorized) => {
+    if (err) {
+      console.log('is authorized error:' + err)
+      responseObj.success = false;
+      responseObj.error = err;
+      return res.jsonp(responseObj);
+    }
+    responseObj.success = authorized;
+    res.jsonp(responseObj);
+    return;
+  });
+}
+
+/////////////////////////////////////////////////
 /// Grant user permission.
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
