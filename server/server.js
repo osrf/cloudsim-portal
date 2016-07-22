@@ -30,9 +30,16 @@ var db = mongoose.connect(dbName);
 
 // cloudsim-grant
 var adminUser = 'admin';
-var adminResource = 'simulators_list';
+
+// set the initial resources and their associated data. In our case,
+// one resource called 'simulators_list' and empty data: {}
+var adminResources = {'simulators_list':{}}
 const csgrant = require('cloudsim-grant');
-csgrant.init(adminUser, adminResource);
+
+// setup the database for permissions
+csgrant.init(adminUser, adminResources, 'cloudsim-portal', ()=>{
+  console.log('Cloudsim-grant data loaded')
+})
 
 // https
 const useHttps = true

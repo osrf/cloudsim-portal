@@ -46,11 +46,9 @@ gulp.task('nodemon', function (cb) {
 	});
 });
 
-
 gulp.task('set-test-env', function () {
   return process.env.NODE_ENV = 'test';
 });
-
 
 gulp.task('test', ['set-test-env'], function() {
   return gulp.src(['test/mocha/**/*.js'], {read: false})
