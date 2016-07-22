@@ -228,7 +228,8 @@ exports.create = function(req, res) {
                 // add to monitor list
                 instanceList.push(sim.machine_id);
 
-                console.log('instance update: ' + JSON.stringify(sim))
+                // console.log('instance update: ' + JSON.stringify(sim))
+
                 // notify via sockets
                 notifyStatusBySockets(sim, 'simulator_status');
 
@@ -638,7 +639,7 @@ exports.revoke = function(req, res) {
               function(e){return e.username}).indexOf(grantee);
 
           if (result >= 0) {
-            simulator.users.splice(result, 1)
+            simulator.users.splice(result, 1);
             simulator.save();
             // console.log('removing user from permission list')
           }
@@ -712,7 +713,7 @@ var updateInstanceStatus = function() {
                 sim.status = 'UNKNOWN';
               }
               // remove from monitor list
-              instanceList.splice(instanceList.indexOf(sim.machine_id));
+              instanceList.splice(instanceList.indexOf(sim.machine_id), 1);
             }
 
             // console.log('new status ' + sim.status);
