@@ -266,7 +266,7 @@ describe('<Unit Test>', function() {
 
     // verify admin permission query for launching simulator
     describe('Check Admin Permission to Launch Simulator', function() {
-      it('should be for admins to access root resource', function(done) {
+      it('should be possible for admins to access root resource', function(done) {
         agent
         .get('/users/permissions')
         .set('Acccept', 'application/json')
