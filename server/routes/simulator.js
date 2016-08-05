@@ -62,7 +62,7 @@ module.exports = function(router) {
 
 
   /// query user permissions for a simulator
-  router.get('/users/permissions', authenticateUser,
+  router.get('/permissions', authenticateUser,
       Simulators.permissions);
   /// Finish with setting up the simulationId param
   router.param('simulatorId', Simulators.simulatorId);

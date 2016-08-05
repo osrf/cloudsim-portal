@@ -305,7 +305,7 @@ describe('<Unit Test>', function() {
     describe('Check Admin Permission to Launch Simulator', function() {
       it('should be possible for admins to access root resource', function(done) {
         agent
-        .get('/users/permissions')
+        .get('/permissions')
         .set('Acccept', 'application/json')
         .send({})
         .end(function(err,res){
@@ -324,7 +324,7 @@ describe('<Unit Test>', function() {
       it('should be possible for admins to access simulator',
           function(done) {
         agent
-        .get('/users/permissions')
+        .get('/permissions')
         .set('Acccept', 'application/json')
         .send({id:simId2})
         .end(function(err,res){
@@ -343,7 +343,7 @@ describe('<Unit Test>', function() {
       it('should not be possible for user to access root resource',
           function(done) {
         agent
-        .get('/users/permissions')
+        .get('/permissions')
         .set('authorization', 'user2')
         .set('Acccept', 'application/json')
         .send({})
@@ -362,7 +362,7 @@ describe('<Unit Test>', function() {
       it('should not have access to simulator without permission',
           function(done) {
         agent
-        .get('/users/permissions')
+        .get('/permissions')
         .set('authorization', 'user2')
         .set('Acccept', 'application/json')
         .send({id:simId3})
@@ -418,7 +418,7 @@ describe('<Unit Test>', function() {
       it('should have access to simulator with permission',
           function(done) {
         agent
-        .get('/users/permissions')
+        .get('/permissions')
         .set('authorization', 'user2')
         .set('Acccept', 'application/json')
         .send({id:simId2})
