@@ -294,7 +294,7 @@ describe('<Unit Test>', function() {
         adminClient.on('connect', function(socket) {
           user2Client.on('connect', function(socket) {
             agent
-            .post('/simulators/permissions')
+            .post('/permissions')
             .set('Accept', 'application/json')
             .send({id: simId1, username: 'user2', read_only: true})
             .end(function(err,res){
@@ -381,7 +381,7 @@ describe('<Unit Test>', function() {
           user2Client.on('connect', function(socket) {
             user3Client.on('connect', function(socket) {
               agent
-              .post('/simulators/permissions')
+              .post('/permissions')
               .set('Accept', 'application/json')
               .send({id: simId1, username: 'user3', read_only: false})
               .end(function(err,res){
@@ -467,7 +467,7 @@ describe('<Unit Test>', function() {
           user2Client.on('connect', function(socket) {
             user3Client.on('connect', function(socket) {
               agent
-              .delete('/simulators/permissions')
+              .delete('/permissions')
               .set('Accept', 'application/json')
               .send({id: simId1, username: 'user3', read_only: false})
               .end(function(err,res){
