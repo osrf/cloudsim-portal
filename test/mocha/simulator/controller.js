@@ -275,6 +275,7 @@ describe('<Unit Test>', function() {
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
+          text.read_only.should.equal(false);
           text.success.should.equal(true);
           done();
         });
@@ -293,6 +294,7 @@ describe('<Unit Test>', function() {
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
+          text.read_only.should.equal(false);
           text.success.should.equal(true);
           done();
         });

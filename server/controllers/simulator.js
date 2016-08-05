@@ -489,18 +489,36 @@ exports.permissions = function(req, res) {
   var responseObj = {};
   var simulatorId = req.body.id || adminResource;
 
-  // check read permission
-  csgrant.isAuthorized(req.user.username, simulatorId, true,
+  // check write permission first
+  csgrant.isAuthorized(req.user.username, simulatorId, false,
       (err, authorized) => {
     if (err) {
-      console.log('is authorized error:' + err)
       responseObj.success = false;
       responseObj.error = err;
       return res.jsonp(responseObj);
     }
-    responseObj.success = authorized;
-    res.jsonp(responseObj);
-    return;
+    // check read permission if no write permission
+    if (!authorized) {
+      csgrant.isAuthorized(req.user.username, simulatorId, true,
+          (err, authorized) => {
+        if (err) {
+          responseObj.success = false;
+          responseObj.error = err;
+          return res.jsonp(responseObj);
+        }
+        responseObj.read_only = true;
+        responseObj.success = authorized;
+        res.jsonp(responseObj);
+        return;
+      });
+    }
+    else
+    {
+      responseObj.read_only = false;
+      responseObj.success = true;
+      res.jsonp(responseObj);
+      return;
+    }
   });
 }
 
