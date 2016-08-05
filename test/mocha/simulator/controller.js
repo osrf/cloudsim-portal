@@ -321,7 +321,7 @@ describe('<Unit Test>', function() {
     describe('Grant Read Permission', function() {
       it('should be possible to grant user read permission', function(done) {
         agent
-        .post('/simulators/permissions')
+        .post('/permissions')
         .set('Acccept', 'application/json')
         .send({id: simId2, username: user2.username, read_only: true})
         .end(function(err,res){
@@ -380,7 +380,7 @@ describe('<Unit Test>', function() {
     describe('Grant Write Permission', function() {
       it('should be possible to grant user write permission', function(done) {
         agent
-        .post('/simulators/permissions')
+        .post('/permissions')
         .set('Acccept', 'application/json')
         .send({id: simId3, username: user2.username, read_only: false})
         .end(function(err,res){
@@ -498,7 +498,7 @@ describe('<Unit Test>', function() {
       it('should be possible to grant user read permission to more simulators',
           function(done) {
         agent
-        .post('/simulators/permissions')
+        .post('/permissions')
         .set('Acccept', 'application/json')
         .send({id: simId4, username: user2.username, read_only: true})
         .end(function(err,res){
@@ -552,7 +552,7 @@ describe('<Unit Test>', function() {
       it('should be possible to revoke user read permission',
           function(done) {
         agent
-        .delete('/simulators/permissions')
+        .delete('/permissions')
         .set('Acccept', 'application/json')
         .send({id: simId4, username: user2.username, read_only: true})
         .end(function(err,res){
@@ -608,7 +608,7 @@ describe('<Unit Test>', function() {
       it('should be possible to update user from read to write permission',
           function(done) {
         agent
-        .post('/simulators/permissions')
+        .post('/permissions')
         .set('Acccept', 'application/json')
         .send({id: simId2, username: user2.username, read_only: false})
         .end(function(err,res){
@@ -650,7 +650,7 @@ describe('<Unit Test>', function() {
       it('should not be possible to revoke user write permission with read',
           function(done) {
         agent
-        .delete('/simulators/permissions')
+        .delete('/permissions')
         .set('Acccept', 'application/json')
         .send({id: simId2, username: user2.username, read_only: true})
         .end(function(err,res){
@@ -667,7 +667,7 @@ describe('<Unit Test>', function() {
     describe('Revoke User Write Permission', function() {
       it('should be able to revoke write permission', function(done) {
         agent
-        .delete('/simulators/permissions')
+        .delete('/permissions')
         .set('authorization', 'user2')
         .set('Acccept', 'application/json')
         .send({id: simId2, username: user2.username, read_only: false})
