@@ -293,7 +293,7 @@ exports.destroy = function(req, res) {
   if (!simulatorId || simulatorId.length == 0)
   {
     var error = {error: {
-      msg: 'Missing required fields'
+      msg: 'Missing required fields to destroy simulator'
     }};
     res.jsonp(error);
     return;
@@ -486,14 +486,14 @@ exports.all = function(req, res) {
 /// @param[out] res Nodejs response object.
 /// @return Grant function
 exports.grant = function(req, res) {
-  var simulatorId = req.body.id;
-  var grantee = req.body.username;
-  var readOnly = req.body.read_only;
+  const simulatorId = req.body.resource;
+  const grantee = req.body.grantee;
+  const readOnly = req.body.readOnly;
 
   if (!simulatorId || simulatorId.length == 0)
   {
     var error = {error: {
-      msg: 'Missing required fields'
+      msg: 'Missing required fields to grant permission'
     }};
     res.jsonp(error);
     return;

@@ -22,17 +22,23 @@ console.log('ENV ' + process.env.NODE_ENV);
 
 // Mongo
 let mongoose = require('mongoose');
-var dbName = 'mongodb://localhost/cloudsim-portal';
-if (process.env.NODE_ENV === 'test')
-  dbName = dbName + '-test';
-console.log('Using database: ' + dbName);
+let permissionDbName = 'cloudsim-portal'
+let dbName = 'mongodb://localhost/cloudsim-portal'
+if (process.env.NODE_ENV === 'test'){
+  dbName = dbName + '-test'
+  permissionDbName += '-test'
+}
+console.log('Using mongo database: ' + dbName)
+console.log('Using redis database: ' + permissionDbName)
 var db = mongoose.connect(dbName);
 
 // cloudsim-grant
 var adminUser = 'admin';
 var adminResource = 'simulators_list';
 const csgrant = require('cloudsim-grant');
-csgrant.init(adminUser, adminResource);
+csgrant.init(adminUser, {'simulators_list': {} }, permissionDbName, ()=>{
+  console.log( permissionDbName + ' redis database loaded')
+});
 
 // https
 const useHttps = true
