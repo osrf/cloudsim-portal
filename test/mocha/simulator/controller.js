@@ -286,7 +286,7 @@ describe('<Unit Test>', function() {
         agent
         .post('/simulators/permissions')
         .set('Acccept', 'application/json')
-        .send({id: simId2, username: user2.username, read_only: true})
+        .send({resource: simId2, grantee: user2.username, readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -345,7 +345,7 @@ describe('<Unit Test>', function() {
         agent
         .post('/simulators/permissions')
         .set('Acccept', 'application/json')
-        .send({id: simId3, username: user2.username, read_only: false})
+        .send({resource: simId3, grantee: user2.username, readOnly: false})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -463,15 +463,15 @@ describe('<Unit Test>', function() {
         agent
         .post('/simulators/permissions')
         .set('Acccept', 'application/json')
-        .send({id: simId4, username: user2.username, read_only: true})
+        .send({resource: simId4, granteee: user2.username, readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(true);
-          text.id.should.equal(simId4);
-          text.username.should.equal(user2.username);
-          text.read_only.should.equal(true);
+          text.resource.should.equal(simId4);
+          text.grantee.should.equal(user2.username);
+          text.readOnly.should.equal(true);
           done();
         });
       });
