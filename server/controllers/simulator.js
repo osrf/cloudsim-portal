@@ -509,7 +509,7 @@ exports.permissions = function(req, res) {
           responseObj.error = err;
           return res.jsonp(responseObj);
         }
-        responseObj.read_only = true;
+        responseObj.readOnly = true;
         responseObj.success = authorized;
         res.jsonp(responseObj);
         return;
@@ -517,7 +517,7 @@ exports.permissions = function(req, res) {
     }
     else
     {
-      responseObj.read_only = false;
+      responseObj.readOnly = false;
       responseObj.success = true;
       res.jsonp(responseObj);
       return;
@@ -594,11 +594,11 @@ exports.grant = function(req, res) {
                 function(e){return e.username}).indexOf(grantee);
 
             if (result >= 0) {
-              simulator.users[result].read_only = readOnly;
+              simulator.users[result].readOnly = readOnly;
               // console.log('update user in permission list')
             }
             else {
-              var permission = {username: grantee, read_only: readOnly};
+              var permission = {username: grantee, readOnly: readOnly};
               simulator.users.push(permission);
               // console.log('insert new user to permission list')
             }
@@ -624,7 +624,7 @@ exports.grant = function(req, res) {
 exports.revoke = function(req, res) {
   var simulatorId = req.body.id;
   var grantee = req.body.username;
-  var readOnly = req.body.read_only;
+  var readOnly = req.body.readOnly;
 
   if (!simulatorId || simulatorId.length === 0)
   {
