@@ -312,7 +312,7 @@ describe('<Unit Test>', function() {
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
-          text.read_only.should.equal(false);
+          text.readOnly.should.equal(false);
           text.success.should.equal(true);
           done();
         });
@@ -331,7 +331,7 @@ describe('<Unit Test>', function() {
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
-          text.read_only.should.equal(false);
+          text.readOnly.should.equal(false);
           text.success.should.equal(true);
           done();
         });
@@ -446,7 +446,7 @@ describe('<Unit Test>', function() {
           text[0].id.should.equal(simId2);
           text[0].users.length.should.be.exactly(1);
           text[0].users[0].username.should.equal('user2');
-          text[0].users[0].read_only.should.equal(true);
+          text[0].users[0].readOnly.should.equal(true);
           done();
         });
       });
@@ -515,12 +515,12 @@ describe('<Unit Test>', function() {
           sims[simId2Idx].id.should.equal(simId2);
           sims[simId2Idx].users.length.should.be.exactly(1);
           sims[simId2Idx].users[0].username.should.equal('user2');
-          sims[simId2Idx].users[0].read_only.should.equal(true);
+          sims[simId2Idx].users[0].readOnly.should.equal(true);
           sims[simId3Idx].id.should.not.be.empty();
           sims[simId3Idx].id.should.equal(simId3);
           sims[simId3Idx].users.length.should.be.exactly(1);
           sims[simId3Idx].users[0].username.should.equal('user2');
-          sims[simId3Idx].users[0].read_only.should.equal(false);
+          sims[simId3Idx].users[0].readOnly.should.equal(false);
           done();
         });
       });
@@ -632,11 +632,11 @@ describe('<Unit Test>', function() {
           sims[simId2Idx].id.should.equal(simId2);
           sims[simId2Idx].users.length.should.be.exactly(1);
           sims[simId2Idx].users[0].username.should.equal('user2');
-          sims[simId2Idx].users[0].read_only.should.equal(true);
+          sims[simId2Idx].users[0].readOnly.should.equal(true);
           sims[simId4Idx].id.should.equal(simId4);
           sims[simId4Idx].users.length.should.be.exactly(1);
           sims[simId4Idx].users[0].username.should.equal('user2');
-          sims[simId4Idx].users[0].read_only.should.equal(true);
+          sims[simId4Idx].users[0].readOnly.should.equal(true);
           done();
         });
       });
@@ -649,7 +649,7 @@ describe('<Unit Test>', function() {
         agent
         .delete('/permissions')
         .set('Acccept', 'application/json')
-        .send({id: simId4, username: user2.username, read_only: true})
+        .send({id: simId4, username: user2.username, readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -657,7 +657,7 @@ describe('<Unit Test>', function() {
           text.success.should.equal(true);
           text.id.should.equal(simId4);
           text.username.should.equal(user2.username);
-          text.read_only.should.equal(true);
+          text.readOnly.should.equal(true);
           done();
         });
       });
@@ -733,21 +733,21 @@ describe('<Unit Test>', function() {
           sims.length.should.be.exactly(1);
           sims[0].users.length.should.be.exactly(1);
           sims[0].users[0].username.should.equal('user2');
-          sims[0].users[0].read_only.should.equal(false);
+          sims[0].users[0].readOnly.should.equal(false);
           done();
         });
       });
     });
 
     // verify user2's write permission to simId2 cannot be revoke
-    // using read_only = true
+    // using readOnly = true
     describe('Revoke Write Permission with ReadOnly flag', function() {
       it('should not be possible to revoke user write permission with read',
           function(done) {
         agent
         .delete('/permissions')
         .set('Acccept', 'application/json')
-        .send({id: simId2, username: user2.username, read_only: true})
+        .send({id: simId2, username: user2.username, readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -764,7 +764,7 @@ describe('<Unit Test>', function() {
         agent
         .delete('/permissions')
         .set('Acccept', 'application/json')
-        .send({id: simId2, username: user2.username, read_only: false})
+        .send({id: simId2, username: user2.username, readOnly: false})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -772,7 +772,7 @@ describe('<Unit Test>', function() {
           text.success.should.equal(true);
           text.id.should.equal(simId2);
           text.username.should.equal(user2.username);
-          text.read_only.should.equal(false);
+          text.readOnly.should.equal(false);
           done();
         });
       });

@@ -61,7 +61,7 @@ var SimulatorSchema = new Schema({
 
     users : [{
       username: String,
-      read_only: Boolean
+      readOnly: Boolean
     }]
 });
 
