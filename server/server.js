@@ -40,6 +40,9 @@ csgrant.init(adminUser, {'simulators_list': {} }, permissionDbName, ()=>{
   console.log( permissionDbName + ' redis database loaded')
 });
 
+console.log('\n\ncloudsim-grant version', require('cloudsim-grant/package.json').version)
+
+
 // https
 const useHttps = true
 if(useHttps) {
