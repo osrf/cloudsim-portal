@@ -62,14 +62,16 @@ module.exports = function(router) {
   /// Revoke permissions for a resource.
   router.delete('/permissions', authenticateUser, Simulators.revoke);
 /*
-  /// query user permissions for a simulator
   router.get('/permissions', authenticateUser,
       Simulators.permissions);
 */
 
+console.log('GET /permissions csgrant.allResources')
+  /// query user permissions for a simulator
   router.get('/permissions', csgrant.authenticate,
     csgrant.ownsResource('simulators_list', true), csgrant.allResources)
 
+console.log('GET /permissions/:resourceId csgrant.resource')
   router.get('/permissions/:resourceId', csgrant.authenticate,
     csgrant.ownsResource(':resourceId', true), csgrant.resource)
 
