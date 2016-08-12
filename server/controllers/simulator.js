@@ -490,7 +490,7 @@ exports.all = function(req, res) {
 /// @return user permission function
 exports.permissions = function(req, res) {
   var responseObj = {};
-  var simulatorId = req.body.id || adminResource;
+  var simulatorId = req.body.resource || adminResource;
 
   // check write permission first
   csgrant.isAuthorized(req.user.username, simulatorId, false,
@@ -622,8 +622,8 @@ exports.grant = function(req, res) {
 /// @param[out] res Nodejs response object.
 /// @return Grant function
 exports.revoke = function(req, res) {
-  var simulatorId = req.body.id;
-  var grantee = req.body.username;
+  var simulatorId = req.body.resource;
+  var grantee = req.body.grantee;
   var readOnly = req.body.readOnly;
 
   if (!simulatorId || simulatorId.length === 0)

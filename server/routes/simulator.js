@@ -1,5 +1,6 @@
 'use strict';
 
+const csgrant = require('cloudsim-grant')
 // Simulators routes use Simulators controller
 var Simulators = require('../controllers/simulator');
 
@@ -56,14 +57,28 @@ module.exports = function(router) {
   /// POST /permissions
   /// Grant permission for a resource.
   router.post('/permissions', authenticateUser, Simulators.grant);
+
   /// DEL /permissions
   /// Revoke permissions for a resource.
   router.delete('/permissions', authenticateUser, Simulators.revoke);
-
-
+/*
   /// query user permissions for a simulator
   router.get('/permissions', authenticateUser,
       Simulators.permissions);
+*/
+
+  router.get('/permissions', csgrant.authenticate,
+    csgrant.ownsResource('simulators_list', true), csgrant.allResources)
+
+  router.get('/permissions/:resourceId', csgrant.authenticate,
+    csgrant.ownsResource(':resourceId', true), csgrant.resource)
+
   /// Finish with setting up the simulationId param
   router.param('simulatorId', Simulators.simulatorId);
+
+  router.param('resourceId', function( req, res, next, id) {
+    req.resourceId = id
+    next()
+  })
+
 };
