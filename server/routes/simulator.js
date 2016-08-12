@@ -38,6 +38,7 @@ var authenticateUser = function(req, res, next) {
 
 
 module.exports = function(router) {
+console.log('adding simulator routes to the router')
   /// GET /simulators
   /// Return all the simulators, running and terminated
   router.get('/simulators', authenticateUser, Simulators.all);
