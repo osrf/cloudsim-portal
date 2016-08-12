@@ -67,12 +67,12 @@ module.exports = function(router) {
 */
 
   /// GET /permissions
-  /// Query user permissions for a resource.
+  /// Get user permissions for all resources.
   router.get('/permissions', csgrant.authenticate,
     csgrant.ownsResource('simulators_list', true), csgrant.allResources)
 
   /// GET /permissions/:resourceId
-  /// Get user permissions for a given resource.
+  /// Get all user permissions for a given resource.
   router.get('/permissions/:resourceId', csgrant.authenticate,
     csgrant.ownsResource(':resourceId', true), csgrant.resource)
 
