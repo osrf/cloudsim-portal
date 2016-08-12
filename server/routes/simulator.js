@@ -38,7 +38,6 @@ var authenticateUser = function(req, res, next) {
 
 
 module.exports = function(router) {
-console.log('adding simulator routes to the router')
   /// GET /simulators
   /// Return all the simulators, running and terminated
   router.get('/simulators', authenticateUser, Simulators.all);
@@ -67,12 +66,13 @@ console.log('adding simulator routes to the router')
       Simulators.permissions);
 */
 
-console.log('GET /permissions csgrant.allResources')
-  /// query user permissions for a simulator
+  /// GET /permissions
+  /// Query user permissions for a resource.
   router.get('/permissions', csgrant.authenticate,
     csgrant.ownsResource('simulators_list', true), csgrant.allResources)
 
-console.log('GET /permissions/:resourceId csgrant.resource')
+  /// GET /permissions/:resourceId
+  /// Get user permissions for a given resource.
   router.get('/permissions/:resourceId', csgrant.authenticate,
     csgrant.ownsResource(':resourceId', true), csgrant.resource)
 

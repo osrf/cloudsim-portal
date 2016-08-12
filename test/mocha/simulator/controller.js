@@ -17,17 +17,14 @@ var util = require('util');
 var should = require('should');
 var supertest = require('supertest');
 
-
 // we need fresh keys for this test
 const keys = csgrant.token.generateKeys()
 csgrant.token.initKeys(keys.public, keys.private)
-
 
 let userToken
 const userTokenData = {username:'admin'}
 let user2Token
 const user2TokenData = {username:'user2'}
-
 
 var user;
 var user2;
@@ -335,7 +332,6 @@ describe('<Unit Test>', function() {
       });
     });
 
-
     // verify admin permission query for launching simulator
     describe('Check Admin Permission to Launch Simulator', function() {
       it('should be possible for admins to access root resource', function(done) {
@@ -350,6 +346,9 @@ describe('<Unit Test>', function() {
           var data  = JSON.parse(res.text)
           data.success.should.equal(true)
           data.result.permissions.length.should.equal(1)
+          const permission = data.result.permissions[0]
+          permission.username.should.equal('admin')
+          permission.readOnly.should.equal(false)
           done();
         });
       });
@@ -369,7 +368,8 @@ describe('<Unit Test>', function() {
           var r = JSON.parse(res.text)
           r.success.should.equal(true)
           r.resource.should.equal(simId2)
-          const permission =  r.result.permissions[0]
+          r.result.permissions.length.should.equal(1)
+          const permission = r.result.permissions[0]
           permission.username.should.equal('admin')
           permission.readOnly.should.equal(false)
           done()
@@ -387,6 +387,9 @@ describe('<Unit Test>', function() {
         .set('authorization', user2Token)
         .end(function(err,res){
           res.status.should.be.equal(401);
+          res.redirect.should.equal(false);
+          var text = JSON.parse(res.text);
+          text.success.should.equal(false);
           done();
         });
       });
@@ -432,7 +435,6 @@ describe('<Unit Test>', function() {
       it('should be possible to grant user read permission', function(done) {
         agent
         .post('/permissions')
-//        .set('authorization', userToken)
         .set('Acccept', 'application/json')
         .send({resource: simId2, grantee: user2.username, readOnly: true})
         .end(function(err,res){
@@ -460,10 +462,20 @@ describe('<Unit Test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-
-console.log('\n\nTEXT TEXT TEXT\n', res.text, '\n\n')
-          text.success.should.equal(true);
+          var r = JSON.parse(res.text);
+          r.success.should.equal(true);
+          r.resource.should.equal(simId2)
+          r.result.permissions.length.should.equal(2)
+          {
+            const permission = r.result.permissions[0]
+            permission.username.should.equal('admin')
+            permission.readOnly.should.equal(false)
+          }
+          {
+            const permission = r.result.permissions[1]
+            permission.username.should.equal(user2.username)
+            permission.readOnly.should.equal(true)
+          }
           done();
         });
       });
