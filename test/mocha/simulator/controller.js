@@ -4,6 +4,8 @@ console.log('test/mocha/simulator/controller.js');
 
 require('../../../server/server.js')
 
+const csgrant = require('cloudsim-grant')
+
 
 /// Module dependencies.
 var mongoose = require('mongoose'),
@@ -14,6 +16,15 @@ var mongoose = require('mongoose'),
 var util = require('util');
 var should = require('should');
 var supertest = require('supertest');
+
+// we need fresh keys for this test
+const keys = csgrant.token.generateKeys()
+csgrant.token.initKeys(keys.public, keys.private)
+
+let userToken
+const userTokenData = {username:'admin'}
+let user2Token
+const user2TokenData = {username:'user2'}
 
 var user;
 var user2;
@@ -26,6 +37,26 @@ const launchData = {
                    }
 
 describe('<Unit Test>', function() {
+
+  before(function(done) {
+    csgrant.model.clearDb()
+    csgrant.token.signToken(userTokenData, (e, tok)=>{
+      console.log('token signed for user "' + userTokenData.username  + '"')
+      if(e) {
+        console.log('sign error: ' + e)
+      }
+      userToken = tok
+      csgrant.token.signToken(user2TokenData, (e, tok)=>{
+        console.log('token signed for user "' + user2TokenData.username  + '"')
+        if(e) {
+          console.log('sign error: ' + e)
+        }
+        user2Token = tok
+        done()
+      })
+    })
+  })
+
   describe('Simulator Controller:', function() {
     before(function(done) {
       User.remove({}, function(err){
@@ -305,15 +336,19 @@ describe('<Unit Test>', function() {
     describe('Check Admin Permission to Launch Simulator', function() {
       it('should be possible for admins to access root resource', function(done) {
         agent
-        .get('/permissions')
+        .get('/permissions/simulators_list')
         .set('Acccept', 'application/json')
+        .set('authorization', userToken)
         .send({})
         .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.readOnly.should.equal(false);
-          text.success.should.equal(true);
+          res.status.should.be.equal(200)
+          res.redirect.should.equal(false)
+          var data  = JSON.parse(res.text)
+          data.success.should.equal(true)
+          data.result.permissions.length.should.equal(1)
+          const permission = data.result.permissions[0]
+          permission.username.should.equal('admin')
+          permission.readOnly.should.equal(false)
           done();
         });
       });
@@ -324,31 +359,34 @@ describe('<Unit Test>', function() {
       it('should be possible for admins to access simulator',
           function(done) {
         agent
-        .get('/permissions')
+        .get('/permissions/' + simId2)
         .set('Acccept', 'application/json')
-        .send({id:simId2})
+        .set('authorization', userToken)
         .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.readOnly.should.equal(false);
-          text.success.should.equal(true);
-          done();
-        });
-      });
-    });
+          res.status.should.be.equal(200)
+          res.redirect.should.equal(false)
+          var r = JSON.parse(res.text)
+          r.success.should.equal(true)
+          r.resource.should.equal(simId2)
+          r.result.permissions.length.should.equal(1)
+          const permission = r.result.permissions[0]
+          permission.username.should.equal('admin')
+          permission.readOnly.should.equal(false)
+          done()
+        })
+      })
+    })
 
     // verify user permission query for launching simulator
-    describe('Check User Permission to Launch Simulator', function() {
-      it('should not be possible for user to access root resource',
+    describe('Check User2 Permission to Launch Simulator', function() {
+      it('should not be possible for user2 to access root resource',
           function(done) {
         agent
-        .get('/permissions')
-        .set('authorization', 'user2')
+        .get('/permissions/simulators_list')
         .set('Acccept', 'application/json')
-        .send({})
+        .set('authorization', user2Token)
         .end(function(err,res){
-          res.status.should.be.equal(200);
+          res.status.should.be.equal(401);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(false);
@@ -362,12 +400,11 @@ describe('<Unit Test>', function() {
       it('should not have access to simulator without permission',
           function(done) {
         agent
-        .get('/permissions')
-        .set('authorization', 'user2')
+        .get('/permissions/' + simId3)
         .set('Acccept', 'application/json')
-        .send({id:simId3})
+        .set('authorization', user2Token)
         .end(function(err,res){
-          res.status.should.be.equal(200);
+          res.status.should.be.equal(401);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(false);
@@ -382,7 +419,8 @@ describe('<Unit Test>', function() {
           function(done) {
         agent
         .get('/simulators')
-        .set('authorization', 'user2')
+        .set('Acccept', 'application/json')
+        .set('authorization', user2Token)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -402,7 +440,7 @@ describe('<Unit Test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          var text = JSON.parse(res.text)
           text.success.should.equal(true);
           text.resource.should.equal(simId2);
           text.grantee.should.equal(user2.username);
@@ -418,15 +456,26 @@ describe('<Unit Test>', function() {
       it('should have access to simulator with permission',
           function(done) {
         agent
-        .get('/permissions')
-        .set('authorization', 'user2')
+        .get('/permissions/' + simId2)
+        .set('authorization', user2Token)
         .set('Acccept', 'application/json')
-        .send({id:simId2})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.success.should.equal(true);
+          var r = JSON.parse(res.text);
+          r.success.should.equal(true);
+          r.resource.should.equal(simId2)
+          r.result.permissions.length.should.equal(2)
+          {
+            const permission = r.result.permissions[0]
+            permission.username.should.equal('admin')
+            permission.readOnly.should.equal(false)
+          }
+          {
+            const permission = r.result.permissions[1]
+            permission.username.should.equal(user2.username)
+            permission.readOnly.should.equal(true)
+          }
           done();
         });
       });
@@ -649,14 +698,14 @@ describe('<Unit Test>', function() {
         agent
         .delete('/permissions')
         .set('Acccept', 'application/json')
-        .send({id: simId4, username: user2.username, readOnly: true})
+        .send({resource: simId4, grantee: user2.username, readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(true);
-          text.id.should.equal(simId4);
-          text.username.should.equal(user2.username);
+          text.resource.should.equal(simId4);
+          text.grantee.should.equal(user2.username);
           text.readOnly.should.equal(true);
           done();
         });
@@ -747,7 +796,7 @@ describe('<Unit Test>', function() {
         agent
         .delete('/permissions')
         .set('Acccept', 'application/json')
-        .send({id: simId2, username: user2.username, readOnly: true})
+        .send({resource: simId2, grantee: user2.username, readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -764,14 +813,14 @@ describe('<Unit Test>', function() {
         agent
         .delete('/permissions')
         .set('Acccept', 'application/json')
-        .send({id: simId2, username: user2.username, readOnly: false})
+        .send({resource: simId2, grantee: user2.username, readOnly: false})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(true);
-          text.id.should.equal(simId2);
-          text.username.should.equal(user2.username);
+          text.resource.should.equal(simId2);
+          text.grantee.should.equal(user2.username);
           text.readOnly.should.equal(false);
           done();
         });

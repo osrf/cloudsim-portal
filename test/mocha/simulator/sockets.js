@@ -469,14 +469,14 @@ describe('<Unit Test>', function() {
               agent
               .delete('/permissions')
               .set('Accept', 'application/json')
-              .send({id: simId1, username: 'user3', readOnly: false})
+              .send({resource: simId1, grantee: 'user3', readOnly: false})
               .end(function(err,res){
                 res.status.should.be.equal(200);
                 res.redirect.should.equal(false);
                 var text = JSON.parse(res.text);
                 text.success.should.equal(true);
-                text.id.should.equal(simId1);
-                text.username.should.equal('user3');
+                text.resource.should.equal(simId1);
+                text.grantee.should.equal('user3');
                 text.readOnly.should.equal(false);
                 revoked = true;
               });
