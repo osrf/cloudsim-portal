@@ -463,14 +463,10 @@ describe('<Unit Test>', function() {
           r.success.should.equal(true);
           r.resource.should.equal(simId2)
           r.result.permissions.should.not.be.empty()
-          {
-            const permission = r.result.permissions['admin']
-            permission.readOnly.should.equal(false)
-          }
-          {
-            const permission = r.result.permissions['user2']
-            permission.readOnly.should.equal(true)
-          }
+          let permission = r.result.permissions['admin']
+          permission.readOnly.should.equal(false)
+          permission = r.result.permissions['user2']
+          permission.readOnly.should.equal(true)
           done();
         });
       });
