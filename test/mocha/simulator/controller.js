@@ -367,6 +367,7 @@ describe('<Unit Test>', function() {
           var r = JSON.parse(res.text)
           r.success.should.equal(true)
           r.resource.should.equal(simId2)
+          r.result.permissions.should.not.be.empty()
           const permission = r.result.permissions['admin']
           permission.readOnly.should.equal(false)
           done()
