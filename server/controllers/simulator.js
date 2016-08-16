@@ -156,7 +156,7 @@ exports.create = function(req, res) {
   simulator.machine_id = '';
   simulator.id = uuid.v4();
 
-  // check permission - only admins (users with write access to adminResource)
+  // check permission - only users with write access to adminResource
   // can create resources
   csgrant.isAuthorized(req.user.username, adminResource, false,
       (err, authorized) => {
@@ -168,6 +168,8 @@ exports.create = function(req, res) {
       const msg = 'insufficient permission for user "'
           + req.user.username + '"';
       console.log(msg)
+console.log('\n\n\nfsociety.dat 401!!!', req.user.username , adminResource,authorized ,'\n---------\n')
+csgrant.dump()
       return res.jsonp({success: false, error: msg});
     }
     // add resource to csgrant

@@ -10,7 +10,6 @@ var User = mongoose.model('User');
 
 // Simulation authorization helpers
 var authenticateUser = function(req, res, next) {
-
   var userID = req.username;
   // console.log('sim authenticate user: ' + userID);
 
@@ -38,6 +37,7 @@ var authenticateUser = function(req, res, next) {
 
 
 module.exports = function(router) {
+
   /// GET /simulators
   /// Return all the simulators, running and terminated
   router.get('/simulators', authenticateUser, Simulators.all);
@@ -61,27 +61,24 @@ module.exports = function(router) {
   /// DEL /permissions
   /// Revoke permissions for a resource.
   router.delete('/permissions', authenticateUser, Simulators.revoke);
-/*
-  router.get('/permissions', authenticateUser,
-      Simulators.permissions);
-*/
 
-  /// GET /permissions
-  /// Get user permissions for all resources.
-  router.get('/permissions', csgrant.authenticate,
-    csgrant.ownsResource('simulators_list', true), csgrant.allResources)
+  /// query user permissions for all resources
+  router.get('/permissions',
+    csgrant.authenticate,
+    csgrant.ownsResource('simulators_list', true),
+    csgrant.allResources)
 
-  /// GET /permissions/:resourceId
-  /// Get all user permissions for a given resource.
+  /// query permissions for a single resource
   router.get('/permissions/:resourceId', csgrant.authenticate,
     csgrant.ownsResource(':resourceId', true), csgrant.resource)
 
   /// Finish with setting up the simulationId param
   router.param('simulatorId', Simulators.simulatorId);
 
+  /// param for resource name
   router.param('resourceId', function( req, res, next, id) {
     req.resourceId = id
     next()
   })
 
-};
+}
