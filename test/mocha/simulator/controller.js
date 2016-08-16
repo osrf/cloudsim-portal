@@ -345,9 +345,8 @@ describe('<Unit Test>', function() {
           res.redirect.should.equal(false)
           var data  = JSON.parse(res.text)
           data.success.should.equal(true)
-          data.result.permissions.length.should.equal(1)
-          const permission = data.result.permissions[0]
-          permission.username.should.equal('admin')
+          data.result.permissions.should.not.be.empty()
+          const permission = data.result.permissions['admin']
           permission.readOnly.should.equal(false)
           done();
         });
@@ -368,9 +367,8 @@ describe('<Unit Test>', function() {
           var r = JSON.parse(res.text)
           r.success.should.equal(true)
           r.resource.should.equal(simId2)
-          r.result.permissions.length.should.equal(1)
-          const permission = r.result.permissions[0]
-          permission.username.should.equal('admin')
+          r.result.permissions.should.not.be.empty()
+          const permission = r.result.permissions['admin']
           permission.readOnly.should.equal(false)
           done()
         })
@@ -378,7 +376,7 @@ describe('<Unit Test>', function() {
     })
 
     // verify user permission query for launching simulator
-    describe('Check User2 Permission to Launch Simulator', function() {
+    describe('Check User2 Permission to Launch Simulator:', function() {
       it('should not be possible for user2 to access root resource',
           function(done) {
         agent
@@ -396,7 +394,7 @@ describe('<Unit Test>', function() {
     });
 
     // verify user permission query for accessing simulator
-    describe('Check User Permission to Access Simulator', function() {
+    describe('Check User Permission to Access Simulator:', function() {
       it('should not have access to simulator without permission',
           function(done) {
         agent
@@ -465,17 +463,11 @@ describe('<Unit Test>', function() {
           var r = JSON.parse(res.text);
           r.success.should.equal(true);
           r.resource.should.equal(simId2)
-          r.result.permissions.length.should.equal(2)
-          {
-            const permission = r.result.permissions[0]
-            permission.username.should.equal('admin')
-            permission.readOnly.should.equal(false)
-          }
-          {
-            const permission = r.result.permissions[1]
-            permission.username.should.equal(user2.username)
-            permission.readOnly.should.equal(true)
-          }
+          r.result.permissions.should.not.be.empty()
+          let permission = r.result.permissions['admin']
+          permission.readOnly.should.equal(false)
+          permission = r.result.permissions['user2']
+          permission.readOnly.should.equal(true)
           done();
         });
       });
