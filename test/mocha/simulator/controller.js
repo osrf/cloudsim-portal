@@ -346,8 +346,9 @@ describe('<Unit Test>', function() {
           var data  = JSON.parse(res.text)
           data.success.should.equal(true)
           data.result.permissions.should.not.be.empty()
-          const permission = data.result.permissions['admin']
-          permission.readOnly.should.equal(false)
+          const p = data.result.permissions[0]
+          p.username.should.equal('admin')
+          p.permissions.readOnly.should.equal(false)
           done();
         });
       });
@@ -366,10 +367,11 @@ describe('<Unit Test>', function() {
           res.redirect.should.equal(false)
           var r = JSON.parse(res.text)
           r.success.should.equal(true)
-          r.resource.should.equal(simId2)
+          r.result.name.should.equal(simId2)
           r.result.permissions.should.not.be.empty()
-          const permission = r.result.permissions['admin']
-          permission.readOnly.should.equal(false)
+          const p = r.result.permissions[0]
+          p.username.should.equal('admin')
+          p.permissions.readOnly.should.equal(false)
           done()
         })
       })
@@ -461,13 +463,18 @@ describe('<Unit Test>', function() {
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var r = JSON.parse(res.text);
+          // console.log('---------r\n', JSON.stringify(r,null,2), '\n----------\n')
           r.success.should.equal(true);
-          r.resource.should.equal(simId2)
+          r.result.name.should.equal(simId2)
           r.result.permissions.should.not.be.empty()
-          let permission = r.result.permissions['admin']
-          permission.readOnly.should.equal(false)
-          permission = r.result.permissions['user2']
-          permission.readOnly.should.equal(true)
+          r.result.permissions.length.should.equal(2)
+          // requester user permissions are at position 0
+          let puser2 = r.result.permissions[0]
+          puser2.username.should.equal('user2')
+          puser2.permissions.readOnly.should.equal(true)
+          let padmin = r.result.permissions[1]
+          padmin.username.should.equal('admin')
+          padmin.permissions.readOnly.should.equal(false)
           done();
         });
       });
@@ -482,12 +489,13 @@ describe('<Unit Test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.length.should.be.exactly(1);
-          text[0].id.should.equal(simId2);
-          text[0].users.length.should.be.exactly(1);
-          text[0].users[0].username.should.equal('user2');
-          text[0].users[0].readOnly.should.equal(true);
+          const r = JSON.parse(res.text);
+          // console.log('---------r\n', JSON.stringify(r,null,2), '\n----------\n')
+          r.length.should.be.exactly(1);
+          r[0].id.should.equal(simId2);
+          r[0].users.length.should.be.exactly(1);
+          r[0].users[0].username.should.equal('user2');
+          r[0].users[0].readOnly.should.equal(true);
           done();
         });
       });
