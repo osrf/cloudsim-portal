@@ -3,6 +3,8 @@
 const csgrant = require('cloudsim-grant')
 var util = require('util');
 var adminUser = 'admin';
+if (process.env.CLOUDSIM_ADMIN)
+  adminUser = process.env.CLOUDSIM_ADMIN;
 
 ///////////////////////////////////////////////
 // Fast lookup of sockets per user.

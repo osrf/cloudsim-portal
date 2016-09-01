@@ -34,6 +34,8 @@ var db = mongoose.connect(dbName);
 
 // cloudsim-grant
 var adminUser = 'admin';
+if (process.env.CLOUDSIM_ADMIN)
+  adminUser = process.env.CLOUDSIM_ADMIN;
 var adminResource = 'simulators_list';
 const csgrant = require('cloudsim-grant');
 csgrant.init(adminUser, {'simulators_list': {} }, permissionDbName, ()=>{
