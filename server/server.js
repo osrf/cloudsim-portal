@@ -33,9 +33,9 @@ console.log('Using redis database: ' + permissionDbName)
 var db = mongoose.connect(dbName);
 
 // cloudsim-grant
-if (!process.env.CLOUDSIM_ADMIN)
-  throw('undefined: process.env.CLOUDSIM_ADMIN')
-var adminUser = process.env.CLOUDSIM_ADMIN;
+var adminUser = 'admin';
+if (process.env.CLOUDSIM_ADMIN)
+  adminUser = process.env.CLOUDSIM_ADMIN;
 var adminResource = 'simulators_list';
 const csgrant = require('cloudsim-grant');
 csgrant.init(adminUser, {'simulators_list': {} }, permissionDbName, ()=>{
