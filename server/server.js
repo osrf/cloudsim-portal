@@ -36,7 +36,6 @@ var db = mongoose.connect(dbName);
 if (!process.env.CLOUDSIM_ADMIN)
   throw('undefined: process.env.CLOUDSIM_ADMIN')
 var adminUser = process.env.CLOUDSIM_ADMIN;
-console.log(adminUser)
 var adminResource = 'simulators_list';
 const csgrant = require('cloudsim-grant');
 csgrant.init(adminUser, {'simulators_list': {} }, permissionDbName, ()=>{
