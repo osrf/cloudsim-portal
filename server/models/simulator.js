@@ -30,6 +30,16 @@ var SimulatorSchema = new Schema({
         type: String
     },
 
+    // AWS vpc id
+    vpc_id: {
+        type: String
+    },
+
+    // AWS subnet id
+    subnet_id: {
+        type: String
+    },
+
     // ip address of the machine
     machine_ip: {
         type: String

@@ -102,8 +102,10 @@ exports.launchSimulator = function (region, keyName, hardware, security, image, 
                 // util.inspect(data.Instances[0]));
 
                 var machineInfo = { id: data.Instances[0].InstanceId,
-                                    region: region
-                              };
+                                    region: region,
+                                    subnet_id: data.Instances[0].SubnetId,
+                                    vpc_id: data.Instances[0].VpcId
+                                  };
 
                 // create tags with aws format:
                 var Tags = [];
@@ -280,3 +282,121 @@ exports.simulatorStatuses = function (machineInfo, cb) {
 
   getAWSStatusData();
 };
+
+/////////////////////////////////////////////////////////
+// Get the status of all running instances
+// @params[in] machineIds an array of machine ids
+// @param[in] cb Callback function to use when this function is complete.
+exports.createSubnet = function (cidr, vpc, cb) {
+
+  var params = {
+    CidrBlock: cidr, //'172.31.0.0/24'
+    VpcId: vpc,
+    DryRun: dryRun
+  };
+
+  ec2.createSubnet(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}
+
+/////////////////////////////////////////////////////////
+// Get a list of vpcs
+// @param[in] filters array of filters [{Name: 'string', Value: ['string']}]
+// @param[in] vpcIds array of vpc ids ['string']
+exports.getVPCs = function (filters, vpcIds, cb) {
+
+  var params = {
+    DryRun: dryRun,
+    Filters: filters,
+    VpcIds: vpcIds,
+  };
+  ec2.describeVpcs(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}
+
+/////////////////////////////////////////////////////////
+// Get a list of subnets
+// @param[in] filters array of filters [{Name: 'string', Value: ['string']}]
+// @param[in] subnetIds array of subnet ids ['string']
+exports.getSubnets = function (filters, subnetIds, cb) {
+  var params = {
+    DryRun: dryRun,
+    Filters: filters,
+    SubnetIds: subnetIds
+  };
+  ec2.describeSubnets(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}
+
+/////////////////////////////////////////////////////////
+// Get a list of instances
+// @param[in] filters array of filters [{Name: 'string', Value: ['string']}]
+// @param[in] instanceIds array of instance ids ['string']
+exports.getInstances = function (filters, instanceIds, region, cb) {
+    var params = {
+        DryRun: dryRun,
+        Filters: filters,
+        InstanceIds: instanceIds
+    };
+
+    AWS.config.region = region;
+    var ec2 = new AWS.EC2();
+
+    ec2.describeInstances(params, function(err, data) {
+        if (err) {
+          cb(err);
+        }
+        else {
+          cb(null, data);
+        }
+    });
+}
+
+/////////////////////////////////////////////////////////
+// Delete a subnet
+// @param[in] subnetId subnet id
+exports.deleteSubnet = function (subnetId, cb) {
+  var params = {
+    DryRun: dryRun,
+    SubnetId: subnetId
+  };
+  ec2.deleteSubnet(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}
+
+/////////////////////////////////////////////////////////
+// Delete a vpc
+// @param[in] vpcId vpc id
+exports.deleteVPC = function (vpcId, cb) {
+  var params = {
+    DryRun: dryRun,
+    VpcId: vpcId
+  };
+  ec2.deleteVpc(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}

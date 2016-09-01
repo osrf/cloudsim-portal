@@ -203,6 +203,8 @@ exports.create = function(req, res) {
 
         var info = machine;
         simulator.machine_id = info.id;
+        simulator.subnet_id = info.subnet_id;
+        simulator.vpc_id = info.vpc_id;
 
         var sim = new Simulator(simulator);
         sim.save(function(err) {
@@ -711,7 +713,10 @@ var updateInstanceStatus = function() {
 
   // get region for awsData for now
   info.region = awsData.region;
-  info.machineIds = instanceList;
+  // TODO for now just get all instances instead of keeping
+  // a local cache of instance list
+  // info.machineIds = instanceList;
+  info.machineIds = [];
 
   cloudServices.simulatorStatuses(info, function (err, data) {
     if (err) {
