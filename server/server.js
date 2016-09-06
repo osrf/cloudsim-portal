@@ -68,15 +68,9 @@ let io = require('socket.io')(httpServer)
 let userSockets = require('./sockets')
 userSockets.init(io);
 
-//var socketioJwt = require('socketio-jwt');
-
-// var xtend = require('xtend');
-// var jwt = require('jsonwebtoken');
 // var UnauthorizedError = require('./UnauthorizedError');
 
 // const spawn = require('child_process').spawn
-// const ansi_to_html = require('ansi-to-html')
-// const ansi2html = new ansi_to_html()
 
 var auth_pub_key ='';
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
