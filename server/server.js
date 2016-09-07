@@ -20,6 +20,11 @@ const port = process.env.CLOUDSIM_PORT || 4000
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 console.log('ENV ' + process.env.NODE_ENV);
 
+
+var adminUser = 'admin';
+if (process.env.CLOUDSIM_ADMIN)
+  adminUser = process.env.CLOUDSIM_ADMIN;
+
 // Mongo
 let mongoose = require('mongoose');
 let permissionDbName = 'cloudsim-portal'
@@ -33,9 +38,6 @@ console.log('Using redis database: ' + permissionDbName)
 var db = mongoose.connect(dbName);
 
 // cloudsim-grant
-var adminUser = 'admin';
-if (process.env.CLOUDSIM_ADMIN)
-  adminUser = process.env.CLOUDSIM_ADMIN;
 var adminResource = 'simulators_list';
 const csgrant = require('cloudsim-grant');
 csgrant.init(adminUser, {'simulators_list': {} }, permissionDbName, ()=>{
@@ -188,6 +190,16 @@ app.use('/', apiRoutes);
 
 var Simulators = require('./controllers/simulator');
 Simulators.initInstanceStatus();
+
+var User = mongoose.model('User');
+User.loadByUsername(adminUser, function(err, user) {
+  if (err)
+    return next(err);
+  if (!user) {
+    var newUser = new User({username: userID});
+    newUser.save();
+  }
+});
 
 
 // Expose app
