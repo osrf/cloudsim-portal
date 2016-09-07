@@ -4,6 +4,9 @@ console.log('test/mocha/simulator/sockets.js');
 
 require('../../../server/server.js')
 
+var adminUser = 'admin';
+if (process.env.CLOUDSIM_ADMIN)
+  adminUser = process.env.CLOUDSIM_ADMIN;
 
 /// Module dependencies.
 var mongoose = require('mongoose'),
@@ -14,6 +17,9 @@ var mongoose = require('mongoose'),
 var util = require('util');
 var should = require('should');
 var supertest = require('supertest');
+
+// we need fresh keys for this test
+const csgrant = require('cloudsim-grant')
 
 var user;
 var user2;
@@ -38,7 +44,7 @@ describe('<Unit Test>', function() {
           should.fail(err);
         }
         user = new User({
-          username: 'admin'
+          username: adminUser
         });
 
         user.save(function() {
@@ -72,7 +78,7 @@ describe('<Unit Test>', function() {
 
     describe('Check Socket Connection', function() {
       it('should be able to connect via websockets', function(done) {
-        var client = io.connect(socketAddress, {query: 'token=admin',
+        var client = io.connect(socketAddress, {query: 'token=' + adminUser,
             transports: ['websocket'], rejectUnauthorized: false});
         client.on('connect', function(socket) {
           done();
@@ -92,7 +98,7 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io client
-        var client = io.connect(socketAddress, {query: 'token=admin',
+        var client = io.connect(socketAddress, {query: 'token=' + adminUser,
             transports: ['websocket'], rejectUnauthorized: false});
 
         // check launch event
@@ -131,7 +137,7 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io client
-        var client = io.connect(socketAddress, {query: 'token=admin',
+        var client = io.connect(socketAddress, {query: 'token=' + adminUser,
             transports: ['websocket'], rejectUnauthorized: false});
 
         // check status event
@@ -157,9 +163,9 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io clients with same username
-        var client = io.connect(socketAddress, {query: 'token=admin',
+        var client = io.connect(socketAddress, {query: 'token=' + adminUser,
             transports: ['websocket'], rejectUnauthorized: false});
-        var client2 = io.connect(socketAddress, {query: 'token=admin',
+        var client2 = io.connect(socketAddress, {query: 'token=' + adminUser,
             transports: ['websocket'], rejectUnauthorized: false});
 
         var counter = 0;
@@ -206,7 +212,7 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io client
-        var adminClient = io.connect(socketAddress, {query: 'token=admin',
+        var adminClient = io.connect(socketAddress, {query: 'token=' + adminUser,
             transports: ['websocket'], rejectUnauthorized: false});
         var user2Client = io.connect(socketAddress, {query: 'token=user2',
             transports: ['websocket'], rejectUnauthorized: false});
@@ -248,7 +254,7 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io client
-        var adminClient = io.connect(socketAddress, {query: 'token=admin',
+        var adminClient = io.connect(socketAddress, {query: 'token=' + adminUser,
             transports: ['websocket'], rejectUnauthorized: false});
         // user will be granted read access
         var user2Client = io.connect(socketAddress, {query: 'token=user2',
@@ -319,7 +325,7 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io clients
-        var adminClient = io.connect(socketAddress, {query: 'token=admin',
+        var adminClient = io.connect(socketAddress, {query: 'token=' + adminUser,
             transports: ['websocket'], rejectUnauthorized: false});
         var user2Client = io.connect(socketAddress, {query: 'token=user2',
             transports: ['websocket'], rejectUnauthorized: false});
@@ -407,7 +413,7 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io clients
-        var adminClient = io.connect(socketAddress, {query: 'token=admin',
+        var adminClient = io.connect(socketAddress, {query: 'token=' + adminUser,
             transports: ['websocket'], rejectUnauthorized: false});
         var user2Client = io.connect(socketAddress, {query: 'token=user2',
             transports: ['websocket'], rejectUnauthorized: false});
@@ -494,7 +500,7 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io client
-        var adminClient = io.connect(socketAddress, {query: 'token=admin',
+        var adminClient = io.connect(socketAddress, {query: 'token=' + adminUser,
             transports: ['websocket'], rejectUnauthorized: false});
         var user2Client = io.connect(socketAddress, {query: 'token=user2',
             transports: ['websocket'], rejectUnauthorized: false});
@@ -580,7 +586,7 @@ describe('<Unit Test>', function() {
           function(done) {
 
         // create socket io client
-        var adminClient = io.connect(socketAddress, {query: 'token=admin',
+        var adminClient = io.connect(socketAddress, {query: 'token=' + adminUser,
             transports: ['websocket'], rejectUnauthorized: false});
         var user2Client = io.connect(socketAddress, {query: 'token=user2',
             transports: ['websocket'], rejectUnauthorized: false});
@@ -655,8 +661,9 @@ describe('<Unit Test>', function() {
     });
 
     after(function(done) {
-      user.remove();
+      User.remove().exec();
       Simulator.remove().exec();
+      csgrant.model.clearDb();
       done();
     });
   });
