@@ -1,10 +1,12 @@
 'use strict'
 
-let express = require('express')
-let app = express()
-let util = require('util')
-let fs = require('fs')
-let bodyParser = require('body-parser')
+const express = require('express')
+const app = express()
+const util = require('util')
+const fs = require('fs')
+const bodyParser = require('body-parser')
+
+const machinetypes = require('./machinetypes')
 
 let httpServer = null
 
@@ -181,6 +183,7 @@ var walk = function(path) {
 };
 walk(routes_path);
 
+machinetypes.se
 
 // apply the routes to our application with the prefix /api
 app.use('/', apiRoutes);
@@ -195,5 +198,5 @@ exports = module.exports = app;
 
 httpServer.listen(port, function(){
   console.log('ssl: ' + useHttps)
-  console.log('listening on *:' + port);
-});
+  console.log('listening on *:' + port)
+})
