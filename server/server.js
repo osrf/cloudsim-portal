@@ -20,16 +20,21 @@ const port = process.env.CLOUDSIM_PORT || 4000
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 console.log('ENV ' + process.env.NODE_ENV);
 
-
 var adminUser = 'admin';
 if (process.env.CLOUDSIM_ADMIN)
   adminUser = process.env.CLOUDSIM_ADMIN;
 
+// redis
+let permissionDbName = 'cloudsim-portal';
+
 // Mongo
 let mongoose = require('mongoose');
-let permissionDbName = 'cloudsim-portal'
-let dbName = 'mongodb://localhost/cloudsim-portal'
-if (process.env.NODE_ENV === 'test'){
+let dbName = 'mongodb://localhost/cloudsim-portal';
+
+if (process.env.CLOUDSIM_PORTAL_DB)
+  dbName = 'mongodb://' + process.env.CLOUDSIM_PORTAL_DB + '/cloudsim-portal';
+
+if (process.env.NODE_ENV === 'test') {
   dbName = dbName + '-test'
   permissionDbName += '-test'
 }
