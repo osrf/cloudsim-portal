@@ -5,14 +5,12 @@ const app = express()
 const util = require('util')
 const fs = require('fs')
 const bodyParser = require('body-parser')
-
 const machinetypes = require('./machinetypes')
 
 let httpServer = null
 
 const cors = require('cors')
-
-var dotenv = require('dotenv');
+const dotenv = require('dotenv');
 dotenv.load();
 
 // https server port (as specified in .env, or 4000)
@@ -22,36 +20,41 @@ const port = process.env.CLOUDSIM_PORT || 4000
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 console.log('ENV ' + process.env.NODE_ENV);
 
-var adminUser = 'admin';
-if (process.env.CLOUDSIM_ADMIN)
-  adminUser = process.env.CLOUDSIM_ADMIN;
-
-// redis
-let permissionDbName = 'cloudsim-portal';
-
 // Mongo
 let mongoose = require('mongoose');
-let dbName = 'mongodb://localhost/cloudsim-portal';
-
-if (process.env.CLOUDSIM_PORTAL_DB)
-  dbName = 'mongodb://' + process.env.CLOUDSIM_PORTAL_DB + '/cloudsim-portal';
-
-if (process.env.NODE_ENV === 'test') {
+let permissionDbName = 'cloudsim-portal'
+let dbName = 'mongodb://localhost/cloudsim-portal'
+if (process.env.NODE_ENV === 'test'){
   dbName = dbName + '-test'
   permissionDbName += '-test'
 }
-console.log('Using mongo database: ' + dbName)
-console.log('Using redis database: ' + permissionDbName)
+
 var db = mongoose.connect(dbName);
 
 // cloudsim-grant
-var adminResource = 'simulators_list';
+let adminUser = 'admin'
+if (process.env.CLOUDSIM_ADMIN)
+  adminUser = process.env.CLOUDSIM_ADMIN
+
+console.log('Admin user:', adminUser)
+
 const csgrant = require('cloudsim-grant');
-csgrant.init(adminUser, {'simulators_list': {} }, permissionDbName, ()=>{
+
+const initialResources =  {
+  'simulators_list': {},
+  'machine_types': {}
+ }
+csgrant.init(adminUser,
+ initialResources,
+ permissionDbName, ()=>{
+  csgrant.dump()
   console.log( permissionDbName + ' redis database loaded')
 });
 
 console.log('\n\ncloudsim-grant version', require('cloudsim-grant/package.json').version)
+console.log('using mongo database: ' + dbName)
+console.log('using redis database: ' + permissionDbName)
+// console.log('initial resources:', JSON.stringify(initialResources, null, 2))
 
 
 // https
@@ -77,9 +80,15 @@ let io = require('socket.io')(httpServer)
 let userSockets = require('./sockets')
 userSockets.init(io);
 
+//var socketioJwt = require('socketio-jwt');
+
+// var xtend = require('xtend');
+// var jwt = require('jsonwebtoken');
 // var UnauthorizedError = require('./UnauthorizedError');
 
 // const spawn = require('child_process').spawn
+// const ansi_to_html = require('ansi-to-html')
+// const ansi2html = new ansi_to_html()
 
 var auth_pub_key ='';
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
@@ -190,7 +199,7 @@ var walk = function(path) {
 };
 walk(routes_path);
 
-machinetypes.se
+machinetypes.setRoutes(app)
 
 // apply the routes to our application with the prefix /api
 app.use('/', apiRoutes);
@@ -199,21 +208,11 @@ app.use('/', apiRoutes);
 var Simulators = require('./controllers/simulator');
 Simulators.initInstanceStatus();
 
-var User = mongoose.model('User');
-User.loadByUsername(adminUser, function(err, user) {
-  if (err)
-    return next(err);
-  if (!user) {
-    var newUser = new User({username: userID});
-    newUser.save();
-  }
-});
-
 
 // Expose app
 exports = module.exports = app;
 
 httpServer.listen(port, function(){
   console.log('ssl: ' + useHttps)
-  console.log('listening on *:' + port)
-})
+  console.log('listening on *:' + port);
+});

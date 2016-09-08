@@ -1,10 +1,8 @@
   'use strict'
 
-  const express = require('express')
-  const router = express.Router()
-  const csgrant = require('cloudsim-grant')
+const csgrant = require('cloudsim-grant')
 
-  function setRoutes(app) {
+function setRoutes(app) {
 
     console.log('MACHINE TYPES setRoutes')
 
