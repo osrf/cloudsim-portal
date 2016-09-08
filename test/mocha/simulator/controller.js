@@ -4,8 +4,6 @@ console.log('test/mocha/simulator/controller.js');
 
 require('../../../server/server.js')
 
-const csgrant = require('cloudsim-grant')
-
 
 /// Module dependencies.
 var mongoose = require('mongoose'),
@@ -18,11 +16,16 @@ var should = require('should');
 var supertest = require('supertest');
 
 // we need fresh keys for this test
+const csgrant = require('cloudsim-grant')
 const keys = csgrant.token.generateKeys()
 csgrant.token.initKeys(keys.public, keys.private)
 
+var adminUser = 'admin';
+if (process.env.CLOUDSIM_ADMIN)
+  adminUser = process.env.CLOUDSIM_ADMIN;
+
 let userToken
-const userTokenData = {username:'admin'}
+const userTokenData = {username:adminUser}
 let user2Token
 const user2TokenData = {username:'user2'}
 
@@ -64,7 +67,7 @@ describe('<Unit Test>', function() {
           should.fail(err);
         }
         user = new User({
-          username: 'admin'
+          username: adminUser
         });
         user2 = new User({
           username: 'user2',
@@ -130,7 +133,7 @@ describe('<Unit Test>', function() {
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.length.should.be.exactly(1);
-          text[0].owner.username.should.equal('admin');
+          text[0].owner.username.should.equal(adminUser);
           text[0].id.should.not.be.empty();
           text[0].id.should.equal(simId1);
           text[0].status.should.equal('LAUNCHING');
@@ -149,7 +152,7 @@ describe('<Unit Test>', function() {
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
-          text.owner.username.should.equal('admin');
+          text.owner.username.should.equal(adminUser);
           text.id.should.equal(simId1);
           text.status.should.equal('LAUNCHING');
           text.region.should.equal('us-west-1');
@@ -200,13 +203,13 @@ describe('<Unit Test>', function() {
           simId2Idx.should.be.greaterThanOrEqual(0);
           simId1Idx.should.not.equal(simId2Idx);
 
-          sims[simId1Idx].owner.username.should.equal('admin');
+          sims[simId1Idx].owner.username.should.equal(adminUser);
           sims[simId1Idx].id.should.not.be.empty();
           sims[simId1Idx].id.should.equal(simId1);
           sims[simId1Idx].status.should.equal('LAUNCHING');
           sims[simId1Idx].region.should.equal('us-west-1');
 
-          sims[simId2Idx].owner.username.should.equal('admin');
+          sims[simId2Idx].owner.username.should.equal(adminUser);
           sims[simId2Idx].id.should.not.be.empty();
           sims[simId2Idx].id.should.equal(simId2);
           sims[simId2Idx].status.should.equal('LAUNCHING');
@@ -240,7 +243,7 @@ describe('<Unit Test>', function() {
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.length.should.be.exactly(1);
-          text[0].owner.username.should.equal('admin');
+          text[0].owner.username.should.equal(adminUser);
           text[0].id.should.not.be.empty();
           text[0].id.should.equal(simId2);
           text[0].status.should.equal('LAUNCHING');
@@ -259,7 +262,7 @@ describe('<Unit Test>', function() {
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
-          text.owner.username.should.equal('admin');
+          text.owner.username.should.equal(adminUser);
           text.id.should.equal(simId1);
           // status should now be terminated
           text.status.should.equal('TERMINATED');
@@ -290,13 +293,13 @@ describe('<Unit Test>', function() {
           simId2Idx.should.be.greaterThanOrEqual(0);
           simId1Idx.should.not.equal(simId2Idx);
 
-          sims[simId1Idx].owner.username.should.equal('admin');
+          sims[simId1Idx].owner.username.should.equal(adminUser);
           sims[simId1Idx].id.should.not.be.empty();
           sims[simId1Idx].id.should.equal(simId1);
           sims[simId1Idx].status.should.equal('TERMINATED');
           sims[simId1Idx].region.should.equal('us-west-1');
 
-          sims[simId2Idx].owner.username.should.equal('admin');
+          sims[simId2Idx].owner.username.should.equal(adminUser);
           sims[simId2Idx].id.should.not.be.empty();
           sims[simId2Idx].id.should.equal(simId2);
           sims[simId2Idx].status.should.equal('LAUNCHING');
@@ -347,7 +350,7 @@ describe('<Unit Test>', function() {
           data.success.should.equal(true)
           data.result.permissions.should.not.be.empty()
           const p = data.result.permissions[0]
-          p.username.should.equal('admin')
+          p.username.should.equal(adminUser)
           p.permissions.readOnly.should.equal(false)
           done();
         });
@@ -370,7 +373,7 @@ describe('<Unit Test>', function() {
           r.result.name.should.equal(simId2)
           r.result.permissions.should.not.be.empty()
           const p = r.result.permissions[0]
-          p.username.should.equal('admin')
+          p.username.should.equal(adminUser)
           p.permissions.readOnly.should.equal(false)
           done()
         })
@@ -473,7 +476,7 @@ describe('<Unit Test>', function() {
           puser2.username.should.equal('user2')
           puser2.permissions.readOnly.should.equal(true)
           let padmin = r.result.permissions[1]
-          padmin.username.should.equal('admin')
+          padmin.username.should.equal(adminUser)
           padmin.permissions.readOnly.should.equal(false)
           done();
         });
@@ -602,7 +605,7 @@ describe('<Unit Test>', function() {
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.length.should.be.exactly(1);
-          text[0].owner.username.should.equal('admin');
+          text[0].owner.username.should.equal(adminUser);
           text[0].id.should.not.be.empty();
           text[0].id.should.equal(simId2);
           text[0].status.should.equal('LAUNCHING');
@@ -862,10 +865,9 @@ describe('<Unit Test>', function() {
     });
 
     after(function(done) {
-      user.remove();
-      user2.remove();
-
+      User.remove().exec();
       Simulator.remove().exec();
+      csgrant.model.clearDb();
       done();
     });
   });
