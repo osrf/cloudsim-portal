@@ -287,12 +287,12 @@ exports.simulatorStatuses = function (machineInfo, cb) {
 // @param[in] cb Callback function to use when this function is complete.
 exports.createSecurityGroup = function (groupName, cb) {
 
-  var params = {
+  const params = {
     GroupName: groupName,
     DryRun: dryRun
   };
 
-  var ec2 = new AWS.EC2();
+  const ec2 = new AWS.EC2();
   ec2.createSecurityGroup(params, function(err, data) {
     if (err)
       cb(err, null);
@@ -306,11 +306,11 @@ exports.createSecurityGroup = function (groupName, cb) {
 // Delete a subnet
 // @param[in] groupId subnet id
 exports.deleteSecurityGroup = function (groupId, cb) {
-  var params = {
+  const params = {
     DryRun: dryRun,
     GroupId: groupId
   };
-  var ec2 = new AWS.EC2();
+  const ec2 = new AWS.EC2();
   ec2.deleteSecurityGroup(params, function(err, data) {
     if (err)
       cb(err, null);
@@ -326,12 +326,12 @@ exports.deleteSecurityGroup = function (groupId, cb) {
 // @param[in] filters array of filters [{Name: 'string', Value: ['string']}]
 // @param[in] groupIds array of subnet ids ['string']
 exports.getSecurityGroups = function (filters, groupIds, cb) {
-  var params = {
+  const params = {
     DryRun: dryRun,
     Filters: filters,
     GroupIds: groupIds
   };
-  var ec2 = new AWS.EC2();
+  const ec2 = new AWS.EC2();
   ec2.describeSecurityGroups(params, function(err, data) {
     if (err)
       cb(err, null);
@@ -339,28 +339,4 @@ exports.getSecurityGroups = function (filters, groupIds, cb) {
       cb(null, data);
     }
   });
-}
-
-/////////////////////////////////////////////////////////
-// Get a list of instances
-// @param[in] filters array of filters [{Name: 'string', Value: ['string']}]
-// @param[in] instanceIds array of instance ids ['string']
-exports.getInstances = function (filters, instanceIds, region, cb) {
-    var params = {
-        DryRun: dryRun,
-        Filters: filters,
-        InstanceIds: instanceIds
-    };
-
-    AWS.config.region = region;
-    var ec2 = new AWS.EC2();
-
-    ec2.describeInstances(params, function(err, data) {
-        if (err) {
-          cb(err);
-        }
-        else {
-          cb(null, data);
-        }
-    });
 }

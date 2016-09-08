@@ -14,8 +14,8 @@ function log(s) {
 var fakeSims = [];
 var simCounter = 0;
 
-var fakeSecurityGroups = [];
-var sgCounter = 0;
+let fakeSecurityGroups = [];
+let sgCounter = 0;
 
 exports.generateKey = function (keyName, region, cb) {
   log('FAKE generate Key ' + keyName + ' in region ' + region);
@@ -79,7 +79,7 @@ exports.createSecurityGroup = function (groupName, cb) {
 }
 
 exports.deleteSecurityGroup = function (groupId, cb) {
-  var idx = fakeSecurityGroups.map(
+  let idx = fakeSecurityGroups.map(
       function(e){return e.GroupId}).indexOf(groupId);
 
   let response = {};
@@ -101,7 +101,7 @@ exports.getSecurityGroups = function (filters, groupIds, cb) {
   if (filters && filters.length > 0) {
     console.log('filters not supported for now');
   }
-  var result = [];
+  let result = [];
   result.SecurityGroups = [];
 
   if (groupIds && groupId.length > 0)
