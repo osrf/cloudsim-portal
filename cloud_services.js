@@ -102,8 +102,10 @@ exports.launchSimulator = function (region, keyName, hardware, security, image, 
                 // util.inspect(data.Instances[0]));
 
                 var machineInfo = { id: data.Instances[0].InstanceId,
-                                    region: region
-                              };
+                                    region: region,
+                                    subnet_id: data.Instances[0].SubnetId,
+                                    vpc_id: data.Instances[0].VpcId
+                                  };
 
                 // create tags with aws format:
                 var Tags = [];
@@ -280,3 +282,87 @@ exports.simulatorStatuses = function (machineInfo, cb) {
 
   getAWSStatusData();
 };
+
+/////////////////////////////////////////////////////////
+// Get the status of all running instances
+// @params[in] machineIds an array of machine ids
+// @param[in] cb Callback function to use when this function is complete.
+exports.createSecurityGroup = function (groupName, cb) {
+
+  var params = {
+    GroupName: groupName,
+    DryRun: dryRun
+  };
+
+  var ec2 = new AWS.EC2();
+  ec2.createSecurityGroup(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}
+
+/////////////////////////////////////////////////////////
+// Delete a subnet
+// @param[in] groupId subnet id
+exports.deleteSecurityGroup = function (groupId, cb) {
+  var params = {
+    DryRun: dryRun,
+    GroupId: groupId
+  };
+  var ec2 = new AWS.EC2();
+  ec2.deleteSecurityGroup(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}
+
+
+/////////////////////////////////////////////////////////
+// Get a list of subnets
+// @param[in] filters array of filters [{Name: 'string', Value: ['string']}]
+// @param[in] groupIds array of subnet ids ['string']
+exports.getSecurityGroups = function (filters, groupIds, cb) {
+  var params = {
+    DryRun: dryRun,
+    Filters: filters,
+    GroupIds: groupIds
+  };
+  var ec2 = new AWS.EC2();
+  ec2.describeSecurityGroups(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}
+
+/////////////////////////////////////////////////////////
+// Get a list of instances
+// @param[in] filters array of filters [{Name: 'string', Value: ['string']}]
+// @param[in] instanceIds array of instance ids ['string']
+exports.getInstances = function (filters, instanceIds, region, cb) {
+    var params = {
+        DryRun: dryRun,
+        Filters: filters,
+        InstanceIds: instanceIds
+    };
+
+    AWS.config.region = region;
+    var ec2 = new AWS.EC2();
+
+    ec2.describeInstances(params, function(err, data) {
+        if (err) {
+          cb(err);
+        }
+        else {
+          cb(null, data);
+        }
+    });
+}

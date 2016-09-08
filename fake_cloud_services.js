@@ -14,6 +14,9 @@ function log(s) {
 var fakeSims = [];
 var simCounter = 0;
 
+var fakeSecurityGroups = [];
+var sgCounter = 0;
+
 exports.generateKey = function (keyName, region, cb) {
   log('FAKE generate Key ' + keyName + ' in region ' + region);
   cb(null, 'START FAKE KEY\n=====346785893bjhdfgsd847edjhvcs\nEND FAKE KEY');
@@ -64,5 +67,60 @@ exports.simulatorStatuses = function (machineInfo, cb) {
   }
   out.InstanceStatuses = array;
   cb(null, out);
-
 };
+
+exports.createSecurityGroup = function (groupName, cb) {
+  let sgId = 'fake-sg-' + groupName + '-' + sgCounter.toString();
+  sgCounter++;
+
+  let sgData = {GroupId: sgId, GroupName: groupName}
+  fakeSecurityGroups.push(sgData);
+  cb(null, sgData);
+}
+
+exports.deleteSecurityGroup = function (groupId, cb) {
+  var idx = fakeSecurityGroups.map(
+      function(e){return e.GroupId}).indexOf(groupId);
+
+  console.log('removing sub ' + idx + ' ' + groupId);
+
+  let response = {};
+  if (idx >= 0) {
+    response.GroupId = fakeSecurityGroups[idx].GroupId;
+    response.GroupName = fakeSecurityGroups[idx].GroupName;
+    fakeSecurityGroups.splice(idx, 1);
+  }
+  else {
+    let error = {error: 'Security group not found'};
+    cb(error, null);
+    return;
+  }
+
+  cb(null, response);
+}
+
+exports.getSecurityGroups = function (filters, groupIds, cb) {
+  if (filters && filters.length > 0) {
+    console.log('filters not supported for now');
+  }
+  var result = [];
+  result.SecurityGroups = [];
+
+  if (groupIds && groupId.length > 0)
+  {
+    for (let i = 0; i < groupIds.length; ++i) {
+      const id = groupIds[i];
+      const idx = fakeSecurityGroups.map(
+          function(e){return e.GroupId}).indexOf(id);
+      if (idx >= 0)
+        result.SecurityGroups.push(fakeSecurityGroups[idx]);
+    }
+  }
+  else
+  {
+    for (let i = 0; i < fakeSecurityGroups.length; ++i) {
+      result.SecurityGroups.push(fakeSecurityGroups[i]);
+    }
+  }
+  cb(null, result);
+}

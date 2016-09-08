@@ -711,7 +711,10 @@ var updateInstanceStatus = function() {
 
   // get region for awsData for now
   info.region = awsData.region;
-  info.machineIds = instanceList;
+  // TODO for now just get all instances instead of keeping
+  // a local cache of instance list
+  // info.machineIds = instanceList;
+  info.machineIds = [];
 
   cloudServices.simulatorStatuses(info, function (err, data) {
     if (err) {
