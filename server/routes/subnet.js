@@ -3,52 +3,44 @@
 const csgrant = require('cloudsim-grant')
 var Subnets = require('../controllers/subnet');
 
-var mongoose = require('mongoose');
-var User = mongoose.model('User');
-var Subnet = mongoose.model('Subnet');
-
-// Simulation authorization helpers
-var authenticateUser = function(req, res, next) {
-  var userID = req.username;
-  // console.log('sim authenticate user: ' + userID);
-
-  if (!userID)
-    return res.status(401).send('User is not found');
-
-  User.loadByUsername(userID, function(err, user) {
-    if (err)
-      return next(err);
-    if (!user) {
-      var newUser = new User({username: userID});
-      newUser.save(function() {
-        req.user = newUser;
-        next();
-      });
-    }
-    else {
-      req.user = user;
-      next();
-    }
-  });
-};
 
 module.exports = function(router) {
 
   /// GET /simulators/:simulationId
   /// Create a new subnet
   router.post('/subnets',
-             authenticateUser,
-             Subnets.create);
+              csgrant.authenticate,
+              csgrant.ownsResource('subnet', false),
+              Subnets.create);
 
   /// GET /subnets
   /// Get a list of subnets
   router.get('/subnets',
-             authenticateUser,
-             Subnets.all);
+             csgrant.authenticate,
+             csgrant.userResources,
+             function (req, res, next) {
+               // we're going to filter out the non
+               // groups types before the next middleware.
+               req.allResources = req.userResources
+               req.userResources = req.allResources.filter( (obj)=>{
+                 if(obj.name.indexOf('subnet-') == 0)
+                   return true
+                 return false
+               })
+               next()
+             },
+             csgrant.allResources)
+
 
   /// DEL /subnets
   /// delete a subnet
   router.delete('/subnets',
-                authenticateUser,
+                csgrant.authenticate,
+                function (req, res, next) {
+                  // put the group name in req.group
+                  req.subnet = req.body.resource
+                  next()
+                },
+                csgrant.ownsResource(':subnet', false),
                 Subnets.destroy);
 }
