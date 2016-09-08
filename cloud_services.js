@@ -102,9 +102,7 @@ exports.launchSimulator = function (region, keyName, hardware, security, image, 
                 // util.inspect(data.Instances[0]));
 
                 var machineInfo = { id: data.Instances[0].InstanceId,
-                                    region: region,
-                                    subnet_id: data.Instances[0].SubnetId,
-                                    vpc_id: data.Instances[0].VpcId
+                                    region: region
                                   };
 
                 // create tags with aws format:

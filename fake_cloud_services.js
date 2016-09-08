@@ -82,8 +82,6 @@ exports.deleteSecurityGroup = function (groupId, cb) {
   var idx = fakeSecurityGroups.map(
       function(e){return e.GroupId}).indexOf(groupId);
 
-  console.log('removing sub ' + idx + ' ' + groupId);
-
   let response = {};
   if (idx >= 0) {
     response.GroupId = fakeSecurityGroups[idx].GroupId;
