@@ -38,8 +38,7 @@ function setRoutes(app) {
       console.log('create machine type:')
       console.log('  body:' +  JSON.stringify(req.body))
 
-      const data = req.body
-      const resourceData = data
+      const resourceData = req.body
 
       const op = 'create machine type'
       const error = function(msg) {
