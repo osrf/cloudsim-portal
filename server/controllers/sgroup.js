@@ -14,10 +14,12 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
   cloudServices = require('../../fake_cloud_services.js');
 }
 
+const awsData = {region: 'us-west-1'};
+
 /////////////////////////////////////////////////
 /// Create a security group
-/// @param[in] req Nodejs request object.
-/// @param[out] res Nodejs response object.
+/// @param req Nodejs request object.
+/// @param res Nodejs response object.
 /// @return Security group create function.
 exports.create = function(req, res) {
   if (!cloudServices) {
@@ -43,30 +45,47 @@ exports.create = function(req, res) {
     return;
   }
 
+  // get unique resource id
   csgrant.getNextResourceId('sgroup', (err, resourceName) => {
     if (err) {
       res.status(500).jsonp(err);
       return;
     }
 
-    cloudServices.createSecurityGroup(sgroupName, function (err, result) {
+    const info = {groupName: sgroupName, region: awsData.region};
+    cloudServices.createSecurityGroup(info, function (err, result) {
       if (err) {
         res.status(500).jsonp(err);
         return;
       }
 
-      csgrant.createResource(req.user, resourceName,
-          {name: sgroupName, groupId: result.GroupId},
-          (err, data) => {
-        let r = {};
-        if (err) {
-          res.status(500).jsonp(err);
+      // add traffic rule.
+      // default - allow traffic from within the same group
+      const ruleInfo = {groupId: result.GroupId,
+                        sourceGroupName: sgroupName,
+                        region: awsData.region};
+      cloudServices.addSecurityGroupInboundRule(ruleInfo,
+          function (ruleErr, ruleResult) {
+
+        if (ruleErr) {
+          res.status(500).jsonp(ruleErr);
           return;
         }
-        r.success = true;
-        r.result = data;
-        r.id = resourceName;
-        res.jsonp(r);
+
+        // add the resource to csgrant
+        csgrant.createResource(req.user, resourceName,
+            {name: sgroupName, groupId: result.GroupId},
+            (err, data) => {
+          let r = {};
+          if (err) {
+            res.status(500).jsonp(err);
+            return;
+          }
+          r.success = true;
+          r.result = data;
+          r.id = resourceName;
+          res.jsonp(r);
+        })
       })
     })
   })
@@ -74,14 +93,14 @@ exports.create = function(req, res) {
 
 /////////////////////////////////////////////////
 /// Delete a security group.
-/// @param[in] req Nodejs request object.
-/// @param[out] res Nodejs response object.
+/// @param req Nodejs request object.
+/// @param res Nodejs response object.
 /// @return Destroy function
 exports.destroy = function(req, res) {
 
   if (!cloudServices) {
     // Create an error
-    var error = {error: {
+    const error = {error: {
       success: false,
       msg: 'Cloud services are not available'
     }};
@@ -90,7 +109,7 @@ exports.destroy = function(req, res) {
     return;
   }
 
-  var sgroupName = req.sgroup;
+  let sgroupName = req.sgroup;
 
   if (!sgroupName)
   {
@@ -105,6 +124,7 @@ exports.destroy = function(req, res) {
     return;
   }
 
+  // read the resource to get the aws security group id
   csgrant.readResource(req.user, sgroupName, function(err, data) {
     if (err) {
       res.status(500).jsonp(err);
@@ -122,7 +142,8 @@ exports.destroy = function(req, res) {
     }
 
     // finally remove the security group
-    cloudServices.deleteSecurityGroup(data.data.groupId, function(err, result) {
+    const info = {groupId:data.data.groupId, region:awsData.region};
+    cloudServices.deleteSecurityGroup(info, function(err, result) {
       if (err) {
         res.status(500).jsonp(err);
         return;
