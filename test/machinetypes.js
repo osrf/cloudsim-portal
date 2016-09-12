@@ -26,9 +26,6 @@ let adminToken
 
 console.log('adminTokenData', adminTokenData)
 
-const bobTokenData = {username:'bob'}
-let bobToken
-
 function getResponse(res, print) {
   const response = JSON.parse(res.text)
   if(print) {
@@ -45,16 +42,10 @@ describe('<Unit test Machine types>', function() {
       console.log('token signed for user "' + admin + '"')
       if(e) {
         console.log('sign error: ' + e)
+        should.fail()
       }
       adminToken = tok
-      token.signToken(bobTokenData, (e, tok)=>{
-        console.log('token signed for user "bob"')
-        if(e) {
-          console.log('sign error: ' + e)
-        }
-        bobToken = tok
-        done()
-      })
+      done()
     })
   })
 
@@ -107,7 +98,7 @@ describe('<Unit test Machine types>', function() {
     })
   })
 
-  // get resource
+  // update resource
   describe('Update resource', function() {
     it('change the region', function(done) {
       agent
@@ -152,7 +143,7 @@ describe('<Unit test Machine types>', function() {
     })
   })
 
-  // get resource
+  // update resource
   describe('Update resource', function() {
     it('change the region', function(done) {
       agent
