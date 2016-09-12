@@ -6,15 +6,13 @@ let util = require('util')
 let fs = require('fs')
 let bodyParser = require('body-parser')
 
-let httpServer = null
-
 const cors = require('cors')
 
 var dotenv = require('dotenv');
 dotenv.load();
 
-// https server port (as specified in .env, or 4000)
-const port = process.env.CLOUDSIM_PORT || 4000
+// http server port (as specified in .env, or 4000)
+const port = process.env.PORT || 4000
 
 // Load configurations
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
@@ -52,8 +50,9 @@ csgrant.init(adminUser, {'simulators_list': {} }, permissionDbName, ()=>{
 console.log('\n\ncloudsim-grant version', require('cloudsim-grant/package.json').version)
 
 
-// https
-const useHttps = true
+// server
+let httpServer = null
+const useHttps = false
 if(useHttps) {
   const keyPath = __dirname + '/key.pem'
   const certPath = __dirname + '/key-cert.pem'
@@ -212,5 +211,5 @@ exports = module.exports = app;
 
 httpServer.listen(port, function(){
   console.log('ssl: ' + useHttps)
-  console.log('listening on *:' + port);
+  console.log('listening on port ' + port);
 });
