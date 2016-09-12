@@ -136,6 +136,8 @@ exports.create = function(req, res) {
   simulator.region = req.body.region
   simulator.hardware = req.body.hardware
   simulator.image = req.body.machineImage
+  if (req.body.sgroup)
+    simulator.sgroup = req.body.sgroup
   if (!simulator.region || !simulator.image || !simulator.hardware)
   {
     var error = {
@@ -186,8 +188,11 @@ exports.create = function(req, res) {
       var scriptName = 'empty.bash';
       var script = fs.readFileSync(scriptName, 'utf8')
 
+      let sgroups = [awsData.security];
+      if (req.body.sgroup)
+        sgroups.push(req.body.sgroup)
       cloudServices.launchSimulator(simulator.region, awsData.keyName,
-          simulator.hardware, awsData.security, simulator.image, tag, script,
+          simulator.hardware, sgroups, simulator.image, tag, script,
           function (err, machine) {
         if (err) {
           // Create an error

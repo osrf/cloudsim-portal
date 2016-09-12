@@ -40,4 +40,24 @@ module.exports = function(router) {
                 },
                 csgrant.ownsResource(':sgroup', false),
                 SecurityGroup.destroy);
+
+
+  /// delete a security group
+  router.delete('/sgroups/:sgroup',
+                csgrant.authenticate,
+                csgrant.ownsResource(':sgroup', false),
+                SecurityGroup.destroy);
+
+
+  /// Update security group rules
+  router.put('/sgroups/:sgroup',
+             csgrant.authenticate,
+             csgrant.ownsResource(':sgroup', false),
+             SecurityGroup.update)
+
+  // sgroup route parameter
+  router.param('sgroup', function(req, res, next, id) {
+    req.sgroup = id
+    next()
+  })
 }

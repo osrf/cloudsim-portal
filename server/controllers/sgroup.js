@@ -24,23 +24,24 @@ const awsData = {region: 'us-west-1'};
 exports.create = function(req, res) {
   if (!cloudServices) {
     // Create an error
-    var error = {error: {
-      msg: 'Cloud services are not available'
-    }};
-    console.log(error.msg)
+    var error = {
+      success: false,
+      error: 'Cloud services are not available'
+    };
+    console.log(error.error)
     res.jsonp(error);
     return;
   }
 
-  var sgroupName = req.body.resource;
+  const sgroupName = req.body.resource;
+
   if (!sgroupName)
   {
     var error = {
-      error: {
-        msg: 'Missing required fields (resource)'
-      }
+      success: false,
+      error: 'Missing required fields (resource)'
     }
-    console.log(error.msg)
+    console.log(error.error)
     res.jsonp(error);
     return;
   }
@@ -74,7 +75,9 @@ exports.create = function(req, res) {
 
         // add the resource to csgrant
         csgrant.createResource(req.user, resourceName,
-            {name: sgroupName, groupId: result.GroupId},
+            {name: sgroupName,
+             groupId: result.GroupId,
+             rules: [{type:'inbound', sourceGroupName: sgroupName}]},
             (err, data) => {
           let r = {};
           if (err) {
@@ -100,26 +103,24 @@ exports.destroy = function(req, res) {
 
   if (!cloudServices) {
     // Create an error
-    const error = {error: {
+    const error = {
       success: false,
-      msg: 'Cloud services are not available'
-    }};
-    console.log(error.msg)
+      error: 'Cloud services are not available'
+    };
+    console.log(error.error)
     res.status(500).jsonp(error);
     return;
   }
 
-  let sgroupName = req.sgroup;
+  const sgroupName = req.sgroup;
 
   if (!sgroupName)
   {
     var error = {
-      error: {
-        success: false,
-        msg: 'Missing required fields (resource)'
-      }
+      success: false,
+      error: 'Missing required fields (resource)'
     }
-    console.log(error.msg)
+    console.log(error.error)
     res.status(500).jsonp(error);
     return;
   }
@@ -133,10 +134,8 @@ exports.destroy = function(req, res) {
 
     if (!data.data.groupId) {
       var error = {
-        error: {
-          success: false,
-          msg: 'Invalid security group id'
-        }
+        success: false,
+        error: 'Invalid security group id'
       }
       res.status(500).jsonp(err);
     }
@@ -162,3 +161,139 @@ exports.destroy = function(req, res) {
     });
   });
 };
+
+/////////////////////////////////////////////////
+/// Update a security group's rules.
+/// @param req Nodejs request object.
+/// @param res Nodejs response object.
+/// @return Update sgroup function
+exports.update = function(req, res) {
+
+  if (!cloudServices) {
+    // Create an error
+    const error = {
+      success: false,
+      error: 'Cloud services are not available'
+    };
+    console.log(error.error)
+    res.status(500).jsonp(error);
+    return;
+  }
+
+  const sgroupName = req.sgroup;
+  const newData = req.body;
+
+  if (!sgroupName || !newData) {
+    var error = {
+      success: false,
+      error: 'Missing required fields'
+    }
+    console.log(error.error)
+    res.status(500).jsonp(error);
+    return;
+  }
+
+  // read the resource to get the aws security group id
+  csgrant.readResource(req.user, sgroupName, function(err, oldData) {
+    if (err) {
+      res.status(500).jsonp(err);
+      return;
+    }
+
+    if (!oldData.data.groupId) {
+      var error = {
+        success: false,
+        error: 'Invalid security group id'
+      }
+      res.status(500).jsonp(error);
+    }
+
+
+    // update traffic rules
+    if (!newData.rules || newData.rules.length <= 0) {
+      return res.jsonp({success: false,
+                        error: 'Only rules can be updated for now'})
+    }
+
+    const oldRules = JSON.parse(JSON.stringify(oldData.data.rules))
+
+    // function for adding new rules
+    // the function assumes all rules are inbound for now (rule.type == inbound)
+    // TODO support outbound rules
+    const addNewRules = function(index, rules, cb) {
+      if (index == rules.length) {
+        return cb(null, rules);
+      }
+
+      // check if rule exists or not, if not then add a new rule
+      const rule = newData.rules[index];
+      const idx = oldRules.map(
+        function(e){return e.sourceGroupName}).indexOf(rule.sourceGroupName);
+      if (idx < 0) {
+        // rule does not exist - add new one.
+        const ruleInfo = {groupId: oldData.data.groupId,
+                          sourceGroupName: rule.sourceGroupName,
+                          region: awsData.region};
+        cloudServices.addSecurityGroupInboundRule(ruleInfo,
+            function (ruleErr, ruleResult) {
+
+          if (ruleErr) {
+            return cb(ruleErr, null);
+          }
+          addNewRules(++index, rules, cb);
+        })
+      }
+      else {
+        // rule exists, remove it from the array
+        oldRules.splice(idx, 1);
+        addNewRules(++index, rules, cb);
+      }
+    }
+
+    // function for removing any remaining rules in old data
+    const removeOldRules = function(index, rules, cb) {
+      if (index == rules.length) {
+        return cb(null, rules);
+      }
+
+      const rule = rules[index];
+      const ruleInfo = {groupId: oldData.data.groupId,
+                        sourceGroupName: rule.sourceGroupName,
+                        region: awsData.region};
+      cloudServices.deleteSecurityGroupInboundRule(ruleInfo,
+            function (ruleErr, ruleResult) {
+        if (ruleErr) {
+          return cb(ruleErr, null);
+        }
+        removeOldRules(++index, rules, cb);
+      })
+    }
+
+    // update rules by chaining the add / remove rule functions
+    addNewRules(0, newData.rules, function(addRuleErr, addRuleData) {
+      if (addRuleErr) {
+        res.status(500).jsonp(addRuleErr);
+        return;
+      }
+      removeOldRules(0, oldRules, function(removeRuleErr, removeRuleData) {
+        if (removeRuleErr) {
+          res.status(500).jsonp(removeRuleErr);
+          return;
+        }
+
+        // update csgrant
+        let futureData = oldData.data;
+        futureData.rules = newData.rules
+        csgrant.updateResource(req.user, sgroupName, futureData,
+            (err, data) => {
+          if(err) {
+            return res.jsonp({success: false, error: err})
+          }
+          const r = {success: true, result: data};
+          res.jsonp(r)
+        })
+      })
+    })
+
+  });
+}

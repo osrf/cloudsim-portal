@@ -87,7 +87,7 @@ exports.launchSimulator = function (region, keyName, hardware, security, image, 
         MinCount:1,
         MaxCount: 1,
         UserData: userData,
-        SecurityGroups: [security],
+        SecurityGroups: security,
         DryRun: dryRun
     };
     var ec2 = new AWS.EC2();
@@ -245,7 +245,7 @@ exports.simulatorStatuses = function (machineInfo, cb) {
       IncludeAllInstances: true
   };
 
-  if (machineInfo.machineIds.length >= 0)
+  if (machineInfo.machineIds.length > 0)
     params.InstanceIds = machineInfo.machineIds;
 
   AWS.config.region = machineInfo.region;
@@ -373,7 +373,8 @@ exports.addSecurityGroupInboundRule = function (info, cb) {
 /////////////////////////////////////////////////////////
 // delete an inbound rule from a security group
 // @param info - groupId: security group id,
-//               sourceGroupName: source security group to remove permission from
+//               sourceGroupName: source security group to remove permission
+//                                from
 //               region: ec2 region
 // @param cb - Callback function to use when this function is complete.
 exports.deleteSecurityGroupInboundRule = function (info, cb) {

@@ -85,8 +85,7 @@ exports.deleteSecurityGroup = function (info, cb) {
 
   let response = {};
   if (idx >= 0) {
-    response.GroupId = fakeSecurityGroups[idx].GroupId;
-    response.GroupName = fakeSecurityGroups[idx].GroupName;
+    response = JSON.parse(JSON.stringify(fakeSecurityGroups[idx]))
     fakeSecurityGroups.splice(idx, 1);
   }
   else {
@@ -132,6 +131,7 @@ exports.getSecurityGroups = function (info, cb) {
 // @param cb - Callback function to use when this function is complete.
 exports.addSecurityGroupInboundRule = function (info, cb) {
 
+  let idx = -1;
   for (let i = 0; i < fakeSecurityGroupInboundRules.length; ++i)
   {
     let rule = fakeSecurityGroupInboundRules[i];
@@ -156,11 +156,13 @@ exports.addSecurityGroupInboundRule = function (info, cb) {
 /////////////////////////////////////////////////////////
 // delete an inbound rule from a security group
 // @param info - groupId: security group id,
-//               sourceGroupName: source security group to remove permission from
+//               sourceGroupName: source security group to remove permission
+//                                from
 //               region: ec2 region
 // @param cb - Callback function to use when this function is complete.
 exports.deleteSecurityGroupInboundRule = function (info, cb) {
 
+  let response = {};
   let idx = -1;
   for (let i = 0; i < fakeSecurityGroupInboundRules.length; ++i)
   {
@@ -172,6 +174,8 @@ exports.deleteSecurityGroupInboundRule = function (info, cb) {
     }
   }
   if (idx >= 0) {
+    response = JSON.parse(JSON.stringify(fakeSecurityGroupInboundRules[idx]));
     fakeSecurityGroupInboundRules.splice(idx, 1);
   }
+  cb(null, response);
 }
