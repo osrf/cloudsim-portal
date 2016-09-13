@@ -219,5 +219,5 @@ exports = module.exports = app;
 httpServer.listen(port, function(){
   console.log('ssl: ' + useHttps)
   console.log('listening on *:' + port);
-})
+});
 
