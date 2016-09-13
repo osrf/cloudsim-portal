@@ -4,6 +4,7 @@ var gulp = require('gulp');
 var browserSync = require('browser-sync');
 var nodemon = require('gulp-nodemon');
 var mocha = require('gulp-mocha');
+var istanbul = require('gulp-istanbul');
 
 gulp.task('default', ['serve'], function () {
 });
@@ -51,12 +52,23 @@ gulp.task('set-test-env', function () {
   return process.env.NODE_ENV = 'test';
 });
 
+gulp.task('pre-test', function () {
+  return gulp.src(['server/**/*.js'])
+    // Covering files
+    .pipe(istanbul())
+    // Force `require` to return covered files
+    .pipe(istanbul.hookRequire());
+});
 
-gulp.task('test', ['set-test-env'], function() {
+gulp.task('test', ['set-test-env', 'pre-test'], function() {
   return gulp.src(['test/mocha/**/*.js'], {read: false})
     .pipe(mocha({
       reporter: 'spec'
     }))
+    // Creating the reports after tests ran
+    .pipe(istanbul.writeReports())
+    // Enforce a coverage of at least 45%
+    .pipe(istanbul.enforceThresholds({ thresholds: { global: 45 } }))
     .once('end', function () {
       process.exit();
     });
