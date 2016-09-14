@@ -24,6 +24,11 @@ var SimulatorSchema = new Schema({
         default: ''
     },
 
+    // security group
+    sgroup: {
+        type: String
+    },
+
     // a cloud provider machine id (necessary for termination)
     // for AWS, this is the "instance id"
     machine_id: {
