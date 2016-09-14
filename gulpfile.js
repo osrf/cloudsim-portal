@@ -5,6 +5,7 @@ var browserSync = require('browser-sync');
 var nodemon = require('gulp-nodemon');
 var mocha = require('gulp-mocha');
 var istanbul = require('gulp-istanbul');
+var coveralls = require('gulp-coveralls');
 
 gulp.task('default', ['serve'], function () {
 });
@@ -72,4 +73,9 @@ gulp.task('test', ['set-test-env', 'pre-test'], function() {
     .once('end', function () {
       process.exit();
     });
+});
+
+gulp.task('coveralls', function() {
+  return gulp.src('./coverage/lcov.info')
+    .pipe(coveralls());
 });
