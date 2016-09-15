@@ -9,7 +9,6 @@ function setRoutes(app) {
   // list all resources
   app.get('/machinetypes',
     csgrant.authenticate,
-    csgrant.ownsResource('machine_types', true),
     csgrant.userResources,
     function(req, res, next) {
       // we're going to filter out the non
@@ -26,7 +25,7 @@ function setRoutes(app) {
 
   app.get('/machinetypes/:mt',
     csgrant.authenticate,
-    csgrant.ownsResource(':mt', false),
+    csgrant.ownsResource(':mt', true),
     csgrant.resource)
 
   // create a new simulation
