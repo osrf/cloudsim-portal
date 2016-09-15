@@ -36,6 +36,8 @@
     "socket.io-client": "^1.4.8"
   },
   "devDependencies": {
+    "gulp-coveralls": "^0.1.4",
+    "gulp-istanbul": "^1.1.1",
     "should": "^11.1.0",
     "supertest": "^2.0.0"
   }

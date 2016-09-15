@@ -7,14 +7,12 @@ const fs = require('fs')
 const bodyParser = require('body-parser')
 const machinetypes = require('./machinetypes')
 
-let httpServer = null
-
 const cors = require('cors')
 const dotenv = require('dotenv');
 dotenv.load();
 
-// https server port (as specified in .env, or 4000)
-const port = process.env.CLOUDSIM_PORT || 4000
+// http server port (as specified in .env, or 4000)
+const port = process.env.PORT || 4000
 
 // Load configurations
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
@@ -27,8 +25,7 @@ const mongoose = require('mongoose');
 process.env.CLOUDSIM_PORTAL_DB = process.env.CLOUDSIM_PORTAL_DB || 'localhost'
 let dbName = 'mongodb://' + process.env.CLOUDSIM_PORTAL_DB + '/cloudsim-portal'
 
-
-if (process.env.NODE_ENV === 'test'){
+if (process.env.NODE_ENV === 'test') {
   dbName = dbName + '-test'
   permissionDbName += '-test'
 }
@@ -44,7 +41,8 @@ const csgrant = require('cloudsim-grant');
 
 const initialResources =  {
   'simulators_list': {},
-  'machine_types': {}
+  'machine_types': {},
+  'sgroup': {}
  }
 
 csgrant.init(adminUser,
@@ -67,8 +65,9 @@ console.log('redis database: ' + permissionDbName)
 console.log('============================================')
 console.log('\n\n')
 
-// https
-const useHttps = true
+// server
+let httpServer = null
+const useHttps = false
 if(useHttps) {
   const keyPath = __dirname + '/key.pem'
   const certPath = __dirname + '/key-cert.pem'
@@ -218,6 +217,6 @@ exports = module.exports = app;
 
 httpServer.listen(port, function(){
   console.log('ssl: ' + useHttps)
-  console.log('listening on *:' + port);
+  console.log('listening on port ' + port);
 });
 

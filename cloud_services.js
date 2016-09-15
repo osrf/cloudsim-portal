@@ -87,7 +87,7 @@ exports.launchSimulator = function (region, keyName, hardware, security, image, 
         MinCount:1,
         MaxCount: 1,
         UserData: userData,
-        SecurityGroups: [security],
+        SecurityGroups: security,
         DryRun: dryRun
     };
     var ec2 = new AWS.EC2();
@@ -103,7 +103,7 @@ exports.launchSimulator = function (region, keyName, hardware, security, image, 
 
                 var machineInfo = { id: data.Instances[0].InstanceId,
                                     region: region
-                              };
+                                  };
 
                 // create tags with aws format:
                 var Tags = [];
@@ -240,14 +240,13 @@ exports.simulatorStatuses = function (machineInfo, cb) {
     cb(error, null);
   }
 
-  if (machineInfo.machineIds.length === 0)
-    cb(null, null);
-
   var params = {
       DryRun: dryRun,
-      InstanceIds: machineInfo.machineIds,
       IncludeAllInstances: true
   };
+
+  if (machineInfo.machineIds.length > 0)
+    params.InstanceIds = machineInfo.machineIds;
 
   AWS.config.region = machineInfo.region;
   var ec2 = new AWS.EC2();
@@ -280,3 +279,118 @@ exports.simulatorStatuses = function (machineInfo, cb) {
 
   getAWSStatusData();
 };
+
+/////////////////////////////////////////////////////////
+// Create a security group
+// @params info - groupName: Name of security group, and region: ec2 region
+// @param cb - Callback function to use when this function is complete.
+exports.createSecurityGroup = function (info, cb) {
+  const params = {
+    GroupName: info.groupName,
+    DryRun: dryRun,
+    Description: info.groupName + '-portal'
+  };
+
+  AWS.config.region = info.region;
+  const ec2 = new AWS.EC2();
+  ec2.createSecurityGroup(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}
+
+/////////////////////////////////////////////////////////
+// Delete a security group
+// @param info - groupId: security group id, region: ec2 region
+// @param cb - Callback function to use when this function is complete.
+exports.deleteSecurityGroup = function (info, cb) {
+  const params = {
+    DryRun: dryRun,
+    GroupId: info.groupId
+  };
+
+  AWS.config.region = info.region;
+  const ec2 = new AWS.EC2();
+  ec2.deleteSecurityGroup(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}
+
+/////////////////////////////////////////////////////////
+// Get a list of security groups
+// @param info - filters: array of filters [{Name: 'string', Value: ['string']}]
+//               groupIds: array of security group ids ['string']
+//               region: ec2 region
+exports.getSecurityGroups = function (info, cb) {
+  const params = {
+    DryRun: dryRun,
+    Filters: info.filters,
+    GroupIds: info.groupIds
+  };
+
+  AWS.config.region = info.region;
+  const ec2 = new AWS.EC2();
+  ec2.describeSecurityGroups(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}
+
+/////////////////////////////////////////////////////////
+// add an inbound rule to a security group
+// @param info - groupId: security group id
+//               sourceGroupName: source security group to give permission to
+//               region: ec2 region
+// @param cb - Callback function to use when this function is complete.
+exports.addSecurityGroupInboundRule = function (info, cb) {
+  const params = {
+    DryRun: dryRun,
+    GroupId: info.groupId,
+    SourceSecurityGroupName: info.sourceGroupName
+  };
+
+  AWS.config.region = info.region;
+  const ec2 = new AWS.EC2();
+  ec2.authorizeSecurityGroupIngress(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}
+
+/////////////////////////////////////////////////////////
+// delete an inbound rule from a security group
+// @param info - groupId: security group id,
+//               sourceGroupName: source security group to remove permission
+//                                from
+//               region: ec2 region
+// @param cb - Callback function to use when this function is complete.
+exports.deleteSecurityGroupInboundRule = function (info, cb) {
+  const params = {
+    DryRun: dryRun,
+    GroupId: info.groupId,
+    SourceSecurityGroupName: info.sourceGroupName
+  };
+
+  AWS.config.region = info.region;
+  const ec2 = new AWS.EC2();
+  ec2.revokeSecurityGroupIngress(params, function(err, data) {
+    if (err)
+      cb(err, null);
+    else {
+      cb(null, data);
+    }
+  });
+}

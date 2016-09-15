@@ -2,6 +2,8 @@
 
 [![Dependency Status](https://www.versioneye.com/user/projects/57ca2d8c939fc600508e90a4/badge.svg?style=flat-square)](https://www.versioneye.com/user/projects/57ca2d8c939fc600508e90a4)
 
+[![Coverage Status](https://coveralls.io/repos/bitbucket/osrf/cloudsim-portal/badge.svg?branch=default)](https://coveralls.io/bitbucket/osrf/cloudsim-portal?branch=default)
+
 This is the portal server for Cloudsim
 
 ## What is this repository for? ##
