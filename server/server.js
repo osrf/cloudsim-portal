@@ -41,9 +41,9 @@ console.log('Using redis database: ' + permissionDbName)
 var db = mongoose.connect(dbName);
 
 // cloudsim-grant
-var adminResource = 'simulators_list';
+var adminResource = 'simulators';
 const csgrant = require('cloudsim-grant');
-csgrant.init(adminUser, {'simulators_list': {}, 'sgroup': {} }, permissionDbName, ()=>{
+csgrant.init(adminUser, {'simulators': {}, 'sgroups': {} }, permissionDbName, ()=>{
   console.log( permissionDbName + ' redis database loaded')
 });
 

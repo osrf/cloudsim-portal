@@ -26,7 +26,7 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
   cloudServices = require('../../fake_cloud_services.js');
 }
 
-var adminResource = 'simulators_list';
+var adminResource = 'simulators';
 var aws_ssh_key = 'cloudsim';
 
 var sockets = require('../sockets.js');
@@ -293,7 +293,7 @@ function terminateSimulator(simulator, cb) {
 /// @param[out] res Nodejs response object.
 /// @return Destroy function
 exports.destroy = function(req, res) {
-  var simulatorId = req.body.id;
+  var simulatorId = req.body.resource;
 
   if (!simulatorId || simulatorId.length == 0)
   {
