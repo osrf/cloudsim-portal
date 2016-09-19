@@ -102,6 +102,35 @@ describe('<Unit Test>', function() {
       });
     });
 
+    // verify admin permissions to root resources
+    describe('Check All Admin Permissions', function() {
+      it('admin should have write permission to all root resources', function(done) {
+        agent
+        .get('/permissions')
+        .set('Acccept', 'application/json')
+        .set('authorization', userToken)
+        .send({})
+        .end(function(err,res){
+          res.status.should.be.equal(200);
+          res.redirect.should.equal(false);
+          var data  = JSON.parse(res.text);
+          data.success.should.equal(true);
+          data.requester.should.equal(adminUser);
+          data.result.length.should.be.greaterThanOrEqual(2);
+
+          data.result[0].name.should.be.equal("simulators_list");
+          data.result[0].permissions[0].username.should.be.equal(adminUser);
+          data.result[0].permissions[0].permissions.readOnly.should.be.equal(false);
+
+          data.result[1].name.should.be.equal("sgroup");
+          data.result[1].permissions[0].username.should.be.equal(adminUser);
+          data.result[1].permissions[0].permissions.readOnly.should.be.equal(false);
+
+          done();
+        });
+      });
+    });
+
     var simId1 ='';
     describe('Check Launch Simulator', function() {
       it('should be possible to launch a simulator', function(done) {
@@ -379,6 +408,26 @@ describe('<Unit Test>', function() {
         })
       })
     })
+
+    // verify all user permissions
+    describe('Check All User2 Permissions', function() {
+      it('user2 should not have any permissions', function(done) {
+        agent
+        .get('/permissions')
+        .set('Acccept', 'application/json')
+        .set('authorization', user2Token)
+        .send({})
+        .end(function(err,res){
+          res.status.should.be.equal(200);
+          res.redirect.should.equal(false);
+          var data  = JSON.parse(res.text);
+          data.success.should.equal(true);
+          data.requester.should.equal('user2');
+          data.result.length.should.be.equal(0);
+          done();
+        });
+      });
+    });
 
     // verify user permission query for launching simulator
     describe('Check User2 Permission to Launch Simulator:', function() {
