@@ -62,7 +62,7 @@ gulp.task('pre-test', function () {
 });
 
 gulp.task('test', ['set-test-env', 'pre-test'], function() {
-  return gulp.src(['test/mocha/**/*.js'], {read: false})
+  return gulp.src(['test/**/*.js'], {read: false})
     .pipe(mocha({
       reporter: 'spec'
     }))
