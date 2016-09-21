@@ -1,4 +1,4 @@
-  'use strict'
+'use strict'
 
 const csgrant = require('cloudsim-grant')
 
@@ -15,7 +15,7 @@ function setRoutes(app) {
       // machine types before the next middleware.
       req.allResources = req.userResources
       req.userResources = req.allResources.filter( (obj)=>{
-        if(obj.name.indexOf('mt-') == 0)
+        if(obj.name.indexOf('machinetype-') == 0)
           return true
         return false
       })
@@ -23,15 +23,15 @@ function setRoutes(app) {
     },
     csgrant.allResources)
 
-  app.get('/machinetypes/:mt',
+  app.get('/machinetypes/:machinetype',
     csgrant.authenticate,
-    csgrant.ownsResource(':mt', true),
+    csgrant.ownsResource(':machinetype', true),
     csgrant.resource)
 
   // create a new simulation
   app.post('/machinetypes',
            csgrant.authenticate,
-           csgrant.ownsResource('machine_types', false),
+           csgrant.ownsResource('machinetypes', false),
            function(req, res) {
 
     console.log('create machine type:')
@@ -48,7 +48,7 @@ function setRoutes(app) {
 
     const user = req.user
     const r = {success: false}
-    csgrant.getNextResourceId('mt', (err, resourceName) => {
+    csgrant.getNextResourceId('machinetype', (err, resourceName) => {
       if(err) {
         res.jsonp(error(err))
         return
@@ -71,12 +71,12 @@ function setRoutes(app) {
   })
 
   // Update a simulation
-  app.put('/machinetypes/:mt',
+  app.put('/machinetypes/:machinetype',
           csgrant.authenticate,
-          csgrant.ownsResource(':mt', true),
+          csgrant.ownsResource(':machinetype', true),
           function(req, res) {
 
-    const resourceName = req.mt
+    const resourceName = req.machinetype
     const newData = req.body
     console.log(' Update machine type: ' + resourceName)
     console.log(' new data: ' + JSON.stringify(newData))
@@ -85,8 +85,11 @@ function setRoutes(app) {
     const r = {success: false}
 
     csgrant.readResource(user, resourceName, function(err, oldData) {
-      if(err)
-        return res.jsonp({success: false, error: 'error trying to read existing data: ' + err})
+      if(err) {
+        return res.jsonp({success: false,
+                          error: 'error trying to read existing data: ' + err})
+      }
+
       const futureData = oldData.data
       // merge with existing fields of the newData... thus keeping old fields intact
       for (var attrname in newData) {
@@ -105,15 +108,15 @@ function setRoutes(app) {
   })
 
   // Delete a simulation
-  app.delete('/machinetypes/:mt',
+  app.delete('/machinetypes/:machinetype',
              csgrant.authenticate,
-             csgrant.ownsResource(':mt', false),
+             csgrant.ownsResource(':machinetype', false),
              function(req, res) {
-    console.log('delete machine type ' + req.mt)
-    const resourceName = req.mt
+    console.log('delete machine type ' + req.machinetype)
+    const resourceName = req.machinetype
     const r = {success: false}
     const user = req.user  // from previous middleware
-    const resource = req.mt // from app.param (see below)
+    const resource = req.machinetype // from app.param (see below)
     csgrant.deleteResource(user, resource, (err, data) => {
       if(err) {
         return res.jsonp({success: false, error: err})
@@ -126,8 +129,8 @@ function setRoutes(app) {
   })
 
   // machine type route parameter
-  app.param('mt', function( req, res, next, id) {
-    req.mt = id
+  app.param('machinetype', function( req, res, next, id) {
+    req.machinetype = id
     next()
   })
 }
