@@ -41,7 +41,7 @@ const csgrant = require('cloudsim-grant');
 
 const initialResources =  {
   'simulators_list': {},
-  'machine_types': {},
+  'machinetypes': {},
   'sgroup': {}
  }
 

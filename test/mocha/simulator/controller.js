@@ -122,9 +122,13 @@ describe('<Unit Test>', function() {
           data.result[0].permissions[0].username.should.be.equal(adminUser);
           data.result[0].permissions[0].permissions.readOnly.should.be.equal(false);
 
-          data.result[1].name.should.be.equal("machine_types");
+          data.result[1].name.should.be.equal("machinetypes");
           data.result[1].permissions[0].username.should.be.equal(adminUser);
           data.result[1].permissions[0].permissions.readOnly.should.be.equal(false);
+
+          data.result[2].name.should.be.equal("sgroup");
+          data.result[2].permissions[0].username.should.be.equal(adminUser);
+          data.result[2].permissions[0].permissions.readOnly.should.be.equal(false);
 
           done();
         });

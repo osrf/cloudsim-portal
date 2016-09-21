@@ -49,7 +49,7 @@ describe('<Unit test Machine types>', function() {
     })
   })
 
-  let mtId
+  let machinetypeId
   describe('Create machine type', function() {
     it('should be possible to create a machine type', function(done) {
       agent
@@ -67,7 +67,7 @@ describe('<Unit test Machine types>', function() {
         res.redirect.should.equal(false)
         const response = getResponse(res)
         response.success.should.equal(true)
-        mtId = response.id
+        machinetypeId = response.id
         done()
       })
     })
@@ -88,7 +88,7 @@ describe('<Unit test Machine types>', function() {
         response.success.should.equal(true)
         response.requester.should.equal(admin)
         response.result.length.should.equal(1)
-        response.result[0].name.should.equal(mtId)
+        response.result[0].name.should.equal(machinetypeId)
         response.result[0].data.name.should.equal('test-1')
         response.result[0].data.region.should.equal('us-west-1')
         response.result[0].data.hardware.should.equal('hard')
@@ -102,7 +102,7 @@ describe('<Unit test Machine types>', function() {
   describe('Update resource', function() {
     it('change the region', function(done) {
       agent
-      .put('/machinetypes/' + mtId)
+      .put('/machinetypes/' + machinetypeId)
       .set('Acccept', 'application/json')
       .set('authorization', adminToken)
       .send({
@@ -133,7 +133,7 @@ describe('<Unit test Machine types>', function() {
         response.success.should.equal(true)
         response.requester.should.equal(admin)
         response.result.length.should.equal(1)
-        response.result[0].name.should.equal(mtId)
+        response.result[0].name.should.equal(machinetypeId)
         response.result[0].data.name.should.equal('test-1')
         response.result[0].data.region.should.equal('us-east-1')
         response.result[0].data.hardware.should.equal('hard')
@@ -147,7 +147,7 @@ describe('<Unit test Machine types>', function() {
   describe('Update resource', function() {
     it('change the region', function(done) {
       agent
-      .delete('/machinetypes/' + mtId)
+      .delete('/machinetypes/' + machinetypeId)
       .set('Acccept', 'application/json')
       .set('authorization', adminToken)
       .send({})
