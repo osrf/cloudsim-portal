@@ -1,14 +1,14 @@
 'use strict'
 
-let express = require('express')
-let app = express()
-let util = require('util')
-let fs = require('fs')
-let bodyParser = require('body-parser')
+const express = require('express')
+const app = express()
+const util = require('util')
+const fs = require('fs')
+const bodyParser = require('body-parser')
+const machinetypes = require('./machinetypes')
 
 const cors = require('cors')
-
-var dotenv = require('dotenv');
+const dotenv = require('dotenv');
 dotenv.load();
 
 // http server port (as specified in .env, or 4000)
@@ -16,39 +16,54 @@ const port = process.env.PORT || 4000
 
 // Load configurations
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
-console.log('ENV ' + process.env.NODE_ENV);
 
-var adminUser = 'admin';
-if (process.env.CLOUDSIM_ADMIN)
-  adminUser = process.env.CLOUDSIM_ADMIN;
-
-// redis
-let permissionDbName = 'cloudsim-portal';
+// Redis
+let permissionDbName = 'cloudsim-portal'
 
 // Mongo
-let mongoose = require('mongoose');
-let dbName = 'mongodb://localhost/cloudsim-portal';
-
-if (process.env.CLOUDSIM_PORTAL_DB)
-  dbName = 'mongodb://' + process.env.CLOUDSIM_PORTAL_DB + '/cloudsim-portal';
+const mongoose = require('mongoose');
+process.env.CLOUDSIM_PORTAL_DB = process.env.CLOUDSIM_PORTAL_DB || 'localhost'
+let dbName = 'mongodb://' + process.env.CLOUDSIM_PORTAL_DB + '/cloudsim-portal'
 
 if (process.env.NODE_ENV === 'test') {
   dbName = dbName + '-test'
   permissionDbName += '-test'
 }
-console.log('Using mongo database: ' + dbName)
-console.log('Using redis database: ' + permissionDbName)
+
 var db = mongoose.connect(dbName);
 
 // cloudsim-grant
-var adminResource = 'simulators_list';
+let adminUser = 'admin'
+if (process.env.CLOUDSIM_ADMIN)
+  adminUser = process.env.CLOUDSIM_ADMIN
+
 const csgrant = require('cloudsim-grant');
-csgrant.init(adminUser, {'simulators_list': {}, 'sgroup': {} }, permissionDbName, ()=>{
+
+const initialResources =  {
+  'simulators_list': {},
+  'machinetypes': {},
+  'sgroup': {}
+ }
+
+csgrant.init(adminUser,
+ initialResources,
+ permissionDbName, ()=>{
   console.log( permissionDbName + ' redis database loaded')
 });
 
-console.log('\n\ncloudsim-grant version', require('cloudsim-grant/package.json').version)
 
+console.log('\n\n')
+console.log('============================================')
+console.log('cloudsim-portal version: ', require('../package.json').version)
+console.log('server: ', __filename)
+console.log('port: ' + port)
+console.log('cloudsim-grant version: ', require('cloudsim-grant/package.json').version)
+console.log('admin user: ' + adminUser)
+console.log('environment: ' + process.env.NODE_ENV)
+console.log('mongo database: ' + dbName)
+console.log('redis database: ' + permissionDbName)
+console.log('============================================')
+console.log('\n\n')
 
 // server
 let httpServer = null
@@ -74,10 +89,6 @@ let io = require('socket.io')(httpServer)
 let userSockets = require('./sockets')
 userSockets.init(io);
 
-// var UnauthorizedError = require('./UnauthorizedError');
-
-// const spawn = require('child_process').spawn
-
 var auth_pub_key ='';
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
   console.log('*** WARNING: No cloudsim auth public key found. \
@@ -88,8 +99,6 @@ else {
   auth_pub_key = auth_pub_key.replace(/\\n/g, "\n");
   process.env.CLOUDSIM_AUTH_PUB_KEY = auth_pub_key;
 }
-
-console.log('portal server.js')
 
 // Bootstrap models
 var models_path = __dirname + '/models';
@@ -118,9 +127,6 @@ apiRoutes.use(function(req, res, next) {
 
   var header = req.headers['authorization'] || '';
   var token=header.split(/\s+/).pop()||''
-
-  // console.log('  token: ' + token);
-
   // decode token
   if (token && process.env.NODE_ENV !== 'test') {
 
@@ -187,24 +193,24 @@ var walk = function(path) {
 };
 walk(routes_path);
 
+machinetypes.setRoutes(app)
 
 // apply the routes to our application with the prefix /api
 app.use('/', apiRoutes);
 
-
 var Simulators = require('./controllers/simulator');
 Simulators.initInstanceStatus();
 
+// insert the admin user into the mongo database
 var User = mongoose.model('User');
 User.loadByUsername(adminUser, function(err, user) {
   if (err)
-    return next(err);
+    return next(err)
   if (!user) {
-    var newUser = new User({username: userID});
-    newUser.save();
+    var newUser = new User({username: userID})
+    newUser.save()
   }
-});
-
+})
 
 // Expose app
 exports = module.exports = app;
@@ -213,3 +219,4 @@ httpServer.listen(port, function(){
   console.log('ssl: ' + useHttps)
   console.log('listening on port ' + port);
 });
+
