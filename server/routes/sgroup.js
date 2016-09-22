@@ -4,16 +4,16 @@ const csgrant = require('cloudsim-grant')
 var SecurityGroup = require('../controllers/sgroup');
 
 
-module.exports = function(router) {
+module.exports = function(app) {
 
   /// Create a new security group
-  router.post('/sgroups',
+  app.post('/sgroups',
               csgrant.authenticate,
               csgrant.ownsResource('sgroups', false),
               SecurityGroup.create);
 
   /// Get a list of security groups
-  router.get('/sgroups',
+  app.get('/sgroups',
              csgrant.authenticate,
              csgrant.userResources,
              function (req, res, next) {
@@ -31,7 +31,7 @@ module.exports = function(router) {
 
 
   /// delete a security group
-  router.delete('/sgroups',
+  app.delete('/sgroups',
                 csgrant.authenticate,
                 function (req, res, next) {
                   // put the group name in req.group
@@ -43,20 +43,20 @@ module.exports = function(router) {
 
 
   /// delete a security group
-  router.delete('/sgroups/:sgroup',
+  app.delete('/sgroups/:sgroup',
                 csgrant.authenticate,
                 csgrant.ownsResource(':sgroup', false),
                 SecurityGroup.destroy);
 
 
   /// Update security group rules
-  router.put('/sgroups/:sgroup',
+  app.put('/sgroups/:sgroup',
              csgrant.authenticate,
              csgrant.ownsResource(':sgroup', false),
              SecurityGroup.update)
 
   // sgroup route parameter
-  router.param('sgroup', function(req, res, next, id) {
+  app.param('sgroup', function(req, res, next, id) {
     req.sgroup = id
     next()
   })
