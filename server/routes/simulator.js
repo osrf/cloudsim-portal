@@ -44,7 +44,7 @@ module.exports = function(router) {
 
   /// DEL /simulators
   /// Delete one simulation instance
-  router.delete('/simulators', authenticateUser, Simulators.destroy);
+  router.delete('/simulators/:simulatorId', authenticateUser, Simulators.destroy);
 
   /// POST /simulators
   /// Create a new simulation

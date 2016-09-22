@@ -255,8 +255,7 @@ describe('<Unit Test>', function() {
     describe('Check Terminate Simulator', function() {
       it('should be possible to terminate a running simulator', function(done) {
         agent
-        .delete('/simulators')
-        .send({resource: simId1})
+        .delete('/simulators/' + simId1)
         .set('Acccept', 'application/json')
         .end(function(err,res){
           res.status.should.be.equal(200);
@@ -562,10 +561,9 @@ describe('<Unit Test>', function() {
       it('should not be able to terminate simulator without write permission',
           function(done) {
         agent
-        .delete('/simulators')
+        .delete('/simulators/' + simId2)
         .set('Acccept', 'application/json')
         .set('authorization', 'user2')
-        .send({resource: simId2})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -636,10 +634,9 @@ describe('<Unit Test>', function() {
       it('should be able to terminate simulator with write permission',
           function(done) {
         agent
-        .delete('/simulators')
+        .delete('/simulators/' + simId3)
         .set('Acccept', 'application/json')
         .set('authorization', 'user2')
-        .send({resource: simId3})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);

@@ -647,8 +647,7 @@ describe('<Unit Test>', function() {
           user2Client.on('connect', function(socket) {
             // post to terminate simulator
             agent
-            .delete('/simulators')
-            .send({resource: simId1})
+            .delete('/simulators/' + simId1)
             .set('Accept', 'application/json')
             .end(function(err,res){
               res.status.should.be.equal(200);
