@@ -166,8 +166,8 @@ describe('<Unit Test>', function() {
     describe('Check Remove Security Group', function() {
       it('should be possible to remove a security group', function(done) {
         agent
-        .delete('/sgroups')
-        .send({resource: sgroupId1})
+        .delete('/sgroups/' + sgroupId1)
+        .send({})
         .set('Acccept', 'application/json')
         .set('authorization', userToken)
         .end(function(err,res){
@@ -358,6 +358,7 @@ describe('<Unit Test>', function() {
         .delete('/sgroups/' + sgroupId3)
         .set('Acccept', 'application/json')
         .set('authorization', userToken)
+        .send({})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);

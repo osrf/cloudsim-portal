@@ -293,7 +293,7 @@ function terminateSimulator(simulator, cb) {
 /// @param[out] res Nodejs response object.
 /// @return Destroy function
 exports.destroy = function(req, res) {
-  var simulatorId = req.body.resource;
+  var simulatorId = req.simulator.id;
 
   if (!simulatorId || simulatorId.length == 0)
   {
