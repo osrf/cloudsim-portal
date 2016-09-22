@@ -118,7 +118,7 @@ describe('<Unit Test>', function() {
           data.requester.should.equal(adminUser);
           data.result.length.should.be.greaterThanOrEqual(2);
 
-          data.result[0].name.should.be.equal("simulators_list");
+          data.result[0].name.should.be.equal("simulators");
           data.result[0].permissions[0].username.should.be.equal(adminUser);
           data.result[0].permissions[0].permissions.readOnly.should.be.equal(false);
 
@@ -126,7 +126,7 @@ describe('<Unit Test>', function() {
           data.result[1].permissions[0].username.should.be.equal(adminUser);
           data.result[1].permissions[0].permissions.readOnly.should.be.equal(false);
 
-          data.result[2].name.should.be.equal("sgroup");
+          data.result[2].name.should.be.equal("sgroups");
           data.result[2].permissions[0].username.should.be.equal(adminUser);
           data.result[2].permissions[0].permissions.readOnly.should.be.equal(false);
 
@@ -256,7 +256,7 @@ describe('<Unit Test>', function() {
       it('should be possible to terminate a running simulator', function(done) {
         agent
         .delete('/simulators')
-        .send({id: simId1})
+        .send({resource: simId1})
         .set('Acccept', 'application/json')
         .end(function(err,res){
           res.status.should.be.equal(200);
@@ -372,7 +372,7 @@ describe('<Unit Test>', function() {
     describe('Check Admin Permission to Launch Simulator', function() {
       it('should be possible for admins to access root resource', function(done) {
         agent
-        .get('/permissions/simulators_list')
+        .get('/permissions/simulators')
         .set('Acccept', 'application/json')
         .set('authorization', userToken)
         .send({})
@@ -438,7 +438,7 @@ describe('<Unit Test>', function() {
       it('should not be possible for user2 to access root resource',
           function(done) {
         agent
-        .get('/permissions/simulators_list')
+        .get('/permissions/simulators')
         .set('Acccept', 'application/json')
         .set('authorization', user2Token)
         .end(function(err,res){
@@ -565,7 +565,7 @@ describe('<Unit Test>', function() {
         .delete('/simulators')
         .set('Acccept', 'application/json')
         .set('authorization', 'user2')
-        .send({id: simId2})
+        .send({resource: simId2})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -639,7 +639,7 @@ describe('<Unit Test>', function() {
         .delete('/simulators')
         .set('Acccept', 'application/json')
         .set('authorization', 'user2')
-        .send({id: simId3})
+        .send({resource: simId3})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);

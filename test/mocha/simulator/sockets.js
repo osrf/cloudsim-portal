@@ -648,7 +648,7 @@ describe('<Unit Test>', function() {
             // post to terminate simulator
             agent
             .delete('/simulators')
-            .send({id: simId1})
+            .send({resource: simId1})
             .set('Accept', 'application/json')
             .end(function(err,res){
               res.status.should.be.equal(200);

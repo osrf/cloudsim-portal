@@ -40,9 +40,9 @@ if (process.env.CLOUDSIM_ADMIN)
 const csgrant = require('cloudsim-grant');
 
 const initialResources =  {
-  'simulators_list': {},
+  'simulators': {},
   'machinetypes': {},
-  'sgroup': {}
+  'sgroups': {}
  }
 
 csgrant.init(adminUser,

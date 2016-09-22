@@ -9,7 +9,7 @@ module.exports = function(router) {
   /// Create a new security group
   router.post('/sgroups',
               csgrant.authenticate,
-              csgrant.ownsResource('sgroup', false),
+              csgrant.ownsResource('sgroups', false),
               SecurityGroup.create);
 
   /// Get a list of security groups
