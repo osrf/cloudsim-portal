@@ -29,20 +29,7 @@ module.exports = function(app) {
              },
              csgrant.allResources)
 
-
-  /// delete a security group
-  app.delete('/sgroups',
-                csgrant.authenticate,
-                function (req, res, next) {
-                  // put the group name in req.group
-                  req.sgroup = req.body.resource
-                  next()
-                },
-                csgrant.ownsResource(':sgroup', false),
-                SecurityGroup.destroy);
-
-
-  /// delete a security group
+  /// Delete a security group
   app.delete('/sgroups/:sgroup',
                 csgrant.authenticate,
                 csgrant.ownsResource(':sgroup', false),
