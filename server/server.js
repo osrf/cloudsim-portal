@@ -47,7 +47,8 @@ const initialResources =  {
 
 csgrant.init(adminUser,
  initialResources,
- permissionDbName, ()=>{
+ permissionDbName,
+ process.env.CLOUDSIM_PORTAL_DB, ()=>{
   console.log( permissionDbName + ' redis database loaded')
 });
 
@@ -61,7 +62,8 @@ console.log('cloudsim-grant version: ', require('cloudsim-grant/package.json').v
 console.log('admin user: ' + adminUser)
 console.log('environment: ' + process.env.NODE_ENV)
 console.log('mongo database: ' + dbName)
-console.log('redis database: ' + permissionDbName)
+console.log('redis database name: ' + permissionDbName)
+console.log('redis database url: ' + process.env.CLOUDSIM_PORTAL_DB)
 console.log('============================================')
 console.log('\n\n')
 
