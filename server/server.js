@@ -142,24 +142,24 @@ apiRoutes.use(function(req, res, next) {
         });
       }
       console.log(util.inspect(decoded))
-      if (!decoded.username) {
-        console.log('Invalid token. No username provided')
+      if (!decoded.identities || decoded.identities.length == 0) {
+        console.log('Invalid token. No identities provided')
         // return an error
         return res.status(401).send({
             success: false,
-            msg: 'No user field in token.'
+            msg: 'No identities field in token.'
         });
       }
 
-      req.username = decoded.username;
+      req.identities = decoded.identities;
       next();
     });
   }
   else if (process.env.NODE_ENV === 'test') {
 
-    req.username = token || adminUser;
+    req.identities = [token] || [adminUser];
     req.user = {};
-    req.user.username = req.username;
+    req.user.identities = req.identities;
     next();
   }
   else {
@@ -202,13 +202,13 @@ var Simulators = require('./controllers/simulator');
 Simulators.initInstanceStatus();
 
 // insert the admin user into the mongo database
-var User = mongoose.model('User');
-User.loadByUsername(adminUser, function(err, user) {
+var Identities = mongoose.model('Identities');
+Identities.loadByIdentitiesname(adminUser, function(err, user) {
   if (err)
     return next(err)
   if (!user) {
-    var newUser = new User({username: userID})
-    newUser.save()
+    var newIdentities = new Identities({username: userID})
+    newIdentities.save()
   }
 })
 

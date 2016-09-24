@@ -4,25 +4,25 @@
 var mongoose = require('mongoose'),
   Schema = mongoose.Schema;
 
-/// User Schema
-var UserSchema = new Schema({
-  /// User's username.
-  username: {
-    type: String,
+/// Identities Schema
+var IdentitiesSchema = new Schema({
+  /// Identities
+  identities: {
+    type: Array,
     unique: true
   }
 });
 
-UserSchema.path('username').validate(function(username) {
-  return (typeof username === 'string' && username.length > 0);
-}, 'Username cannot be blank');
+IdentitiesSchema.path('identities').validate(function(identities) {
+  return (typeof identities === 'array' && identities.length > 0);
+}, 'Identitiesname cannot be blank');
 
 /////////////////////////////////////////////////
 // Statics
-UserSchema.statics.loadByUsername = function(username, cb) {
+IdentitiesSchema.statics.loadByIdentitiesname = function(identities, cb) {
   this.findOne({
-    username: username
+    identities: identities
   }).exec(cb);
 };
 
-mongoose.model('User', UserSchema);
+mongoose.model('Identities', IdentitiesSchema);

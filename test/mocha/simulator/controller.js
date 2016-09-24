@@ -7,7 +7,7 @@ require('../../../server/server.js')
 
 /// Module dependencies.
 var mongoose = require('mongoose'),
-    User = mongoose.model('User'),
+    Identities = mongoose.model('Identities'),
     Simulator = mongoose.model('Simulator'),
     app = require('../../../server/server')
 
@@ -25,9 +25,9 @@ if (process.env.CLOUDSIM_ADMIN)
   adminUser = process.env.CLOUDSIM_ADMIN;
 
 let userToken
-const userTokenData = {username:adminUser}
+const userTokenData = {identities:[adminUser]}
 let user2Token
-const user2TokenData = {username:'user2'}
+const user2TokenData = {identities:['user2']}
 
 var user;
 var user2;
@@ -39,18 +39,18 @@ const launchData = {
                      machineImage: 'bozo'
                    }
 
-describe('<Unit Test>', function() {
+describe('<Simulator test>', function() {
 
   before(function(done) {
     csgrant.model.clearDb()
     csgrant.token.signToken(userTokenData, (e, tok)=>{
-      console.log('token signed for user "' + userTokenData.username  + '"')
+      console.log('token signed for user "' + userTokenData.identities[0]  + '"')
       if(e) {
         console.log('sign error: ' + e)
       }
       userToken = tok
       csgrant.token.signToken(user2TokenData, (e, tok)=>{
-        console.log('token signed for user "' + user2TokenData.username  + '"')
+        console.log('token signed for user "' + user2TokenData.identities[0]  + '"')
         if(e) {
           console.log('sign error: ' + e)
         }
@@ -62,14 +62,14 @@ describe('<Unit Test>', function() {
 
   describe('Simulator Controller:', function() {
     before(function(done) {
-      User.remove({}, function(err){
+      Identities.remove({}, function(err){
         if (err){
           should.fail(err);
         }
-        user = new User({
+        user = new Identities({
           username: adminUser
         });
-        user2 = new User({
+        user2 = new Identities({
           username: 'user2',
         });
         user2.save(function () {
