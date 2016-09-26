@@ -54,16 +54,15 @@ var SimulationSchema = new Schema({
     },
 
     // The owner who launched the simulation.
+    // The user who launched the simulator instance.
     owner: {
-        type: Schema.ObjectId,
-        ref: 'User'
+        type: String
     },
 
     // The owner who launched the simulation.
-    users: [{
-        type: Schema.ObjectId,
-        ref: 'User'
-    }],
+    users : [{
+      username: String,
+    }]
 });
 
 //
