@@ -10,7 +10,6 @@ if (process.env.CLOUDSIM_ADMIN)
 
 /// Module dependencies.
 var mongoose = require('mongoose'),
-    Identities = mongoose.model('Identities'),
     Simulator = mongoose.model('Simulator'),
     app = require('../../../server/server')
 
@@ -21,8 +20,10 @@ var supertest = require('supertest');
 // we need fresh keys for this test
 const csgrant = require('cloudsim-grant')
 
-var user;
-var user2;
+
+let userToken
+const userTokenData = {identities:[adminUser]}
+
 var agent;
 
 // socket io client
@@ -37,27 +38,29 @@ const launchData = {
                    }
 
 describe('<Unit Test>', function() {
+
+  before(function(done) {
+    csgrant.model.clearDb()
+    csgrant.token.signToken(userTokenData, (e, tok)=>{
+      console.log('token signed for user "' + userTokenData.identities[0]  + '"')
+      if(e) {
+        console.log('sign error: ' + e)
+      }
+      userToken = tok
+      done()
+    })
+  })
+
   describe('Simulator Sockets:', function() {
     before(function(done) {
-      Identities.remove({}, function(err){
+      agent = supertest.agent(app);
+
+      // clear the simulator collection before the tests
+      Simulator.remove({}, function(err){
         if (err){
-          should.fail(err);
+        should.fail(err);
         }
-        user = new Identities({
-          identities: [adminUser]
-        });
-
-        user.save(function() {
-          agent = supertest.agent(app);
-
-          // clear the simulator collection before the tests
-          Simulator.remove({}, function(err){
-            if (err){
-            should.fail(err);
-            }
-            done();
-          });
-        });
+        done();
       });
     });
 
@@ -67,6 +70,7 @@ describe('<Unit Test>', function() {
           function(done) {
         agent
         .get('/simulators')
+        .set('authorization', userToken)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -120,6 +124,7 @@ describe('<Unit Test>', function() {
           agent
           .post('/simulators')
           .set('Accept', 'application/json')
+          .set('authorization', userToken)
           .send(launchData)
           .end(function(err,res){
             should.not.exist(err);
@@ -302,6 +307,7 @@ describe('<Unit Test>', function() {
             agent
             .post('/permissions')
             .set('Accept', 'application/json')
+            .set('authorization', userToken)
             .send({resource: simId1, grantee: 'user2', readOnly: true})
             .end(function(err,res){
               res.status.should.be.equal(200);
@@ -389,6 +395,7 @@ describe('<Unit Test>', function() {
               agent
               .post('/permissions')
               .set('Accept', 'application/json')
+              .set('authorization', userToken)
               .send({resource: simId1, grantee: 'user3', readOnly: false})
               .end(function(err,res){
                 res.status.should.be.equal(200);
@@ -475,6 +482,7 @@ describe('<Unit Test>', function() {
               agent
               .delete('/permissions')
               .set('Accept', 'application/json')
+              .set('authorization', userToken)
               .send({resource: simId1, grantee: 'user3', readOnly: false})
               .end(function(err,res){
                 res.status.should.be.equal(200);
@@ -568,6 +576,7 @@ describe('<Unit Test>', function() {
             agent
             .post('/simulators')
             .set('Accept', 'application/json')
+            .set('authorization', userToken)
             .send(launchData)
             .end(function(err,res){
               should.not.exist(err);
@@ -649,6 +658,7 @@ describe('<Unit Test>', function() {
             agent
             .delete('/simulators/' + simId1)
             .set('Accept', 'application/json')
+            .set('authorization', userToken)
             .end(function(err,res){
               res.status.should.be.equal(200);
               res.redirect.should.equal(false);
@@ -660,7 +670,6 @@ describe('<Unit Test>', function() {
     });
 
     after(function(done) {
-      User.remove().exec();
       Simulator.remove().exec();
       csgrant.model.clearDb();
       done();

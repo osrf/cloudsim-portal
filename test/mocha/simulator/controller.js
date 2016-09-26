@@ -7,7 +7,6 @@ require('../../../server/server.js')
 
 /// Module dependencies.
 var mongoose = require('mongoose'),
-    Identities = mongoose.model('Identities'),
     Simulator = mongoose.model('Simulator'),
     app = require('../../../server/server')
 
@@ -29,8 +28,6 @@ const userTokenData = {identities:[adminUser]}
 let user2Token
 const user2TokenData = {identities:['user2']}
 
-var user;
-var user2;
 var agent;
 
 const launchData = {
@@ -62,29 +59,14 @@ describe('<Simulator test>', function() {
 
   describe('Simulator Controller:', function() {
     before(function(done) {
-      Identities.remove({}, function(err){
-        if (err){
-          should.fail(err);
-        }
-        user = new Identities({
-          username: adminUser
-        });
-        user2 = new Identities({
-          username: 'user2',
-        });
-        user2.save(function () {
-          user.save(function() {
-            agent = supertest.agent(app);
+      agent = supertest.agent(app);
 
-            // clear the simulator collection before the tests
-            Simulator.remove({}, function(err){
-              if (err){
-              should.fail(err);
-              }
-              done();
-            });
-          });
-        });
+      // clear the simulator collection before the tests
+      Simulator.remove({}, function(err){
+        if (err){
+        should.fail(err);
+        }
+        done();
       });
     });
 
@@ -93,6 +75,7 @@ describe('<Simulator test>', function() {
           function(done) {
         agent
         .get('/simulators')
+        .set('authorization', userToken)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -141,6 +124,7 @@ describe('<Simulator test>', function() {
         agent
         .post('/simulators')
         .set('Acccept', 'application/json')
+        .set('authorization', userToken)
         .send(launchData)
         .end(function(err,res){
           should.not.exist(err);
@@ -161,12 +145,13 @@ describe('<Simulator test>', function() {
       it('should be one running simulator', function(done) {
         agent
         .get('/simulators')
+        .set('authorization', userToken)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.length.should.be.exactly(1);
-          text[0].owner.username.should.equal(adminUser);
+          text[0].owner.should.equal(adminUser);
           text[0].id.should.not.be.empty();
           text[0].id.should.equal(simId1);
           text[0].status.should.equal('LAUNCHING');
@@ -181,11 +166,12 @@ describe('<Simulator test>', function() {
         function(done) {
         agent
         .get('/simulators/' + simId1)
+        .set('authorization', userToken)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
-          text.owner.username.should.equal(adminUser);
+          text.owner.should.equal(adminUser);
           text.id.should.equal(simId1);
           text.status.should.equal('LAUNCHING');
           text.region.should.equal('us-west-1');
@@ -203,6 +189,7 @@ describe('<Simulator test>', function() {
         agent
         .post('/simulators')
         .set('Acccept', 'application/json')
+        .set('authorization', userToken)
         .send(data)
         .end(function(err,res){
           res.status.should.be.equal(200);
@@ -222,6 +209,7 @@ describe('<Simulator test>', function() {
       it('should be two running simulators', function(done) {
         agent
         .get('/simulators')
+        .set('authorization', userToken)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -236,13 +224,13 @@ describe('<Simulator test>', function() {
           simId2Idx.should.be.greaterThanOrEqual(0);
           simId1Idx.should.not.equal(simId2Idx);
 
-          sims[simId1Idx].owner.username.should.equal(adminUser);
+          sims[simId1Idx].owner.should.equal(adminUser);
           sims[simId1Idx].id.should.not.be.empty();
           sims[simId1Idx].id.should.equal(simId1);
           sims[simId1Idx].status.should.equal('LAUNCHING');
           sims[simId1Idx].region.should.equal('us-west-1');
 
-          sims[simId2Idx].owner.username.should.equal(adminUser);
+          sims[simId2Idx].owner.should.equal(adminUser);
           sims[simId2Idx].id.should.not.be.empty();
           sims[simId2Idx].id.should.equal(simId2);
           sims[simId2Idx].status.should.equal('LAUNCHING');
@@ -257,6 +245,7 @@ describe('<Simulator test>', function() {
         agent
         .delete('/simulators/' + simId1)
         .set('Acccept', 'application/json')
+        .set('authorization', userToken)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -270,12 +259,13 @@ describe('<Simulator test>', function() {
       it('should be one running simulator', function(done) {
         agent
         .get('/simulators')
+        .set('authorization', userToken)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.length.should.be.exactly(1);
-          text[0].owner.username.should.equal(adminUser);
+          text[0].owner.should.equal(adminUser);
           text[0].id.should.not.be.empty();
           text[0].id.should.equal(simId2);
           text[0].status.should.equal('LAUNCHING');
@@ -290,11 +280,12 @@ describe('<Simulator test>', function() {
         its new state', function(done) {
         agent
         .get('/simulators/' + simId1)
+        .set('authorization', userToken)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
-          text.owner.username.should.equal(adminUser);
+          text.owner.should.equal(adminUser);
           text.id.should.equal(simId1);
           // status should now be terminated
           text.status.should.equal('TERMINATED');
@@ -311,6 +302,7 @@ describe('<Simulator test>', function() {
         .get('/simulators')
         .send({all: true})
         .set('Acccept', 'application/json')
+        .set('authorization', userToken)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -325,13 +317,13 @@ describe('<Simulator test>', function() {
           simId2Idx.should.be.greaterThanOrEqual(0);
           simId1Idx.should.not.equal(simId2Idx);
 
-          sims[simId1Idx].owner.username.should.equal(adminUser);
+          sims[simId1Idx].owner.should.equal(adminUser);
           sims[simId1Idx].id.should.not.be.empty();
           sims[simId1Idx].id.should.equal(simId1);
           sims[simId1Idx].status.should.equal('TERMINATED');
           sims[simId1Idx].region.should.equal('us-west-1');
 
-          sims[simId2Idx].owner.username.should.equal(adminUser);
+          sims[simId2Idx].owner.should.equal(adminUser);
           sims[simId2Idx].id.should.not.be.empty();
           sims[simId2Idx].id.should.equal(simId2);
           sims[simId2Idx].status.should.equal('LAUNCHING');
@@ -351,6 +343,7 @@ describe('<Simulator test>', function() {
         agent
         .post('/simulators')
         .set('Acccept', 'application/json')
+        .set('authorization', userToken)
         .send(data)
         .end(function(err,res){
           res.status.should.be.equal(200);
@@ -425,7 +418,7 @@ describe('<Simulator test>', function() {
           res.redirect.should.equal(false);
           var data  = JSON.parse(res.text);
           data.success.should.equal(true);
-          data.requester.should.equal('user2');
+          data.requester.should.equal(user2TokenData.identities[0]);
           data.result.length.should.be.equal(0);
           done();
         });
@@ -491,14 +484,15 @@ describe('<Simulator test>', function() {
         agent
         .post('/permissions')
         .set('Acccept', 'application/json')
-        .send({resource: simId2, grantee: user2.username, readOnly: true})
+        .set('authorization', userToken)
+        .send({resource: simId2, grantee: user2TokenData.identities[0], readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text)
           text.success.should.equal(true);
           text.resource.should.equal(simId2);
-          text.grantee.should.equal(user2.username);
+          text.grantee.should.equal(user2TokenData.identities[0]);
           text.readOnly.should.equal(true);
           done();
         });
@@ -525,7 +519,7 @@ describe('<Simulator test>', function() {
           r.result.permissions.length.should.equal(2)
           // requester user permissions are at position 0
           let puser2 = r.result.permissions[0]
-          puser2.username.should.equal('user2')
+          puser2.username.should.equal(user2TokenData.identities[0])
           puser2.permissions.readOnly.should.equal(true)
           let padmin = r.result.permissions[1]
           padmin.username.should.equal(adminUser)
@@ -540,7 +534,7 @@ describe('<Simulator test>', function() {
       it('should be able to see only one running simulator', function(done) {
         agent
         .get('/simulators')
-        .set('authorization', 'user2')
+        .set('authorization', user2Token)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -549,7 +543,7 @@ describe('<Simulator test>', function() {
           r.length.should.be.exactly(1);
           r[0].id.should.equal(simId2);
           r[0].users.length.should.be.exactly(1);
-          r[0].users[0].username.should.equal('user2');
+          r[0].users[0].username.should.equal(user2TokenData.identities[0]);
           r[0].users[0].readOnly.should.equal(true);
           done();
         });
@@ -563,7 +557,7 @@ describe('<Simulator test>', function() {
         agent
         .delete('/simulators/' + simId2)
         .set('Acccept', 'application/json')
-        .set('authorization', 'user2')
+        .set('authorization', user2Token)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -580,14 +574,15 @@ describe('<Simulator test>', function() {
         agent
         .post('/permissions')
         .set('Acccept', 'application/json')
-        .send({resource: simId3, grantee: user2.username, readOnly: false})
+        .set('authorization', userToken)
+        .send({resource: simId3, grantee: user2TokenData.identities[0], readOnly: false})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId3);
-          text.grantee.should.equal(user2.username);
+          text.grantee.should.equal(user2TokenData.identities[0]);
           text.readOnly.should.equal(false);
           done();
         });
@@ -599,7 +594,7 @@ describe('<Simulator test>', function() {
       it('should be able to see only one running simulator', function(done) {
         agent
         .get('/simulators')
-        .set('authorization', 'user2')
+        .set('authorization', user2Token)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -617,12 +612,12 @@ describe('<Simulator test>', function() {
           sims[simId2Idx].id.should.not.be.empty();
           sims[simId2Idx].id.should.equal(simId2);
           sims[simId2Idx].users.length.should.be.exactly(1);
-          sims[simId2Idx].users[0].username.should.equal('user2');
+          sims[simId2Idx].users[0].username.should.equal(user2TokenData.identities[0]);
           sims[simId2Idx].users[0].readOnly.should.equal(true);
           sims[simId3Idx].id.should.not.be.empty();
           sims[simId3Idx].id.should.equal(simId3);
           sims[simId3Idx].users.length.should.be.exactly(1);
-          sims[simId3Idx].users[0].username.should.equal('user2');
+          sims[simId3Idx].users[0].username.should.equal(user2TokenData.identities[0]);
           sims[simId3Idx].users[0].readOnly.should.equal(false);
           done();
         });
@@ -636,7 +631,7 @@ describe('<Simulator test>', function() {
         agent
         .delete('/simulators/' + simId3)
         .set('Acccept', 'application/json')
-        .set('authorization', 'user2')
+        .set('authorization', user2Token)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -650,12 +645,13 @@ describe('<Simulator test>', function() {
       it('should be one running simulator', function(done) {
         agent
         .get('/simulators')
+        .set('authorization', userToken)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.length.should.be.exactly(1);
-          text[0].owner.username.should.equal(adminUser);
+          text[0].owner.should.equal(adminUser);
           text[0].id.should.not.be.empty();
           text[0].id.should.equal(simId2);
           text[0].status.should.equal('LAUNCHING');
@@ -672,6 +668,7 @@ describe('<Simulator test>', function() {
       it('should be possible to create the fourth simulator', function(done) {
         agent
         .post('/simulators')
+        .set('authorization', userToken)
         .set('Acccept', 'application/json')
         .send(launchData)
         .end(function(err,res){
@@ -696,15 +693,16 @@ describe('<Simulator test>', function() {
           function(done) {
         agent
         .post('/permissions')
+        .set('authorization', userToken)
         .set('Acccept', 'application/json')
-        .send({resource: simId4, grantee: user2.username, readOnly: true})
+        .send({resource: simId4, grantee: user2TokenData.identities[0], readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId4);
-          text.grantee.should.equal(user2.username);
+          text.grantee.should.equal(user2TokenData.identities[0]);
           text.readOnly.should.equal(true);
           done();
         });
@@ -716,7 +714,7 @@ describe('<Simulator test>', function() {
       it('should be able to see two running simulators', function(done) {
         agent
         .get('/simulators')
-        .set('authorization', 'user2')
+        .set('authorization', user2Token)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -733,11 +731,11 @@ describe('<Simulator test>', function() {
 
           sims[simId2Idx].id.should.equal(simId2);
           sims[simId2Idx].users.length.should.be.exactly(1);
-          sims[simId2Idx].users[0].username.should.equal('user2');
+          sims[simId2Idx].users[0].username.should.equal(user2TokenData.identities[0]);
           sims[simId2Idx].users[0].readOnly.should.equal(true);
           sims[simId4Idx].id.should.equal(simId4);
           sims[simId4Idx].users.length.should.be.exactly(1);
-          sims[simId4Idx].users[0].username.should.equal('user2');
+          sims[simId4Idx].users[0].username.should.equal(user2TokenData.identities[0]);
           sims[simId4Idx].users[0].readOnly.should.equal(true);
           done();
         });
@@ -750,15 +748,16 @@ describe('<Simulator test>', function() {
           function(done) {
         agent
         .delete('/permissions')
+        .set('authorization', userToken)
         .set('Acccept', 'application/json')
-        .send({resource: simId4, grantee: user2.username, readOnly: true})
+        .send({resource: simId4, grantee: user2TokenData.identities[0], readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId4);
-          text.grantee.should.equal(user2.username);
+          text.grantee.should.equal(user2TokenData.identities[0]);
           text.readOnly.should.equal(true);
           done();
         });
@@ -770,7 +769,7 @@ describe('<Simulator test>', function() {
       it('should be able to see one running simulators', function(done) {
         agent
         .get('/simulators')
-        .set('authorization', 'user2')
+        .set('authorization', user2Token)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -789,7 +788,7 @@ describe('<Simulator test>', function() {
           function(done) {
         agent
         .get('/simulators/' + simId4)
-        .set('authorization', 'user2')
+        .set('authorization', user2Token)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -807,14 +806,15 @@ describe('<Simulator test>', function() {
         agent
         .post('/permissions')
         .set('Acccept', 'application/json')
-        .send({resource: simId2, grantee: user2.username, readOnly: false})
+        .set('authorization', userToken)
+        .send({resource: simId2, grantee: user2TokenData.identities[0], readOnly: false})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId2);
-          text.grantee.should.equal(user2.username);
+          text.grantee.should.equal(user2TokenData.identities[0]);
           text.readOnly.should.equal(false);
           done();
         });
@@ -827,14 +827,14 @@ describe('<Simulator test>', function() {
           function(done) {
         agent
         .get('/simulators')
-        .set('authorization', 'user2')
+        .set('authorization', user2Token)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var sims = JSON.parse(res.text);
           sims.length.should.be.exactly(1);
           sims[0].users.length.should.be.exactly(1);
-          sims[0].users[0].username.should.equal('user2');
+          sims[0].users[0].username.should.equal(user2TokenData.identities[0]);
           sims[0].users[0].readOnly.should.equal(false);
           done();
         });
@@ -849,7 +849,8 @@ describe('<Simulator test>', function() {
         agent
         .delete('/permissions')
         .set('Acccept', 'application/json')
-        .send({resource: simId2, grantee: user2.username, readOnly: true})
+        .set('authorization', userToken)
+        .send({resource: simId2, grantee: user2TokenData.identities[0], readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -866,14 +867,15 @@ describe('<Simulator test>', function() {
         agent
         .delete('/permissions')
         .set('Acccept', 'application/json')
-        .send({resource: simId2, grantee: user2.username, readOnly: false})
+        .set('authorization', userToken)
+        .send({resource: simId2, grantee: user2TokenData.identities[0], readOnly: false})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId2);
-          text.grantee.should.equal(user2.username);
+          text.grantee.should.equal(user2TokenData.identities[0]);
           text.readOnly.should.equal(false);
           done();
         });
@@ -885,7 +887,7 @@ describe('<Simulator test>', function() {
       it('should not be able to see any running simulators', function(done) {
         agent
         .get('/simulators')
-        .set('authorization', 'user2')
+        .set('authorization', user2Token)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -902,6 +904,7 @@ describe('<Simulator test>', function() {
           function(done) {
         agent
         .get('/simulators')
+        .set('authorization', userToken)
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -915,7 +918,6 @@ describe('<Simulator test>', function() {
     });
 
     after(function(done) {
-      User.remove().exec();
       Simulator.remove().exec();
       csgrant.model.clearDb();
       done();

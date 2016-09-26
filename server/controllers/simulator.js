@@ -66,10 +66,10 @@ var formatResponse = function(simulator) {
 
 var notifyStatusBySockets = function(simulator, event) {
 
-  if (!simulator.owner || !simulator.owner.username)
+  if (!simulator.owner || !simulator.owner)
     return;
 
-  var socketUser = simulator.owner.username;
+  var socketUser = simulator.owner;
 
   // notify owner and users
   sockets.getUserSockets().notifyUser(socketUser, event, simulator);
@@ -160,7 +160,7 @@ exports.create = function(req, res) {
 
   // check permission - only users with write access to adminResource
   // can create resources
-  csgrant.isAuthorized(req.user.username, adminResource, false,
+  csgrant.isAuthorized(req.user, adminResource, false,
       (err, authorized) => {
     if (err) {
       console.log('is authorized error:' + err)
@@ -168,12 +168,12 @@ exports.create = function(req, res) {
     }
     if (!authorized) {
       const msg = 'insufficient permission for user "'
-          + req.user.username + '"';
+          + req.user + '"';
       console.log(msg)
       return res.jsonp({success: false, error: msg});
     }
     // add resource to csgrant
-    csgrant.createResource(req.user.username, simulator.id, {},
+    csgrant.createResource(req.user, simulator.id, {},
         (err, data) => {
       if (err) {
         console.log('create resource error:' + err)
@@ -182,7 +182,7 @@ exports.create = function(req, res) {
       }
 
       // launch the simulator!
-      var tagName = simulator.owner.username + '_' + simulator.region + '_'
+      var tagName = simulator.owner + '_' + simulator.region + '_'
           + Date.now();
       var tag = {Name: tagName};
       var scriptName = 'empty.bash';
@@ -313,7 +313,7 @@ exports.destroy = function(req, res) {
     return;
   }
 
-  Simulator.findOne({id: simulatorId}).populate('owner', 'username').exec(
+  Simulator.findOne({id: simulatorId}).exec(
       function(err, simulator) {
     // in case of error, hand it over to the next middleware
     if (err) {
@@ -334,21 +334,21 @@ exports.destroy = function(req, res) {
     }
 
     // check permission
-    csgrant.isAuthorized(req.user.username, simulator.id, false,
+    csgrant.isAuthorized(req.user, simulator.id, false,
         (err, authorized) => {
       if (err) {
         return res.jsonp({success: false, error: err})
       }
       if (!authorized) {
         const msg = 'insufficient permission for user "'
-            + req.user.username + '"'
+            + req.user + '"'
         return res.jsonp({success: false, error: msg})
       }
 
       // delete resource from csgrant?
       // keep the resource since we only mark it as terminated.
       // user should still be able to see it using /simulators/:id
-      // csgrant.deleteResource(req.user.username, simulator.id, (err, data) => {
+      // csgrant.deleteResource(req.user, simulator.id, (err, data) => {
       // if (err) {
       //   return res.jsonp({success: false, error: err})
       // }
@@ -379,7 +379,7 @@ exports.destroy = function(req, res) {
 exports.show = function(req, res) {
 
   // check permission
-  csgrant.isAuthorized(req.user.username, req.simulator.id, true,
+  csgrant.isAuthorized(req.user, req.simulator.id, true,
       (err, authorized) => {
     if (err) {
       return res.jsonp({success: false, error: err})
@@ -387,7 +387,7 @@ exports.show = function(req, res) {
 
     if (!authorized) {
       const msg = 'insufficient permission for user "'
-          + req.user.username + '"'
+          + req.user + '"'
       return res.jsonp({success: false, error: msg})
     }
 
@@ -433,7 +433,7 @@ exports.all = function(req, res) {
     }
 
     // check permission - get simulators that the user has read permission to
-    csgrant.isAuthorized(req.user.username, simList[s].id, true,
+    csgrant.isAuthorized(req.user, simList[s].id, true,
         (err, authorized) => {
       if (err) {
         return cb(err, filtered);
@@ -453,7 +453,7 @@ exports.all = function(req, res) {
     filter = {$where: 'this.status != "TERMINATED"'};
 
   // Get all simulators
-  Simulator.find(filter).sort().populate('owner', 'username')
+  Simulator.find(filter).sort()
     .exec(function(err, simulators) {
       if (err) {
         var error = {error: {
@@ -498,7 +498,7 @@ exports.permissions = function(req, res) {
   var simulatorId = req.body.resource || adminResource;
 
   // check write permission first
-  csgrant.isAuthorized(req.user.username, simulatorId, false,
+  csgrant.isAuthorized(req.user, simulatorId, false,
       (err, authorized) => {
     if (err) {
       responseObj.success = false;
@@ -507,7 +507,7 @@ exports.permissions = function(req, res) {
     }
     // check read permission if no write permission
     if (!authorized) {
-      csgrant.isAuthorized(req.user.username, simulatorId, true,
+      csgrant.isAuthorized(req.user, simulatorId, true,
           (err, authorized) => {
         if (err) {
           responseObj.success = false;
@@ -549,7 +549,7 @@ exports.grant = function(req, res) {
     return;
   }
 
-  Simulator.findOne({id: simulatorId}).populate('owner', 'username').exec(
+  Simulator.findOne({id: simulatorId}).exec(
       function(err, simulator) {
     // in case of error, respond with error msg
     if (err) {
@@ -570,19 +570,19 @@ exports.grant = function(req, res) {
     }
 
     // check permission - only user with write access can grant permission
-    csgrant.isAuthorized(req.user.username, simulatorId, false,
+    csgrant.isAuthorized(req.user, simulatorId, false,
         (err, authorized) => {
       if (err) {
         return res.jsonp({success: false, error: err})
       }
       if (!authorized) {
         const msg = 'insufficient permission for user "'
-            + req.user.username + '"'
+            + req.user + '"'
         return res.jsonp({success: false, error: msg})
       }
 
       // grant the permission
-      csgrant.grantPermission(req.user.username, grantee, simulatorId, readOnly,
+      csgrant.grantPermission(req.user, grantee, simulatorId, readOnly,
         function(err, success, message) {
           if (err) {
             var error = {error: {
@@ -612,7 +612,7 @@ exports.grant = function(req, res) {
           }
 
           req.body.success = success;
-          // console.log('grant grantor: ' + req.user.username + ', grantee: '
+          // console.log('grant grantor: ' + req.user + ', grantee: '
           //     + grantee + ', readOnly: ' + readOnly + ', simulator: '
           //     + simulatorId);
           res.jsonp(req.body);
@@ -640,7 +640,7 @@ exports.revoke = function(req, res) {
     return;
   }
 
-  Simulator.findOne({id: simulatorId}).populate('owner', 'username').exec(
+  Simulator.findOne({id: simulatorId}).exec(
       function(err, simulator) {
     // in case of error, respond with error msg
     if (err) {
@@ -661,18 +661,18 @@ exports.revoke = function(req, res) {
     }
 
     // check permission - only user with write access can revoke permission
-    csgrant.isAuthorized(req.user.username, simulatorId, false,
+    csgrant.isAuthorized(req.user, simulatorId, false,
         (err, authorized) => {
       if (err) {
         return res.jsonp({success: false, error: err})
       }
       if (!authorized) {
         const msg = 'insufficient permission for user "'
-            + req.user.username + '"'
+            + req.user + '"'
         return res.jsonp({success: false, error: msg})
       }
 
-      csgrant.revokePermission(req.user.username, grantee, simulatorId,
+      csgrant.revokePermission(req.user, grantee, simulatorId,
           readOnly, function(err, success, message) {
         if (err) {
           var error = {error: {
@@ -695,7 +695,7 @@ exports.revoke = function(req, res) {
           }
         }
 
-        // console.log('revoke grantor: ' + req.user.username + ', grantee: '
+        // console.log('revoke grantor: ' + req.user + ', grantee: '
         //     + grantee + ', readOnly: ' + readOnly + ', simulator: '
         //     + simulatorId);
         req.body.success = success;
@@ -732,7 +732,7 @@ var updateInstanceStatus = function() {
       // console.log(util.inspect(data.InstanceStatuses));
 
       var filter = {$where: 'this.status != "TERMINATED"'};
-      Simulator.find(filter).populate('owner', 'username').exec(
+      Simulator.find(filter).exec(
           function(err, simulators) {
 
       // console.log(util.inspect(data));

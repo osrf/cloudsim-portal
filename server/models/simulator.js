@@ -60,8 +60,7 @@ var SimulatorSchema = new Schema({
 
     // The user who launched the simulator instance.
     owner: {
-        type: Schema.ObjectId,
-        ref: 'Identities'
+        type: String
     },
 
     users : [{
@@ -98,13 +97,13 @@ SimulatorSchema.path('owner').validate(function(s) {
 SimulatorSchema.statics.load = function(id, cb) {
     this.findOne({
         id: id
-    }).populate('owner', 'username').exec(cb);
+    }).exec(cb);
 };
 
 SimulatorSchema.statics.getRunningSimulators = function(cb) {
     this.find({
         $where: 'this.status != "TERMINATED"'
-    }).populate('owner', 'username').exec(function (err, sims) {
+    }).exec(function (err, sims) {
         cb(err, sims);
     });
 };

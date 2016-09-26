@@ -130,7 +130,7 @@ apiRoutes.use(function(req, res, next) {
   var header = req.headers['authorization'] || '';
   var token=header.split(/\s+/).pop()||''
   // decode token
-  if (token && process.env.NODE_ENV !== 'test') {
+  if (token) {
 
     csgrant.verifyToken(token, (err, decoded) => {
     // verify a token
@@ -143,7 +143,7 @@ apiRoutes.use(function(req, res, next) {
             msg: 'Couldn\'t verify token: ' + err.message
         });
       }
-      console.log(util.inspect(decoded))
+      // console.log(util.inspect(decoded))
       if (!decoded.identities || decoded.identities.length == 0) {
         console.log('Invalid token. No identities provided')
         // return an error
@@ -154,15 +154,9 @@ apiRoutes.use(function(req, res, next) {
       }
 
       req.identities = decoded.identities;
+      req.user = req.identities[0];
       next();
     });
-  }
-  else if (process.env.NODE_ENV === 'test') {
-
-    req.identities = [token] || [adminUser];
-    req.user = {};
-    req.user.identities = req.identities;
-    next();
   }
   else {
     // if there is no token
@@ -203,17 +197,6 @@ app.use('/', apiRoutes);
 var Simulators = require('./controllers/simulator');
 Simulators.initInstanceStatus();
 
-// insert the admin user into the mongo database
-var Identities = mongoose.model('Identities');
-Identities.loadByIdentitiesname(adminUser, function(err, user) {
-  if (err)
-    return next(err)
-  if (!user) {
-    var newIdentities = new Identities({username: userID})
-    newIdentities.save()
-  }
-})
-
 // Expose app
 exports = module.exports = app;
 
@@ -221,4 +204,3 @@ httpServer.listen(port, function(){
   console.log('ssl: ' + useHttps)
   console.log('listening on port ' + port);
 });
-
