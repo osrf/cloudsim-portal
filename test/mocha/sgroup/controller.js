@@ -22,9 +22,9 @@ if (process.env.CLOUDSIM_ADMIN)
   adminUser = process.env.CLOUDSIM_ADMIN;
 
 let userToken
-const userTokenData = {username:adminUser}
+const userTokenData = {identities:[adminUser]}
 let user2Token
-const user2TokenData = {username:'user2'}
+const user2TokenData = {identities:['user2']}
 
 var user;
 var user2;
@@ -35,13 +35,13 @@ describe('<Unit Test>', function() {
   before(function(done) {
     csgrant.model.clearDb()
     csgrant.token.signToken(userTokenData, (e, tok)=>{
-      console.log('token signed for user "' + userTokenData.username  + '"')
+      console.log('token signed for user "' + userTokenData.identities[0]  + '"')
       if(e) {
         console.log('sign error: ' + e)
       }
       userToken = tok
       csgrant.token.signToken(user2TokenData, (e, tok)=>{
-        console.log('token signed for user "' + user2TokenData.username  + '"')
+        console.log('token signed for user "' + user2TokenData.identities[0]  + '"')
         if(e) {
           console.log('sign error: ' + e)
         }

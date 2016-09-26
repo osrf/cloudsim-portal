@@ -5,7 +5,7 @@
 
 /// Module dependencies.
 var mongoose = require('mongoose'),
-    User = mongoose.model('User');
+    Identities = mongoose.model('Identities');
 
 
 /////////////////////////////////////////////////
@@ -16,13 +16,13 @@ var mongoose = require('mongoose'),
 /// @param[in] id The id of the user to retrieve.
 exports.user = function(req, res, next, username) {
   // Use mongoose's findOne function to get a user based on the id value
-  User.findOne({
+  Identities.findOne({
       username: username
   })
   // The function to execute when the user is found.
   .exec(function(err, user) {
     if (err) return next(err);
-    if (!user) return next(new Error('Failed to load User ' + id));
+    if (!user) return next(new Error('Failed to load Identities ' + id));
 
     req.profile = user;
     next();
@@ -39,8 +39,8 @@ exports.all = function(req, res) {
     return;
   }
 
-  // Get all the Users
-  User.find().exec(function(err, users) {
+  // Get all the Identitiess
+  Identities.find().exec(function(err, users) {
     if (err) {
       res.render('error', {status: 500});
     } else {
@@ -59,7 +59,7 @@ exports.update = function(req, res) {
   var user = req.profile;
 
   // Find the user.
-  User.findOne({id: user.id}).exec(function(err, usr) {
+  Identities.findOne({id: user.id}).exec(function(err, usr) {
     if (err) {
       res.jsonp({ error: {message: 'Unable to find user info' }});
     }
@@ -69,7 +69,7 @@ exports.update = function(req, res) {
 
 
       // Save the user to the database
-      User.save(function(err) {
+      Identities.save(function(err) {
         if (err) {
           return res.jsonp({error: {
               message: 'Unable to update user'
@@ -93,7 +93,7 @@ exports.remove = function(req, res) {
   var user = req.profile;
 
   // Find the user.
-  var usr = User.findOne({id: user.id});
+  var usr = Identities.findOne({id: user.id});
 
   usr.remove(function(err) {
     if (err) {
@@ -128,10 +128,10 @@ exports.create = function(req, res) {
 
   // Make sure the requesting user is in the database.
   // TODO: We need to implement user privileges.
-  User.findOne({username: req.username}, function(err) {
+  Identities.findOne({username: req.username}, function(err) {
     if (!err) {
       // Create a new user based on the value in the request object
-      var user = new User(req.body);
+      var user = new Identities(req.body);
 
       // Save the user to the database
       user.save(function(err) {
@@ -139,7 +139,7 @@ exports.create = function(req, res) {
           switch (err.code) {
             case 11000:
             case 11001:
-              message = 'Username already exists';
+              message = 'Identitiesname already exists';
               break;
             default:
               message = 'Please fill all the required fields';
@@ -168,7 +168,7 @@ exports.create = function(req, res) {
 };
 
 /*/////////////////////////////////////////////////
-/// Send User
+/// Send Identities
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
 exports.me = function(req, res) {

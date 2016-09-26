@@ -4,7 +4,7 @@
 var Simulations = require('../controllers/simulation');
 
 var mongoose = require('mongoose');
-var User = mongoose.model('User');
+var Identities = mongoose.model('Identities');
 
 
 // Simulation authorization helpers
@@ -18,11 +18,11 @@ var authenticateUser = function(req, res, next) {
 
   // TODO grant user permission is not implemented yet so let any one
   // who's authorized and has valid token launch a simulator
-  User.loadByUsername(userID, function(err, user) {
+  Identities.loadByIdentitiesname(userID, function(err, user) {
     if (err)
       return next(err);
     if (!user) {
-      var newUser = new User({username: userID});
+      var newUser = new Identities({username: userID});
       newUser.save(function() {
         req.user = newUser;
         next();

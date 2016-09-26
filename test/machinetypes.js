@@ -21,7 +21,7 @@ token.initKeys(keys.public, keys.private)
 const admin = process.env.CLOUDSIM_ADMIN?process.env.CLOUDSIM_ADMIN:'admin'
 
 
-const adminTokenData = {username: admin}
+const adminTokenData = {identities: [admin]}
 let adminToken
 
 console.log('adminTokenData', adminTokenData)

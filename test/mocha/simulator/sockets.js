@@ -10,7 +10,7 @@ if (process.env.CLOUDSIM_ADMIN)
 
 /// Module dependencies.
 var mongoose = require('mongoose'),
-    User = mongoose.model('User'),
+    Identities = mongoose.model('Identities'),
     Simulator = mongoose.model('Simulator'),
     app = require('../../../server/server')
 
@@ -39,12 +39,12 @@ const launchData = {
 describe('<Unit Test>', function() {
   describe('Simulator Sockets:', function() {
     before(function(done) {
-      User.remove({}, function(err){
+      Identities.remove({}, function(err){
         if (err){
           should.fail(err);
         }
-        user = new User({
-          username: adminUser
+        user = new Identities({
+          identities: [adminUser]
         });
 
         user.save(function() {
