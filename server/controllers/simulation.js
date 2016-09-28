@@ -87,7 +87,7 @@ exports.create = function(req, res) {
       res.jsonp(error);
     }
     else {
-      if (simulator.owner.username != req.user.username)
+      if (simulator.owner != req.user)
       {
         console.log('not the owner!');
         // Create an error
@@ -258,7 +258,7 @@ exports.all = function(req, res) {
   var filter = {owner: req.user};
 
   // Get all simulation models, in creation order, for a user
-  Simulation.find(filter).sort().populate('owner', 'username')
+  Simulation.find(filter).sort()
     .exec(function(err, simulations) {
       if (err) {
         // Create an error

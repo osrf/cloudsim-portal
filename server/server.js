@@ -47,7 +47,8 @@ const initialResources =  {
 
 csgrant.init(adminUser,
  initialResources,
- permissionDbName, ()=>{
+ permissionDbName,
+ process.env.CLOUDSIM_PORTAL_DB, ()=>{
   console.log( permissionDbName + ' redis database loaded')
 });
 
@@ -61,7 +62,8 @@ console.log('cloudsim-grant version: ', require('cloudsim-grant/package.json').v
 console.log('admin user: ' + adminUser)
 console.log('environment: ' + process.env.NODE_ENV)
 console.log('mongo database: ' + dbName)
-console.log('redis database: ' + permissionDbName)
+console.log('redis database name: ' + permissionDbName)
+console.log('redis database url: ' + process.env.CLOUDSIM_PORTAL_DB)
 console.log('============================================')
 console.log('\n\n')
 
@@ -128,7 +130,7 @@ apiRoutes.use(function(req, res, next) {
   var header = req.headers['authorization'] || '';
   var token=header.split(/\s+/).pop()||''
   // decode token
-  if (token && process.env.NODE_ENV !== 'test') {
+  if (token) {
 
     csgrant.verifyToken(token, (err, decoded) => {
     // verify a token
@@ -141,26 +143,20 @@ apiRoutes.use(function(req, res, next) {
             msg: 'Couldn\'t verify token: ' + err.message
         });
       }
-      console.log(util.inspect(decoded))
-      if (!decoded.username) {
-        console.log('Invalid token. No username provided')
+      // console.log(util.inspect(decoded))
+      if (!decoded.identities || decoded.identities.length == 0) {
+        console.log('Invalid token. No identities provided')
         // return an error
         return res.status(401).send({
             success: false,
-            msg: 'No user field in token.'
+            msg: 'No identities field in token.'
         });
       }
 
-      req.username = decoded.username;
+      req.identities = decoded.identities;
+      req.user = req.identities[0];
       next();
     });
-  }
-  else if (process.env.NODE_ENV === 'test') {
-
-    req.username = token || adminUser;
-    req.user = {};
-    req.user.username = req.username;
-    next();
   }
   else {
     // if there is no token
@@ -201,17 +197,6 @@ app.use('/', apiRoutes);
 var Simulators = require('./controllers/simulator');
 Simulators.initInstanceStatus();
 
-// insert the admin user into the mongo database
-var User = mongoose.model('User');
-User.loadByUsername(adminUser, function(err, user) {
-  if (err)
-    return next(err)
-  if (!user) {
-    var newUser = new User({username: userID})
-    newUser.save()
-  }
-})
-
 // Expose app
 exports = module.exports = app;
 
@@ -219,4 +204,3 @@ httpServer.listen(port, function(){
   console.log('ssl: ' + useHttps)
   console.log('listening on port ' + port);
 });
-

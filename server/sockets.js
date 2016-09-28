@@ -76,7 +76,7 @@ exports.init = function(io) {
     var token = handshakeData._query['token'];
 
     if (process.env.NODE_ENV == 'test') {
-        socket.username = token || adminUser;
+        socket.identities = [token] || [adminUser];
         next();
     }
     else if (token) {
@@ -99,15 +99,15 @@ exports.init = function(io) {
 
         console.log(util.inspect(decoded));
 
-        if (!decoded.username) {
-          console.log('Invalid token. No username provided');
-          var error = {"message": "no username provided"};
+        if (!decoded.identities || decoded.identities.length == 0) {
+          console.log('Invalid token. No identities provided');
+          var error = {"message": "no identities provided"};
           unauthorizedAccess(error);
 
           // return an error
           return;
         }
-        socket.username = decoded.username;
+        socket.identities = decoded.identities;
 
         next();
       });
@@ -116,7 +116,7 @@ exports.init = function(io) {
   });
 
   io.on('connection', function (socket) {
-    var user = socket.username;
+    var user = socket.identities[0];
 
     // console.log(' socket connection: ' + user);
 
