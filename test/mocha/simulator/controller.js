@@ -36,8 +36,31 @@ const launchData = {
                      machineImage: 'bozo'
                    }
 
-describe('<Simulator test>', function() {
+// parsing a response on steroids:
+// this helper function parses a response into json.
+// However, pass true as second argument and it prints
+// the content of the cloudsim-grant database and the
+// response, (all pretty printed)
+function parseResponse(text, log) {
+  if(log) {
+    csgrant.dump()
+  }
+  let res
+  try {
+   res = JSON.parse(text)
+  }
+  catch (e) {
+    console.log(text)
+    throw e
+  }
+  if(log){
+    const s = JSON.stringify(res, null, 2)
+    console.log(s)
+  }
+  return res
+}
 
+describe('<Simulator test>', function() {
   before(function(done) {
     csgrant.model.clearDb()
     csgrant.token.signToken(userTokenData, (e, tok)=>{
@@ -261,16 +284,16 @@ describe('<Simulator test>', function() {
         .get('/simulators')
         .set('authorization', userToken)
         .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.length.should.be.exactly(1);
-          text[0].owner.should.equal(adminUser);
-          text[0].id.should.not.be.empty();
-          text[0].id.should.equal(simId2);
-          text[0].status.should.equal('LAUNCHING');
-          text[0].region.should.equal('us-east-1');
-          done();
+          res.status.should.be.equal(200)
+          res.redirect.should.equal(false)
+          const r = parseResponse(res.text)
+          r.length.should.be.exactly(1)
+          r[0].owner.should.equal(adminUser)
+          r[0].id.should.not.be.empty()
+          r[0].id.should.equal(simId2)
+          r[0].status.should.equal('LAUNCHING')
+          r[0].region.should.equal('us-east-1')
+          done()
         });
       });
     });
