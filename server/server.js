@@ -45,14 +45,6 @@ const initialResources =  {
   'sgroups': {}
  }
 
-csgrant.init(adminUser,
- initialResources,
- permissionDbName,
- process.env.CLOUDSIM_PORTAL_DB, ()=>{
-  console.log( permissionDbName + ' redis database loaded')
-});
-
-
 console.log('\n\n')
 console.log('============================================')
 console.log('cloudsim-portal version: ', require('../package.json').version)
@@ -82,14 +74,22 @@ else {
   httpServer = require('http').Server(app)
 }
 
-// use body parser so we can get info from POST and/or URL parameters
-app.use(bodyParser.json())
-app.use(cors())
+csgrant.init(adminUser,
+ initialResources,
+ permissionDbName,
+ process.env.CLOUDSIM_PORTAL_DB, ()=>{
+  console.log( permissionDbName + ' redis database loaded')
+});
 
 // socket io
 let io = require('socket.io')(httpServer)
 let userSockets = require('./sockets')
 userSockets.init(io);
+
+
+// use body parser so we can get info from POST and/or URL parameters
+app.use(bodyParser.json())
+app.use(cors())
 
 var auth_pub_key ='';
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
