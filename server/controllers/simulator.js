@@ -34,7 +34,7 @@ var instanceStatusUpdateInterval = 5000;
 var instanceIpUpdateInterval = 10000;
 
 if (process.env.NODE_ENV === 'test') {
-  // no time to waste during testing
+  // reduce delays during testing
   instanceStatusUpdateInterval = 1;
   instanceIpUpdateInterval = 1;
 }
