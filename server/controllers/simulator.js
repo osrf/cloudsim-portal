@@ -32,8 +32,6 @@ var aws_ssh_key = 'cloudsim';
 var sockets = require('../sockets.js');
 
 var instanceList = [];
-// status update frequency in ms
-//var instanceStatusUpdateInterval = 30000;
 var instanceStatusUpdateInterval = 5000;
 var instanceIpUpdateInterval = 10000;
 
@@ -51,7 +49,6 @@ var awsData = { desc: 'Trusty + nvidia (CUDA 7.5)',
                keyName : aws_ssh_key,
                hardware : 'g2.2xlarge',
                security : 'cloudsim-sim',
-//               image : 'ami-610c7801'}
                image : 'ami-d8e996b8'}
 
 
@@ -64,21 +61,6 @@ var formatResponse = function(simulator) {
   return simulator;
 }
 
-var notifyStatusBySockets = function(simulator, event) {
-
-  if (!simulator.owner || !simulator.owner)
-    return;
-
-  var socketUser = simulator.owner;
-
-  // notify owner and users
-  sockets.getUserSockets().notifyUser(socketUser, event, simulator);
-  for (var i = 0; i < simulator.users.length; ++i) {
-    sockets.getUserSockets().notifyUser(
-        simulator.users[i].username, event, simulator);
-  }
-}
-
 /////////////////////////////////////////////////
 /// Find Simulator by id
 /// @param[in] req Nodejs request object.
@@ -87,9 +69,7 @@ var notifyStatusBySockets = function(simulator, event) {
 /// @param[in] id ID of the simulator instance to retrieve.
 /// @return Simulator instance retrieval function.
 exports.simulatorId = function(req, res, next, id) {
-
   // console.log('simulator param ' + id);
-
   Simulator.load(id, function(err, simulator) {
     // in case of error, hand it over to the next middleware
     if (err) return next(err);
@@ -173,7 +153,7 @@ exports.create = function(req, res) {
       return res.jsonp({success: false, error: msg});
     }
     // add resource to csgrant
-    csgrant.createResource(req.user, simulator.id, {},
+    csgrant.createResource(req.user, simulator.id, simulator,
         (err, data) => {
       if (err) {
         console.log('create resource error:' + err)
@@ -222,9 +202,10 @@ exports.create = function(req, res) {
             // send json response object to update the
             // caller with new simulator data.
             res.jsonp(formatResponse(simulator));
-
-            // notify via sockets
-            notifyStatusBySockets(sim, 'simulator_launch');
+            // update resource (this triggers socket notification)
+            csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
+              console.log(simulator.id, 'launch!')
+            })
 
             setTimeout(function() {
               cloudServices.simulatorStatus(info, function(err, state) {
@@ -232,11 +213,11 @@ exports.create = function(req, res) {
                 sim.save();
                 // add to monitor list
                 instanceList.push(sim.machine_id);
-
-                // console.log('instance update: ' + JSON.stringify(sim))
-
-                // notify via sockets
-                notifyStatusBySockets(sim, 'simulator_status');
+                // update resource (this triggers socket notification)
+                simulator.machine_ip = state.ip
+                csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
+                  console.log(simulator.id, 'ip:', simulator.machine_ip)
+                })
 
               });
             }, instanceIpUpdateInterval);
@@ -249,7 +230,7 @@ exports.create = function(req, res) {
 
 /////////////////////////////////////////////////
 // Terminates a simulator.
-function terminateSimulator(simulator, cb) {
+function terminateSimulator(user, simulator, cb) {
 
   var awsRegion = simulator.region;
   var machineInfo = {region: awsRegion,
@@ -268,16 +249,10 @@ function terminateSimulator(simulator, cb) {
         } else {
           var msg = 'Simulator terminated: ';
           msg += util.inspect(info);
-          // console.log(msg);
-
-          // notify via sockets
-          notifyStatusBySockets(simulator, 'simulator_terminate');
-
-/*          // remove from monitor list
-          instanceList.splice(
-              instanceList.indexOf(simulator.machine_id), 1);
-          if (terminatingInstanceList.indexOf(simulator.machine_id) < 0)
-            terminatingInstanceList.push(simulator.machine_id);*/
+          // update resource (this triggers socket notification)
+          csgrant.updateResource(user, simulator.id, simulator, ()=>{
+                  console.log(simulator.id, 'ip:', simulator.machine_ip)
+           })
 
           cb(null, simulator);
         }
@@ -293,7 +268,7 @@ function terminateSimulator(simulator, cb) {
 /// @param[out] res Nodejs response object.
 /// @return Destroy function
 exports.destroy = function(req, res) {
-  var simulatorId = req.simulator.id;
+  const simulatorId = req.simulator.id;
 
   if (!simulatorId || simulatorId.length == 0)
   {
@@ -332,7 +307,6 @@ exports.destroy = function(req, res) {
       res.jsonp(error);
       return;
     }
-
     // check permission
     csgrant.isAuthorized(req.user, simulator.id, false,
         (err, authorized) => {
@@ -353,19 +327,18 @@ exports.destroy = function(req, res) {
       //   return res.jsonp({success: false, error: err})
       // }
 
-        // finally terminate the simulator
-        terminateSimulator(simulator, function(err, sim) {
-            if (err) {
-              var error = {error: {
-                msg: 'Error terminating simulator'
-              }};
-              res.jsonp(error);
-              return;
-            } else {
-              res.jsonp(formatResponse(simulator.toObject()));
-            }
-        });
-      // })
+      // finally terminate the simulator
+      terminateSimulator(req.user, simulator, function(err, sim) {
+        if (err) {
+          var error = {error: {
+            msg: 'Error terminating simulator'
+          }};
+          res.jsonp(error);
+          return;
+        } else {
+          res.jsonp(formatResponse(simulator.toObject()));
+        }
+      })
     })
 
   });
@@ -706,6 +679,25 @@ exports.revoke = function(req, res) {
   });
 }
 
+function getSimulatorDataAndUserFromId(resourceId) {
+  // get the database
+  const db = csgrant.copyInternalDatabase()
+  // isolate the resource
+  const resource = db[resourceId]
+  // we have resource permissions and data
+  const permissions = resource.permissions
+  const data = resource.data
+  // look for a user with read/write
+  let user
+  for (let u in permissions) {
+    if (!permissions[u].readOnly) {
+      user = u
+      break
+    }
+  }
+  return {user: user, data: data}
+}
+
 /////////////////////////////////////////////////
 var updateInstanceStatus = function() {
 
@@ -732,10 +724,8 @@ var updateInstanceStatus = function() {
       // console.log(util.inspect(data.InstanceStatuses));
 
       var filter = {$where: 'this.status != "TERMINATED"'};
-      Simulator.find(filter).exec(
-          function(err, simulators) {
-
-      // console.log(util.inspect(data));
+      Simulator.find(filter).exec(function(err, simulators) {
+        // console.log(util.inspect(data));
         if (simulators.length === 0)
           return;
 
@@ -757,8 +747,7 @@ var updateInstanceStatus = function() {
               sim.status = 'RUNNING';
             else if (state === 'shutting-down' || state === 'stopping')
               sim.status = 'TERMINATING';
-            else
-            {
+            else {
               if (state === 'terminated' || state === 'stopped')
                 sim.status = 'TERMINATED';
               else {
@@ -770,16 +759,21 @@ var updateInstanceStatus = function() {
             }
 
             // console.log('new status ' + sim.status);
-            if (oldSimStatus !== sim.status)
+            if (oldSimStatus !== sim.status) {
               sim.save();
-
-            // notify via sockets
-            notifyStatusBySockets(sim, 'simulator_status');
+              // update resource (this triggers socket notification)
+              const s = getSimulatorDataAndUserFromId(sim.id)
+              const simulator = s.data
+              const user = sim.user
+              csgrant.updateResource(user, sim.id, simulator, ()=>{
+                console.log(simulator.id, 'status update')
+              })
+            }
           }
         }
-      });
+      })
     }
-  });
+  })
 }
 
 /////////////////////////////////////////////////

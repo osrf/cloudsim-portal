@@ -39,12 +39,6 @@ if (process.env.CLOUDSIM_ADMIN)
 
 const csgrant = require('cloudsim-grant');
 
-const initialResources =  {
-  'simulators': {},
-  'machinetypes': {},
-  'sgroups': {}
- }
-
 console.log('\n\n')
 console.log('============================================')
 console.log('cloudsim-portal version: ', require('../package.json').version)
@@ -74,18 +68,20 @@ else {
   httpServer = require('http').Server(app)
 }
 
+const initialResources =  {
+  'simulators': {},
+  'machinetypes': {},
+  'sgroups': {}
+}
+
 csgrant.init(adminUser,
  initialResources,
  permissionDbName,
- process.env.CLOUDSIM_PORTAL_DB, ()=>{
-  console.log( permissionDbName + ' redis database loaded')
-});
-
-// socket io
-let io = require('socket.io')(httpServer)
-let userSockets = require('./sockets')
-userSockets.init(io);
-
+ process.env.CLOUDSIM_PORTAL_DB,
+ httpServer,
+ ()=>{
+   console.log( permissionDbName + ' redis database loaded')
+})
 
 // use body parser so we can get info from POST and/or URL parameters
 app.use(bodyParser.json())
@@ -116,7 +112,8 @@ var walk = function(path) {
             walk(newPath);
         }
     });
-};
+}
+
 walk(models_path);
 
 // API ROUTES -------------------
@@ -194,7 +191,7 @@ machinetypes.setRoutes(app)
 // apply the routes to our application with the prefix /api
 app.use('/', apiRoutes);
 
-var Simulators = require('./controllers/simulator');
+const Simulators = require('./controllers/simulator');
 Simulators.initInstanceStatus();
 
 // Expose app
@@ -203,4 +200,4 @@ exports = module.exports = app;
 httpServer.listen(port, function(){
   console.log('ssl: ' + useHttps)
   console.log('listening on port ' + port);
-});
+})
