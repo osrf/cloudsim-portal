@@ -26,16 +26,15 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
   cloudServices = require('../../fake_cloud_services.js');
 }
 
+// global variables and settings
 var adminResource = 'simulators';
 var aws_ssh_key = 'cloudsim';
-
-var sockets = require('../sockets.js');
-
 var instanceList = [];
 var instanceStatusUpdateInterval = 5000;
 var instanceIpUpdateInterval = 10000;
 
 if (process.env.NODE_ENV === 'test') {
+  // no time to waste during testing
   instanceStatusUpdateInterval = 1;
   instanceIpUpdateInterval = 1;
 }
