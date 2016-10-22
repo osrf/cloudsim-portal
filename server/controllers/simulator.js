@@ -250,7 +250,7 @@ function terminateSimulator(user, simulator, cb) {
           msg += util.inspect(info);
           // update resource (this triggers socket notification)
           csgrant.updateResource(user, simulator.id, simulator, ()=>{
-                  console.log(simulator.id, 'ip:', simulator.machine_ip)
+            console.log(simulator.id, 'terminate', simulator.machine_ip)
            })
 
           cb(null, simulator);

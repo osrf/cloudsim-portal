@@ -1,35 +1,44 @@
-'use strict';
+'use strict'
 
-console.log('test/mocha/simulator/sockets.js');
+console.log('test/mocha/simulator/sockets.js')
 
-require('../../../server/server.js')
+const app = require('../../../server/server.js')
 
-var adminUser = 'admin';
+const util = require('util')
+const should = require('should')
+const supertest = require('supertest')
+const io = require('socket.io-client')
+
+let adminUser = 'admin'
 if (process.env.CLOUDSIM_ADMIN)
-  adminUser = process.env.CLOUDSIM_ADMIN;
+  adminUser = process.env.CLOUDSIM_ADMIN
 
 /// Module dependencies.
-var mongoose = require('mongoose'),
-    Simulator = mongoose.model('Simulator'),
-    app = require('../../../server/server')
-
-var util = require('util');
-var should = require('should');
-var supertest = require('supertest');
+const mongoose = require('mongoose')
+const Simulator = mongoose.model('Simulator')
 
 // we need fresh keys for this test
 const csgrant = require('cloudsim-grant')
 
+// the tokens to identify our users
+let adminToken
+let user2Token
+let user3Token
 
-let userToken
-const userTokenData = {identities:[adminUser]}
+// the simulators created in this test
+let simId1
+let simId2
 
-var agent;
 
-// socket io client
-var io = require('socket.io-client');
+const adminTokenData = {identities:[adminUser]}
+const user2TokenData = {identities:['user2']}
+const user3TokenData = {identities:['user3']}
+
+const log = true?console.log: function(){} // log or not
+
+const agent = supertest.agent(app)
 const port = process.env.PORT || 4000
-const socketAddress = 'http://localhost:' + port;
+const socketAddress = 'http://localhost:' + port
 
 const launchData = {
                      region: 'us-west-1',
@@ -37,32 +46,126 @@ const launchData = {
                      machineImage: 'bozo'
                    }
 
-describe('<Unit Test>', function() {
+// this function creates a socket.io socket connection for the token's user.
+// events will be added to the events array
+function createSocket(token, events) {
+  const query = 'token=' + token
+  const client = io.connect(socketAddress, {
+    query: query,
+    transports: ['websocket'],
+    rejectUnauthorized: false
+  })
+  client.on('connect', function(socket) {
+    log('IO connect')
+  })
+  client.on('error', (e)=>{
+    log('IO ERROR',e)
+    should.fail('should have no error')
+  })
+  client.on('disconnect', ()=>{
+    log('IO disconnect')
+    if (events)
+      events.push("disconnect")
+  })
+  client.on('reconnect', (n)=>{
+    log('IO reconnect, nb:', n)
+    should.fail('should have no reconnect')
+  })
+  client.on('reconnect_attempt', ()=>{
+    log('IO reconnect_attempt')
+    should.fail('should have no reconnect attempt')
+  })
+  client.on('reconnecting', (n)=>{
+    log('IO reconnecting, nb:', n)
+    should.fail('should have no reconnecting')
+  })
+  client.on('reconnect_error',  function(err){
+    log('IO reconnect error ' + util.inspect(err))
+    should.fail('should have no reconnect error')
+  })
+  client.on('resource', function(res) {
+    log('IO resource:', res)
+    if (events)
+      events.push(res)
+  })
+  return client
+}
+
+// json parse an http response. Pass true
+// for log and it will be printed.
+function parseResponse(text, log) {
+  if(log) {
+    csgrant.dump()
+  }
+  let res
+  try {
+   res = JSON.parse(text)
+  }
+  catch (e) {
+    console.log(text)
+    throw e
+  }
+  if(log){
+    const s = JSON.stringify(res, null, 2)
+    console.log(s)
+  }
+  return res
+}
+
+describe('<Unit Test sockets>', function() {
+  before(function(done) {
+    // we need fresh keys for this test
+    const keys = csgrant.token.generateKeys()
+    csgrant.token.initKeys(keys.public, keys.private)
+    log('keys done')
+    done()
+  })
 
   before(function(done) {
-    csgrant.model.clearDb()
-    csgrant.token.signToken(userTokenData, (e, tok)=>{
-      console.log('token signed for user "' + userTokenData.identities[0]  + '"')
+    csgrant.token.signToken(adminTokenData, (e, tok)=>{
       if(e) {
-        console.log('sign error: ' + e)
+        should.fail('sign error: ' + e)
       }
-      userToken = tok
+      adminToken = tok
+      log('token signed for user "' + adminTokenData.identities[0]  + '"')
+      done()
+    })
+  })
+
+  before(function(done) {
+    csgrant.token.signToken(user2TokenData, (e, tok)=>{
+      if(e) {
+        should.fail('sign error: ' + e)
+      }
+      user2Token = tok
+      log('token signed for user "' + user2TokenData.identities  + '"')
+      done()
+    })
+  })
+
+  before(function(done) {
+    csgrant.token.signToken(user3TokenData, (e, tok)=>{
+      if(e) {
+        should.fail('sign error: ' + e)
+      }
+      user3Token = tok
+      console.log('token signed for user "' + user3TokenData.identities[0]  + '"')
       done()
     })
   })
 
   describe('Simulator Sockets:', function() {
     before(function(done) {
-      agent = supertest.agent(app);
-
       // clear the simulator collection before the tests
       Simulator.remove({}, function(err){
         if (err){
-        should.fail(err);
+          should.fail(err)
+          return
         }
-        done();
-      });
-    });
+        log('mongo delete done\n\n')
+        done()
+      })
+    })
 
     // check initial condition - no simulators running
     describe('Check Empty Running Simulator', function() {
@@ -70,609 +173,231 @@ describe('<Unit Test>', function() {
           function(done) {
         agent
         .get('/simulators')
-        .set('authorization', userToken)
+        .set('authorization', adminToken)
         .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          JSON.parse(res.text).length.should.be.exactly(0);
-          done();
-        });
-      });
-    });
+          res.status.should.be.equal(200)
+          res.redirect.should.equal(false)
+          JSON.parse(res.text).length.should.be.exactly(0)
+          done()
+        })
+      })
+    })
+
 
     describe('Check Socket Connection', function() {
       it('should be able to connect via websockets', function(done) {
-        var client = io.connect(socketAddress, {query: 'token=' + adminUser,
-            transports: ['websocket'], rejectUnauthorized: false});
-        client.on('connect', function(socket) {
-          done();
-        });
-
-        client.on('connect_error',  function(err){
-          console.log('connect error ' + util.inspect(err));
-          should.fail('should have no connection errors');
-        });
-      });
-    });
+        const soc = createSocket(adminToken)
+        soc.once('connect', res => {
+          soc.disconnect()
+          done()
+        })
+      })
+    })
 
     // launch simulator and wait for launch event
-    var simId1 ='';
     describe('Check Simulator Launch event', function() {
-      it('should be able to receive simulator launch event',
-          function(done) {
-
-        // create socket io client
-        var client = io.connect(socketAddress, {query: 'token=' + adminUser,
-            transports: ['websocket'], rejectUnauthorized: false});
-
-        // check launch event
-        client.on('simulator_launch', function(simulator) {
-          simulator.id.should.not.be.empty();
-          simId1 = simulator.id;
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          client.disconnect();
-          done();
-        });
-
-        client.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-
-        client.on('connect', function(socket) {
-          // post to simulators to launch
-          agent
+      it('should be able to receive simulator launch event', function(done) {
+        const soc = createSocket(adminToken)
+        soc.once('resource', res => {
+          res.operation.should.equal('update')
+          simId1 = res.resource
+          soc.disconnect()
+          done()
+        })
+        // post to simulators to launch
+        agent
           .post('/simulators')
           .set('Accept', 'application/json')
-          .set('authorization', userToken)
+          .set('authorization', adminToken)
           .send(launchData)
           .end(function(err,res){
-            should.not.exist(err);
-            should.exist(res);
-            res.status.should.be.equal(200);
-            res.redirect.should.equal(false);
-          });
-        });
-      });
-    });
+            should.not.exist(err)
+            should.exist(res)
+            res.status.should.be.equal(200)
+            res.redirect.should.equal(false)
+            const r = parseResponse(res.text)
+            r.status.should.equal('LAUNCHING')
+            should.exist(r.id)
+        })
+      })
+    })
 
-    // verify simulator status events for one client and one simulator
-    describe('Check Simulator Status event', function() {
-      it('should be able to receive simulator status events',
-          function(done) {
-
-        // create socket io client
-        var client = io.connect(socketAddress, {query: 'token=' + adminUser,
-            transports: ['websocket'], rejectUnauthorized: false});
-
-        // check status event
-        client.on('simulator_status', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          client.disconnect();
-          done();
-        });
-
-        client.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-
-      });
-    });
-
-    // verify simulator status events for multiple clients
-    var simId1 ='';
-    describe('Check Simulator Status event for Two Clients', function() {
-      it('should be able to receive simulator status events in two sockets',
-          function(done) {
-
-        // create socket io clients with same username
-        var client = io.connect(socketAddress, {query: 'token=' + adminUser,
-            transports: ['websocket'], rejectUnauthorized: false});
-        var client2 = io.connect(socketAddress, {query: 'token=' + adminUser,
-            transports: ['websocket'], rejectUnauthorized: false});
-
-        var counter = 0;
-        var counter2 = 0;
-
-        var checkDone = function() {
-          if (counter > 5 && counter2 > 5) {
-            client.disconnect();
-            client2.disconnect();
-            done();
-          }
-        }
-
-        // check status event
-        client.on('simulator_status', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          counter++;
-          checkDone();
-        });
-        client2.on('simulator_status', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          counter2++;
-          checkDone();
-        });
-
-        client.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-        client2.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-
-      });
-    });
-
-    // verify simulator status events for client without any permissions
-    describe('Check Client Simulator Status event with No Permission',
-        function() {
-      it('should not receive simulator status events without permission',
-          function(done) {
-
-        // create socket io client
-        var adminClient = io.connect(socketAddress, {query: 'token=' + adminUser,
-            transports: ['websocket'], rejectUnauthorized: false});
-        var user2Client = io.connect(socketAddress, {query: 'token=user2',
-            transports: ['websocket'], rejectUnauthorized: false});
-
-        // check status event
-        var counter = 0;
-        adminClient.on('simulator_status', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          // wait for five updates
-          if (++counter === 5) {
-            adminClient.disconnect();
-            user2Client.disconnect();
-            done();
-          }
-        });
-
-        // user2 does not have read permission to simId1 so should not get
-        // status updates
-        user2Client.on('simulator_status', function(simulator) {
-          should.fail('user1 should not get status updates');
-        });
-
-        adminClient.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-        user2Client.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-
-      });
-    });
 
     // verify simulator status events for client with read permission
     describe('Check Client Simulator Status event with Read Permission',
         function() {
-      it('should receive simulator status events with read permission',
-          function(done) {
-
-        // create socket io client
-        var adminClient = io.connect(socketAddress, {query: 'token=' + adminUser,
-            transports: ['websocket'], rejectUnauthorized: false});
-        // user will be granted read access
-        var user2Client = io.connect(socketAddress, {query: 'token=user2',
-            transports: ['websocket'], rejectUnauthorized: false});
-
-        var counter = 0;
-        var counter2 = 0;
-
-        var checkDone = function() {
-          if (counter > 5 && counter2 > 5) {
-            adminClient.disconnect();
-            user2Client.disconnect();
-            done();
-          }
-        }
-
-        // check status event
-        adminClient.on('simulator_status', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          counter++;
-          checkDone();
-        });
-
-        // user2 has read permission to simId1 so should get status updates
-        user2Client.on('simulator_status', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          counter2++;
-          checkDone();
-        });
-
-        adminClient.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-        user2Client.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-
+      it('should receive simulator grant events for user2 (read only)',
+        function(done) {
+        const soc = createSocket(user2Token)
+        soc.once('resource', res => {
+          res.operation.should.equal('grant')
+          soc.disconnect()
+          done()
+        })
+        const body = {resource: simId1, grantee: 'user2', readOnly: true}
         // make sure both clients are ready before posting to grant permission
-        adminClient.on('connect', function(socket) {
-          user2Client.on('connect', function(socket) {
-            agent
-            .post('/permissions')
-            .set('Accept', 'application/json')
-            .set('authorization', userToken)
-            .send({resource: simId1, grantee: 'user2', readOnly: true})
-            .end(function(err,res){
-              res.status.should.be.equal(200);
-              res.redirect.should.equal(false);
-              var text = JSON.parse(res.text);
-              text.success.should.equal(true);
-              text.resource.should.equal(simId1);
-              text.grantee.should.equal('user2');
-              text.readOnly.should.equal(true);
-            });
-          });
-        });
-
-      });
-    });
+        agent
+          .post('/permissions')
+          .set('Accept', 'application/json')
+          .set('authorization', adminToken)
+          .send(body)
+          .end(function(err,res){
+            res.status.should.be.equal(200)
+            res.redirect.should.equal(false)
+            const r = parseResponse(res.text)
+            r.success.should.equal(true)
+            r.resource.should.equal(simId1)
+            r.grantee.should.equal('user2')
+            r.readOnly.should.equal(true)
+        })
+      })
+    })
 
     // verify simulator status events for client with write permission
     describe('Check Client Simulator Status event with Write Permission',
         function() {
-      it('should receive simulator status events with Write permission',
-          function(done) {
+      it('should receive simulator status events for user3 (read/write)',
+        function(done) {
+        const soc = createSocket(user3Token)
+         soc.once('resource', res => {
+         res.operation.should.equal('grant')
+         soc.disconnect()
+         done()
+        })
 
-        // create socket io clients
-        var adminClient = io.connect(socketAddress, {query: 'token=' + adminUser,
-            transports: ['websocket'], rejectUnauthorized: false});
-        var user2Client = io.connect(socketAddress, {query: 'token=user2',
-            transports: ['websocket'], rejectUnauthorized: false});
-        var user3Client = io.connect(socketAddress, {query: 'token=user3',
-            transports: ['websocket'], rejectUnauthorized: false});
-
-        var counter = 0;
-        var counter2 = 0;
-        var counter3 = 0;
-
-        var checkDone = function() {
-          if (counter > 5 && counter2 > 5 && counter3 > 5) {
-            adminClient.disconnect();
-            user2Client.disconnect();
-            user3Client.disconnect();
-            done();
-          }
-        }
-
-        // check status event
-        adminClient.on('simulator_status', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          counter++;
-          checkDone();
-        });
-
-        // user2 has read permission to simId1 so should get status updates
-        user2Client.on('simulator_status', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          counter2++;
-          checkDone();
-        });
-
-        // user3 has write permission to simId1 so should get status updates
-        user3Client.on('simulator_status', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          counter3++;
-          checkDone();
-        });
-
-        adminClient.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-        user2Client.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-        user3Client.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-
-        // make sure all clients are ready before posting to grant permission
-        adminClient.on('connect', function(socket) {
-          user2Client.on('connect', function(socket) {
-            user3Client.on('connect', function(socket) {
-              agent
-              .post('/permissions')
-              .set('Accept', 'application/json')
-              .set('authorization', userToken)
-              .send({resource: simId1, grantee: 'user3', readOnly: false})
-              .end(function(err,res){
-                res.status.should.be.equal(200);
-                res.redirect.should.equal(false);
-                var text = JSON.parse(res.text);
-                text.success.should.equal(true);
-                text.resource.should.equal(simId1);
-                text.grantee.should.equal('user3');
-                text.readOnly.should.equal(false);
-              });
-            });
-          });
-        });
-
-      });
-    });
+        agent
+        .post('/permissions')
+        .set('Accept', 'application/json')
+        .set('authorization', adminToken)
+        .send({resource: simId1, grantee: 'user3', readOnly: false})
+        .end(function(err,res){
+          res.status.should.be.equal(200)
+          res.redirect.should.equal(false)
+          var text = JSON.parse(res.text)
+          text.success.should.equal(true)
+          text.resource.should.equal(simId1)
+          text.grantee.should.equal('user3')
+          text.readOnly.should.equal(false)
+        })
+      })
+    })
 
     // verify simulator status events for client with revoked permission
-    describe('Check Client Simulator Status event when Permission is Revoked',
+    describe('Check event when Permission is Revoked',
         function() {
-      it('should not receive simulator status events with permission revoked',
+      it('should receive revoke event',
           function(done) {
+        const soc = createSocket(user3Token)
+        soc.once('resource', res => {
+          res.resource.should.equal(simId1)
+          res.operation.should.equal('revoke')
+          soc.disconnect()
+          done()
+        })
 
-        // create socket io clients
-        var adminClient = io.connect(socketAddress, {query: 'token=' + adminUser,
-            transports: ['websocket'], rejectUnauthorized: false});
-        var user2Client = io.connect(socketAddress, {query: 'token=user2',
-            transports: ['websocket'], rejectUnauthorized: false});
-        var user3Client = io.connect(socketAddress, {query: 'token=user3',
-            transports: ['websocket'], rejectUnauthorized: false});
-
-        var counter = 0;
-        var counter2 = 0;
-
-        var checkDone = function() {
-          if (counter > 5 && counter2 > 5) {
-            adminClient.disconnect();
-            user2Client.disconnect();
-            user3Client.disconnect();
-            done();
-          }
-        }
-
-        // check status event
-        adminClient.on('simulator_status', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          counter++;
-          checkDone();
-        });
-
-        // user2 has read permission to simId1 so should get status updates
-        user2Client.on('simulator_status', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          counter2++;
-          checkDone();
-        });
-
-        var revoked = false;
-        // user3 has write permission to simId1 so should get status updates
-        // until the permission is revoked.
-        user3Client.on('simulator_status', function(simulator) {
-          if (revoked)
-            should.fail('should not receive status updates');
-        });
-
-        adminClient.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-        user2Client.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-        user3Client.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-
-        // make sure all clients are ready before posting to revoke permission
-        adminClient.on('connect', function(socket) {
-          user2Client.on('connect', function(socket) {
-            user3Client.on('connect', function(socket) {
-              agent
-              .delete('/permissions')
-              .set('Accept', 'application/json')
-              .set('authorization', userToken)
-              .send({resource: simId1, grantee: 'user3', readOnly: false})
-              .end(function(err,res){
-                res.status.should.be.equal(200);
-                res.redirect.should.equal(false);
-                var text = JSON.parse(res.text);
-                text.success.should.equal(true);
-                text.resource.should.equal(simId1);
-                text.grantee.should.equal('user3');
-                text.readOnly.should.equal(false);
-                revoked = true;
-              });
-            });
-          });
-        });
-      });
-    });
+        agent
+          .delete('/permissions')
+          .set('Accept', 'application/json')
+          .set('authorization', adminToken)
+          .send({resource: simId1, grantee: 'user3', readOnly: false})
+          .end(function(err,res){
+            res.status.should.be.equal(200)
+            res.redirect.should.equal(false)
+            var text = JSON.parse(res.text)
+            text.success.should.equal(true)
+            text.resource.should.equal(simId1)
+            text.grantee.should.equal('user3')
+            text.readOnly.should.equal(false)
+          })
+      })
+    })
 
     // check clients receive the correct events when there is more than one
     // simulator
-    var simId2 ='';
     describe('Check Multiple Simulators and Multiple Clients', function() {
-      it('should be able to receive simulator launch and status events',
+      it('should be able to receive simulator 2 create event',
           function(done) {
-
-        // create socket io client
-        var adminClient = io.connect(socketAddress, {query: 'token=' + adminUser,
-            transports: ['websocket'], rejectUnauthorized: false});
-        var user2Client = io.connect(socketAddress, {query: 'token=user2',
-            transports: ['websocket'], rejectUnauthorized: false});
-
-        var adminSim2Launch = false;
-        var adminSim1Counter = 0;
-        var adminSim2Counter = 0;
-        var user2Sim1Counter = 0;
-
-        // admin should receive launch event for simId2 and status events for
-        // simId1 and simId2
-        // user2 should not receive launch event for simId2 and only receive
-        // status events for simId1
-        var checkDone = function() {
-          if (adminSim2Launch && adminSim1Counter > 5 && adminSim2Counter > 5
-              && user2Sim1Counter > 5) {
-            adminClient.disconnect();
-            user2Client.disconnect();
-            done();
+        let soc = createSocket(adminToken)
+        soc.once('resource', res => {
+          res.resource.should.not.equal(simId1)
+          // simId2 can be set already, but not always
+          if(simId2) {
+            res.resource.should.equal(simId2)
           }
-        }
-
-        // check launch event for admin user
-        adminClient.on('simulator_launch', function(simulator) {
-          simulator.id.should.not.be.empty();
-          simId2 = simulator.id;
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          adminSim2Launch = true;
-        });
-
-        // user2 should not get any events about the new simulator
-        user2Client.on('simulator_launch', function(simulator) {
-          should.fail('should not receive a launch event without permission');
-        });
-
-        // check status event
-        adminClient.on('simulator_status', function(simulator) {
-          if (simulator.id === simId1)
-            adminSim1Counter++;
-          else if (simulator.id === simId2)
-            adminSim2Counter++;
-          checkDone();
-        });
-
-        // user2 has read permission to simId1 so should get status updates
-        user2Client.on('simulator_status', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('LAUNCHING');
-          simulator.region.should.equal('us-west-1');
-          user2Sim1Counter++;
-          checkDone();
-        });
-
-        adminClient.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-        user2Client.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-
+          simId2 = res.resource
+          soc.disconnect()
+          done()
+        })
         // post to simulators to launch
-        adminClient.on('connect', function(socket) {
-          user2Client.on('connect', function(socket) {
-            agent
-            .post('/simulators')
-            .set('Accept', 'application/json')
-            .set('authorization', userToken)
-            .send(launchData)
-            .end(function(err,res){
-              should.not.exist(err);
-              should.exist(res);
-              res.status.should.be.equal(200);
-              res.redirect.should.equal(false);
-            });
-          });
-        });
-      });
-    });
+        agent
+        .post('/simulators')
+        .set('Accept', 'application/json')
+        .set('authorization', adminToken)
+        .send(launchData)
+        .end(function(err,res){
+          should.not.exist(err)
+          should.exist(res)
+          res.status.should.be.equal(200)
+          res.redirect.should.equal(false)
+          const r = parseResponse(res.text)
+          r.status.should.equal('LAUNCHING')
+          should.exist(r.id)
+          // simId2 can be set already, but not always
+          if (simId2) {
+            r.id.should.equal(simId2)
+          }
+          simId2  = r.id
+        })
+      })
+    })
 
     // terminate simulator and wait for terminate event
     describe('Check Simulator Terminate event', function() {
       it('should be able to receive simulator terminate event',
           function(done) {
 
-        // create socket io client
-        var adminClient = io.connect(socketAddress, {query: 'token=' + adminUser,
-            transports: ['websocket'], rejectUnauthorized: false});
-        var user2Client = io.connect(socketAddress, {query: 'token=user2',
-            transports: ['websocket'], rejectUnauthorized: false});
-
-        var adminEvent =false;
-        var user2Event =false;
-        var adminTerminated = false;
-        var user2Terminated = false;
-
-        var checkDone = function() {
-          if (adminEvent && user2Event && adminTerminated && user2Terminated) {
-            adminClient.disconnect();
-            user2Client.disconnect();
-            done();
-          }
-        }
-        // check terminate event
-        adminClient.on('simulator_terminate', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('TERMINATING');
-          simulator.region.should.equal('us-west-1');
-          adminEvent = true;
-          checkDone()
-        });
-        user2Client.on('simulator_terminate', function(simulator) {
-          simulator.id.should.equal(simId1);
-          simulator.status.should.equal('TERMINATING');
-          simulator.region.should.equal('us-west-1');
-          user2Event = true;
-          checkDone()
-        });
-
-        // check status event and wait for status to change from TERMINATING
-        // to TERMINATED
-        adminClient.on('simulator_status', function(simulator) {
-          if (simulator.id == simId1 && simulator.status === 'TERMINATED') {
-            adminTerminated = true;
-            checkDone();
-          }
-        });
-        user2Client.on('simulator_status', function(simulator) {
-          if (simulator.id == simId1 && simulator.status === 'TERMINATED') {
-            user2Terminated = true;
-            checkDone();
-          }
-        });
-
-        adminClient.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-        user2Client.on('connect_error',  function(){
-          should.fail('should have no connection errors');
-        });
-
         // make sure both clients are ready before posting to terminate
         // simulator
-        adminClient.on('connect', function(socket) {
-          user2Client.on('connect', function(socket) {
-            // post to terminate simulator
-            agent
-            .delete('/simulators/' + simId1)
-            .set('Accept', 'application/json')
-            .set('authorization', userToken)
-            .end(function(err,res){
-              res.status.should.be.equal(200);
-              res.redirect.should.equal(false);
-            });
-          });
-        });
+        const socAdmin = createSocket(adminToken)
+        const socU2 = createSocket(user2Token)
 
-      });
-    });
+        let count = 0
+        socAdmin.once('resource', res => {
+          res.resource.should.equal(simId1)
+          // the resource is not deleted, the state is
+          // set to TERMINATING
+          res.operation.should.equal('update')
+          count += 1
+          if (count == 2) {
+            socAdmin.disconnect()
+            done()
+          }
+        })
+        socU2.once('resource', res =>{
+          count += 1
+          if (count == 2) {
+            socU2.disconnect()
+            done()
+          }
+        })
+
+        // post to terminate simulator
+        agent
+        .delete('/simulators/' + simId1)
+        .set('Accept', 'application/json')
+        .set('authorization', adminToken)
+        .end(function(err,res){
+          res.status.should.be.equal(200)
+          res.redirect.should.equal(false)
+          const r = parseResponse(res.text, true)
+        })
+      })
+    })
 
     after(function(done) {
-      Simulator.remove().exec();
-      csgrant.model.clearDb();
-      done();
-    });
-  });
-});
+     Simulator.remove().exec()
+      csgrant.model.clearDb()
+      done()
+    })
+  })
+})
