@@ -2,17 +2,13 @@
 
 console.log('test/mocha/simulator/controller.js');
 
-require('../../../server/server.js')
-
-
 /// Module dependencies.
-var mongoose = require('mongoose'),
-    Simulator = mongoose.model('Simulator'),
-    app = require('../../../server/server')
+const app = require('../../../server/server')
+const mongoose = require('mongoose')
+const Simulator = mongoose.model('Simulator')
 
-var util = require('util');
-var should = require('should');
-var supertest = require('supertest');
+const should = require('should')
+const supertest = require('supertest')
 
 // we need fresh keys for this test
 const csgrant = require('cloudsim-grant')
@@ -31,10 +27,10 @@ const user2TokenData = {identities:['user2']}
 var agent;
 
 const launchData = {
-                     region: 'us-west-1',
-                     hardware:'t2.small',
-                     machineImage: 'bozo'
-                   }
+  region: 'us-west-1',
+  hardware:'t2.small',
+  machineImage: 'bozo'
+}
 
 // parsing a response on steroids:
 // this helper function parses a response into json.
@@ -47,7 +43,7 @@ function parseResponse(text, log) {
   }
   let res
   try {
-   res = JSON.parse(text)
+    res = JSON.parse(text)
   }
   catch (e) {
     console.log(text)
@@ -87,7 +83,7 @@ describe('<Simulator test>', function() {
       // clear the simulator collection before the tests
       Simulator.remove({}, function(err){
         if (err){
-        should.fail(err);
+          should.fail(err);
         }
         done();
       });
@@ -95,17 +91,17 @@ describe('<Simulator test>', function() {
 
     describe('Check Empty Running Simulator', function() {
       it('should be no running simulators at the beginning',
-          function(done) {
-        agent
-        .get('/simulators')
-        .set('authorization', userToken)
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          JSON.parse(res.text).length.should.be.exactly(0);
-          done();
+        function(done) {
+          agent
+          .get('/simulators')
+          .set('authorization', userToken)
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            JSON.parse(res.text).length.should.be.exactly(0);
+            done();
+          });
         });
-      });
     });
 
     // verify admin permissions to root resources
@@ -187,20 +183,20 @@ describe('<Simulator test>', function() {
     describe('Check Get Simulatior by ID', function() {
       it('should be possible to get the first running simulator',
         function(done) {
-        agent
-        .get('/simulators/' + simId1)
-        .set('authorization', userToken)
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.owner.should.equal(adminUser);
-          text.id.should.equal(simId1);
-          text.status.should.equal('LAUNCHING');
-          text.region.should.equal('us-west-1');
-          done();
+          agent
+          .get('/simulators/' + simId1)
+          .set('authorization', userToken)
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            var text = JSON.parse(res.text);
+            text.owner.should.equal(adminUser);
+            text.id.should.equal(simId1);
+            text.status.should.equal('LAUNCHING');
+            text.region.should.equal('us-west-1');
+            done();
+          });
         });
-      });
     });
 
     var simId2 ='';
@@ -320,40 +316,40 @@ describe('<Simulator test>', function() {
 
     describe('Check Get All Simulators Including Terminated Ones', function() {
       it('should be able to see running and terminated simulators',
-          function(done) {
-        agent
-        .get('/simulators')
-        .send({all: true})
-        .set('Acccept', 'application/json')
-        .set('authorization', userToken)
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var sims = JSON.parse(res.text);
-          sims.length.should.be.exactly(2);
+        function(done) {
+          agent
+          .get('/simulators')
+          .send({all: true})
+          .set('Acccept', 'application/json')
+          .set('authorization', userToken)
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            var sims = JSON.parse(res.text);
+            sims.length.should.be.exactly(2);
 
-          var simId1Idx = sims.map(
-             function(e){return e.id}).indexOf(simId1);
-          var simId2Idx = sims.map(
-             function(e){return e.id}).indexOf(simId2);
-          simId1Idx.should.be.greaterThanOrEqual(0);
-          simId2Idx.should.be.greaterThanOrEqual(0);
-          simId1Idx.should.not.equal(simId2Idx);
+            var simId1Idx = sims.map(
+               function(e){return e.id}).indexOf(simId1);
+            var simId2Idx = sims.map(
+               function(e){return e.id}).indexOf(simId2);
+            simId1Idx.should.be.greaterThanOrEqual(0);
+            simId2Idx.should.be.greaterThanOrEqual(0);
+            simId1Idx.should.not.equal(simId2Idx);
 
-          sims[simId1Idx].owner.should.equal(adminUser);
-          sims[simId1Idx].id.should.not.be.empty();
-          sims[simId1Idx].id.should.equal(simId1);
-          sims[simId1Idx].status.should.equal('TERMINATED');
-          sims[simId1Idx].region.should.equal('us-west-1');
+            sims[simId1Idx].owner.should.equal(adminUser);
+            sims[simId1Idx].id.should.not.be.empty();
+            sims[simId1Idx].id.should.equal(simId1);
+            sims[simId1Idx].status.should.equal('TERMINATED');
+            sims[simId1Idx].region.should.equal('us-west-1');
 
-          sims[simId2Idx].owner.should.equal(adminUser);
-          sims[simId2Idx].id.should.not.be.empty();
-          sims[simId2Idx].id.should.equal(simId2);
-          sims[simId2Idx].status.should.equal('LAUNCHING');
-          sims[simId2Idx].region.should.equal('us-east-1');
-          done();
+            sims[simId2Idx].owner.should.equal(adminUser);
+            sims[simId2Idx].id.should.not.be.empty();
+            sims[simId2Idx].id.should.equal(simId2);
+            sims[simId2Idx].status.should.equal('LAUNCHING');
+            sims[simId2Idx].region.should.equal('us-east-1');
+            done();
+          });
         });
-      });
     });
 
     // create simId3 for permission test
@@ -408,24 +404,24 @@ describe('<Simulator test>', function() {
     // verify admin permission query for accessing simulator
     describe('Check Admin Permission to Access Simulator', function() {
       it('should be possible for admins to access simulator',
-          function(done) {
-        agent
-        .get('/permissions/' + simId2)
-        .set('Acccept', 'application/json')
-        .set('authorization', userToken)
-        .end(function(err,res){
-          res.status.should.be.equal(200)
-          res.redirect.should.equal(false)
-          var r = JSON.parse(res.text)
-          r.success.should.equal(true)
-          r.result.name.should.equal(simId2)
-          r.result.permissions.should.not.be.empty()
-          const p = r.result.permissions[0]
-          p.username.should.equal(adminUser)
-          p.permissions.readOnly.should.equal(false)
-          done()
+        function(done) {
+          agent
+          .get('/permissions/' + simId2)
+          .set('Acccept', 'application/json')
+          .set('authorization', userToken)
+          .end(function(err,res){
+            res.status.should.be.equal(200)
+            res.redirect.should.equal(false)
+            var r = JSON.parse(res.text)
+            r.success.should.equal(true)
+            r.result.name.should.equal(simId2)
+            r.result.permissions.should.not.be.empty()
+            const p = r.result.permissions[0]
+            p.username.should.equal(adminUser)
+            p.permissions.readOnly.should.equal(false)
+            done()
+          })
         })
-      })
     })
 
     // verify all user permissions
@@ -451,54 +447,54 @@ describe('<Simulator test>', function() {
     // verify user permission query for launching simulator
     describe('Check User2 Permission to Launch Simulator:', function() {
       it('should not be possible for user2 to access root resource',
-          function(done) {
-        agent
-        .get('/permissions/simulators')
-        .set('Acccept', 'application/json')
-        .set('authorization', user2Token)
-        .end(function(err,res){
-          res.status.should.be.equal(401);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.success.should.equal(false);
-          done();
+        function(done) {
+          agent
+          .get('/permissions/simulators')
+          .set('Acccept', 'application/json')
+          .set('authorization', user2Token)
+          .end(function(err,res){
+            res.status.should.be.equal(401);
+            res.redirect.should.equal(false);
+            var text = JSON.parse(res.text);
+            text.success.should.equal(false);
+            done();
+          });
         });
-      });
     });
 
     // verify user permission query for accessing simulator
     describe('Check User Permission to Access Simulator:', function() {
       it('should not have access to simulator without permission',
-          function(done) {
-        agent
-        .get('/permissions/' + simId3)
-        .set('Acccept', 'application/json')
-        .set('authorization', user2Token)
-        .end(function(err,res){
-          res.status.should.be.equal(401);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.success.should.equal(false);
-          done();
+        function(done) {
+          agent
+          .get('/permissions/' + simId3)
+          .set('Acccept', 'application/json')
+          .set('authorization', user2Token)
+          .end(function(err,res){
+            res.status.should.be.equal(401);
+            res.redirect.should.equal(false);
+            var text = JSON.parse(res.text);
+            text.success.should.equal(false);
+            done();
+          });
         });
-      });
     });
 
     // user2 has no read/write permission to any simulators
     describe('Check Get Simulator without Read Permission', function() {
       it('should not be able to see any running simulators',
-          function(done) {
-        agent
-        .get('/simulators')
-        .set('Acccept', 'application/json')
-        .set('authorization', user2Token)
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          JSON.parse(res.text).length.should.be.exactly(0);
-          done();
+        function(done) {
+          agent
+          .get('/simulators')
+          .set('Acccept', 'application/json')
+          .set('authorization', user2Token)
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            JSON.parse(res.text).length.should.be.exactly(0);
+            done();
+          });
         });
-      });
     });
 
     // give user2 read permission to simId2
@@ -526,30 +522,30 @@ describe('<Simulator test>', function() {
     // permision
     describe('Check User Permission to Access Simulator', function() {
       it('should have access to simulator with permission',
-          function(done) {
-        agent
-        .get('/permissions/' + simId2)
-        .set('authorization', user2Token)
-        .set('Acccept', 'application/json')
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var r = JSON.parse(res.text);
-          // console.log('---------r\n', JSON.stringify(r,null,2), '\n----------\n')
-          r.success.should.equal(true);
-          r.result.name.should.equal(simId2)
-          r.result.permissions.should.not.be.empty()
-          r.result.permissions.length.should.equal(2)
-          // requester user permissions are at position 0
-          let puser2 = r.result.permissions[0]
-          puser2.username.should.equal(user2TokenData.identities[0])
-          puser2.permissions.readOnly.should.equal(true)
-          let padmin = r.result.permissions[1]
-          padmin.username.should.equal(adminUser)
-          padmin.permissions.readOnly.should.equal(false)
-          done();
+        function(done) {
+          agent
+          .get('/permissions/' + simId2)
+          .set('authorization', user2Token)
+          .set('Acccept', 'application/json')
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            var r = JSON.parse(res.text);
+            // console.log('---------r\n', JSON.stringify(r,null,2), '\n----------\n')
+            r.success.should.equal(true);
+            r.result.name.should.equal(simId2)
+            r.result.permissions.should.not.be.empty()
+            r.result.permissions.length.should.equal(2)
+            // requester user permissions are at position 0
+            let puser2 = r.result.permissions[0]
+            puser2.username.should.equal(user2TokenData.identities[0])
+            puser2.permissions.readOnly.should.equal(true)
+            let padmin = r.result.permissions[1]
+            padmin.username.should.equal(adminUser)
+            padmin.permissions.readOnly.should.equal(false)
+            done();
+          });
         });
-      });
     });
 
     // user2 should be able to see simId2
@@ -576,19 +572,19 @@ describe('<Simulator test>', function() {
     // user2 should not be able to terminate simId2 with only read permission
     describe('Check Terminate Simulator without Write Permission', function() {
       it('should not be able to terminate simulator without write permission',
-          function(done) {
-        agent
-        .delete('/simulators/' + simId2)
-        .set('Acccept', 'application/json')
-        .set('authorization', user2Token)
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.success.should.equal(false);
-          done();
+        function(done) {
+          agent
+          .delete('/simulators/' + simId2)
+          .set('Acccept', 'application/json')
+          .set('authorization', user2Token)
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            var text = JSON.parse(res.text);
+            text.success.should.equal(false);
+            done();
+          });
         });
-      });
     });
 
     // give user2 write permission to simId3
@@ -650,17 +646,17 @@ describe('<Simulator test>', function() {
     // user2 should be able to terminate simId3
     describe('Check Terminate Simulator with Write Permission', function() {
       it('should be able to terminate simulator with write permission',
-          function(done) {
-        agent
-        .delete('/simulators/' + simId3)
-        .set('Acccept', 'application/json')
-        .set('authorization', user2Token)
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          done();
+        function(done) {
+          agent
+          .delete('/simulators/' + simId3)
+          .set('Acccept', 'application/json')
+          .set('authorization', user2Token)
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            done();
+          });
         });
-      });
     });
 
     // verify simId3 is terminated
@@ -713,23 +709,23 @@ describe('<Simulator test>', function() {
     // give user2 read permission to simId4
     describe('Grant Read Permission', function() {
       it('should be possible to grant user read permission to more simulators',
-          function(done) {
-        agent
-        .post('/permissions')
-        .set('authorization', userToken)
-        .set('Acccept', 'application/json')
-        .send({resource: simId4, grantee: user2TokenData.identities[0], readOnly: true})
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.success.should.equal(true);
-          text.resource.should.equal(simId4);
-          text.grantee.should.equal(user2TokenData.identities[0]);
-          text.readOnly.should.equal(true);
-          done();
+        function(done) {
+          agent
+          .post('/permissions')
+          .set('authorization', userToken)
+          .set('Acccept', 'application/json')
+          .send({resource: simId4, grantee: user2TokenData.identities[0], readOnly: true})
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            var text = JSON.parse(res.text);
+            text.success.should.equal(true);
+            text.resource.should.equal(simId4);
+            text.grantee.should.equal(user2TokenData.identities[0]);
+            text.readOnly.should.equal(true);
+            done();
+          });
         });
-      });
     });
 
     // user2 should be able to see simId2 and simId4
@@ -768,23 +764,23 @@ describe('<Simulator test>', function() {
     // revoke user2's read permission to simId4
     describe('Revoke Read Permission', function() {
       it('should be possible to revoke user read permission',
-          function(done) {
-        agent
-        .delete('/permissions')
-        .set('authorization', userToken)
-        .set('Acccept', 'application/json')
-        .send({resource: simId4, grantee: user2TokenData.identities[0], readOnly: true})
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.success.should.equal(true);
-          text.resource.should.equal(simId4);
-          text.grantee.should.equal(user2TokenData.identities[0]);
-          text.readOnly.should.equal(true);
-          done();
+        function(done) {
+          agent
+          .delete('/permissions')
+          .set('authorization', userToken)
+          .set('Acccept', 'application/json')
+          .send({resource: simId4, grantee: user2TokenData.identities[0], readOnly: true})
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            var text = JSON.parse(res.text);
+            text.success.should.equal(true);
+            text.resource.should.equal(simId4);
+            text.grantee.should.equal(user2TokenData.identities[0]);
+            text.readOnly.should.equal(true);
+            done();
+          });
         });
-      });
     });
 
     // user2 should be able to see simId2 but not simId4
@@ -808,80 +804,80 @@ describe('<Simulator test>', function() {
     // user2 should not be able to get simId4 without read permission
     describe('Check Get Simulator By ID No Read Permission', function() {
       it('should not be possible to get the simulator by id without permission',
-          function(done) {
-        agent
-        .get('/simulators/' + simId4)
-        .set('authorization', user2Token)
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.success.should.equal(false);
-          done();
+        function(done) {
+          agent
+          .get('/simulators/' + simId4)
+          .set('authorization', user2Token)
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            var text = JSON.parse(res.text);
+            text.success.should.equal(false);
+            done();
+          });
         });
-      });
     });
 
     // update user2's read permission to write permission to simId2
     describe('Update Read to Write Permission', function() {
       it('should be possible to update user from read to write permission',
-          function(done) {
-        agent
-        .post('/permissions')
-        .set('Acccept', 'application/json')
-        .set('authorization', userToken)
-        .send({resource: simId2, grantee: user2TokenData.identities[0], readOnly: false})
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.success.should.equal(true);
-          text.resource.should.equal(simId2);
-          text.grantee.should.equal(user2TokenData.identities[0]);
-          text.readOnly.should.equal(false);
-          done();
+        function(done) {
+          agent
+          .post('/permissions')
+          .set('Acccept', 'application/json')
+          .set('authorization', userToken)
+          .send({resource: simId2, grantee: user2TokenData.identities[0], readOnly: false})
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            var text = JSON.parse(res.text);
+            text.success.should.equal(true);
+            text.resource.should.equal(simId2);
+            text.grantee.should.equal(user2TokenData.identities[0]);
+            text.readOnly.should.equal(false);
+            done();
+          });
         });
-      });
     });
 
     // verify user2 has write permission to simId2
     describe('Verify Update User Write Permission', function() {
       it('should be able to see write permission in user permission list',
-          function(done) {
-        agent
-        .get('/simulators')
-        .set('authorization', user2Token)
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var sims = JSON.parse(res.text);
-          sims.length.should.be.exactly(1);
-          sims[0].users.length.should.be.exactly(1);
-          sims[0].users[0].username.should.equal(user2TokenData.identities[0]);
-          sims[0].users[0].readOnly.should.equal(false);
-          done();
+        function(done) {
+          agent
+          .get('/simulators')
+          .set('authorization', user2Token)
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            var sims = JSON.parse(res.text);
+            sims.length.should.be.exactly(1);
+            sims[0].users.length.should.be.exactly(1);
+            sims[0].users[0].username.should.equal(user2TokenData.identities[0]);
+            sims[0].users[0].readOnly.should.equal(false);
+            done();
+          });
         });
-      });
     });
 
     // verify user2's write permission to simId2 cannot be revoke
     // using readOnly = true
     describe('Revoke Write Permission with ReadOnly flag', function() {
       it('should not be possible to revoke user write permission with read',
-          function(done) {
-        agent
-        .delete('/permissions')
-        .set('Acccept', 'application/json')
-        .set('authorization', userToken)
-        .send({resource: simId2, grantee: user2TokenData.identities[0], readOnly: true})
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.success.should.equal(false);
-          done();
+        function(done) {
+          agent
+          .delete('/permissions')
+          .set('Acccept', 'application/json')
+          .set('authorization', userToken)
+          .send({resource: simId2, grantee: user2TokenData.identities[0], readOnly: true})
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            var text = JSON.parse(res.text);
+            text.success.should.equal(false);
+            done();
+          });
         });
-      });
     });
 
     // revoke user2's write permission to simId2
@@ -924,20 +920,20 @@ describe('<Simulator test>', function() {
     // verify simulators' user permission list
     describe('Verify Simulators User Permissions', function() {
       it('should be to get all simulators and verify no users have permissions',
-          function(done) {
-        agent
-        .get('/simulators')
-        .set('authorization', userToken)
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var sims = JSON.parse(res.text);
-          sims.length.should.be.exactly(2);
-          sims[0].users.length.should.be.exactly(0);
-          sims[1].users.length.should.be.exactly(0);
-          done();
+        function(done) {
+          agent
+          .get('/simulators')
+          .set('authorization', userToken)
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            var sims = JSON.parse(res.text);
+            sims.length.should.be.exactly(2);
+            sims[0].users.length.should.be.exactly(0);
+            sims[1].users.length.should.be.exactly(0);
+            done();
+          });
         });
-      });
     });
 
     after(function(done) {

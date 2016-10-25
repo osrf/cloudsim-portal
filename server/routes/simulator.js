@@ -4,9 +4,6 @@ const csgrant = require('cloudsim-grant')
 // Simulators routes use Simulators controller
 var Simulators = require('../controllers/simulator');
 
-var mongoose = require('mongoose');
-
-
 module.exports = function(router) {
 
   /// GET /simulators
