@@ -36,7 +36,7 @@ const user2TokenData = {identities:['user2']}
 const user3TokenData = {identities:['user3']}
 const user4TokenData = {identities:['user4']}
 
-const log = true?console.log: function(){} // log or not
+const log = false?console.log: function(){} // log or not
 
 const agent = supertest.agent(app)
 const port = process.env.PORT || 4000
