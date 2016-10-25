@@ -36,7 +36,11 @@ const user2TokenData = {identities:['user2']}
 const user3TokenData = {identities:['user3']}
 const user4TokenData = {identities:['user4']}
 
-const log = false?console.log: function(){} // log or not
+const enableLog = false
+
+const log = enableLog ? console.log: function(){
+  // log or not
+}
 
 const agent = supertest.agent(app)
 const port = process.env.PORT || 4000
@@ -47,10 +51,10 @@ let user4socket
 let user4events = []
 
 const launchData = {
-                     region: 'us-west-1',
-                     hardware:'t2.small',
-                     machineImage: 'bozo'
-                   }
+  region: 'us-west-1',
+  hardware:'t2.small',
+  machineImage: 'bozo'
+}
 
 // this function creates a socket.io socket connection for the token's user.
 // events will be added to the events array
@@ -61,7 +65,7 @@ function createSocket(token, events) {
     transports: ['websocket'],
     rejectUnauthorized: false
   })
-  client.on('connect', function(socket) {
+  client.on('connect', function() {
     log('IO connect')
   })
   client.on('error', (e)=>{
@@ -105,7 +109,7 @@ function parseResponse(text, log) {
   }
   let res
   try {
-   res = JSON.parse(text)
+    res = JSON.parse(text)
   }
   catch (e) {
     console.log(text)
@@ -189,24 +193,24 @@ describe('<Unit Test sockets>', function() {
     // check initial condition - no simulators running
     describe('Check Empty Running Simulator', function() {
       it('should be no running simulators at the beginning',
-          function(done) {
-        agent
-        .get('/simulators')
-        .set('authorization', adminToken)
-        .end(function(err,res){
-          res.status.should.be.equal(200)
-          res.redirect.should.equal(false)
-          JSON.parse(res.text).length.should.be.exactly(0)
-          done()
+        function(done) {
+          agent
+          .get('/simulators')
+          .set('authorization', adminToken)
+          .end(function(err,res){
+            res.status.should.be.equal(200)
+            res.redirect.should.equal(false)
+            JSON.parse(res.text).length.should.be.exactly(0)
+            done()
+          })
         })
-      })
     })
 
 
     describe('Check Socket Connection', function() {
       it('should be able to connect via websockets', function(done) {
         const soc = createSocket(adminToken)
-        soc.once('connect', res => {
+        soc.once('connect', function() {
           soc.disconnect()
           done()
         })
@@ -216,7 +220,7 @@ describe('<Unit Test sockets>', function() {
     describe('Check inactive Socket', function() {
       it('should be able to connect via websockets', function(done) {
         user4socket = createSocket(user4Token, user4events)
-        user4socket.on('connect', res => {
+        user4socket.on('connect', function() {
           done()
         })
       })
@@ -227,7 +231,7 @@ describe('<Unit Test sockets>', function() {
     describe('Check Simulator Launch event', function() {
       it('should be able to receive simulator launch event', function(done) {
         const soc = createSocket(adminToken)
-        soc.on('connect', _ => {
+        soc.on('connect', function() {
           // post to simulators to launch
           agent
             .post('/simulators')
@@ -242,7 +246,7 @@ describe('<Unit Test sockets>', function() {
               const r = parseResponse(res.text)
               r.status.should.equal('LAUNCHING')
               should.exist(r.id)
-          })
+            })
         })
 
         soc.once('resource', res => {
@@ -256,179 +260,178 @@ describe('<Unit Test sockets>', function() {
 
     // verify simulator status events for client with read permission
     describe('Check Client Simulator Status event with Read Permission',
-        function() {
-      it('should receive simulator grant events for user2 (read only)',
-        function(done) {
-        const soc = createSocket(user2Token)
-        soc.on('connect', _ => {
-          agent
-            .post('/permissions')
-            .set('Accept', 'application/json')
-            .set('authorization', adminToken)
-            .send({resource: simId1, grantee: 'user2', readOnly: true})
-            .end(function(err,res){
-              res.status.should.be.equal(200)
-              res.redirect.should.equal(false)
-              const r = parseResponse(res.text)
-              r.success.should.equal(true)
-              r.resource.should.equal(simId1)
-              r.grantee.should.equal('user2')
-              r.readOnly.should.equal(true)
+      function() {
+        it('should receive simulator grant events for user2 (read only)',
+          function(done) {
+            const soc = createSocket(user2Token)
+            soc.on('connect', function() {
+              agent
+                .post('/permissions')
+                .set('Accept', 'application/json')
+                .set('authorization', adminToken)
+                .send({resource: simId1, grantee: 'user2', readOnly: true})
+                .end(function(err,res){
+                  res.status.should.be.equal(200)
+                  res.redirect.should.equal(false)
+                  const r = parseResponse(res.text)
+                  r.success.should.equal(true)
+                  r.resource.should.equal(simId1)
+                  r.grantee.should.equal('user2')
+                  r.readOnly.should.equal(true)
+                })
+            })
+            soc.once('resource', res => {
+              res.operation.should.equal('grant')
+              soc.disconnect()
+              done()
+            })
           })
-        })
-        soc.once('resource', res => {
-          res.operation.should.equal('grant')
-          soc.disconnect()
-          done()
-        })
       })
-    })
 
     // verify simulator events for client with write permission
     describe('Check Client Simulator Status event with Write Permission',
-        function() {
-      it('should receive simulator events for user3 (read/write)',
-        function(done) {
-        const soc = createSocket(user3Token)
-        soc.on('connect', _ => {
-          agent
-            .post('/permissions')
-            .set('Accept', 'application/json')
-            .set('authorization', adminToken)
-            .send({resource: simId1, grantee: 'user3', readOnly: false})
-            .end(function(err,res){
-              res.status.should.be.equal(200)
-              res.redirect.should.equal(false)
-              var text = JSON.parse(res.text)
-              text.success.should.equal(true)
-              text.resource.should.equal(simId1)
-              text.grantee.should.equal('user3')
-              text.readOnly.should.equal(false)
+      function() {
+        it('should receive simulator events for user3 (read/write)',
+          function(done) {
+            const soc = createSocket(user3Token)
+            soc.on('connect', function() {
+              agent
+                .post('/permissions')
+                .set('Accept', 'application/json')
+                .set('authorization', adminToken)
+                .send({resource: simId1, grantee: 'user3', readOnly: false})
+                .end(function(err,res){
+                  res.status.should.be.equal(200)
+                  res.redirect.should.equal(false)
+                  var text = JSON.parse(res.text)
+                  text.success.should.equal(true)
+                  text.resource.should.equal(simId1)
+                  text.grantee.should.equal('user3')
+                  text.readOnly.should.equal(false)
+                })
+            })
+            soc.once('resource', res => {
+              res.operation.should.equal('grant')
+              soc.disconnect()
+              done()
+            })
           })
-        })
-        soc.once('resource', res => {
-          res.operation.should.equal('grant')
-          soc.disconnect()
-          done()
-        })
       })
-    })
 
     // verify simulator events for client with revoked permission
     describe('Check event when Permission is Revoked',
-        function() {
-      it('should receive revoke event',
+      function() {
+        it('should receive revoke event',
           function(done) {
-        const soc = createSocket(user3Token)
-        soc.on('connect', _ => {
-          agent
-            .delete('/permissions')
-            .set('Accept', 'application/json')
-            .set('authorization', adminToken)
-            .send({resource: simId1, grantee: 'user3', readOnly: false})
-            .end(function(err,res){
-              res.status.should.be.equal(200)
-              res.redirect.should.equal(false)
-              var text = JSON.parse(res.text)
-              text.success.should.equal(true)
-              text.resource.should.equal(simId1)
-              text.grantee.should.equal('user3')
-              text.readOnly.should.equal(false)
+            const soc = createSocket(user3Token)
+            soc.on('connect', function() {
+              agent
+                .delete('/permissions')
+                .set('Accept', 'application/json')
+                .set('authorization', adminToken)
+                .send({resource: simId1, grantee: 'user3', readOnly: false})
+                .end(function(err,res){
+                  res.status.should.be.equal(200)
+                  res.redirect.should.equal(false)
+                  var text = JSON.parse(res.text)
+                  text.success.should.equal(true)
+                  text.resource.should.equal(simId1)
+                  text.grantee.should.equal('user3')
+                  text.readOnly.should.equal(false)
+                })
+            })
+            soc.once('resource', res => {
+              res.resource.should.equal(simId1)
+              res.operation.should.equal('revoke')
+              soc.disconnect()
+              done()
+            })
           })
-        })
-        soc.once('resource', res => {
-          res.resource.should.equal(simId1)
-          res.operation.should.equal('revoke')
-          soc.disconnect()
-          done()
-        })
       })
-    })
 
     // check clients receive the correct events when there is more than one
     // simulator
     describe('Check Multiple Simulators and Multiple Clients', function() {
       it('should be able to receive simulator 2 create event',
-          function(done) {
-        let soc = createSocket(adminToken)
-        soc.on('connect', _ => {
-          // post to simulators to launch
-          agent
-          .post('/simulators')
-          .set('Accept', 'application/json')
-          .set('authorization', adminToken)
-          .send(launchData)
-          .end(function(err,res){
-            should.not.exist(err)
-            should.exist(res)
-            res.status.should.be.equal(200)
-            res.redirect.should.equal(false)
-            const r = parseResponse(res.text)
-            r.status.should.equal('LAUNCHING')
-            should.exist(r.id)
-            // simId2 can be set already, but not always
-            if (simId2) {
-              r.id.should.equal(simId2)
+        function(done) {
+          let soc = createSocket(adminToken)
+          soc.on('connect', function() {
+            // post to simulators to launch
+            agent
+            .post('/simulators')
+            .set('Accept', 'application/json')
+            .set('authorization', adminToken)
+            .send(launchData)
+            .end(function(err,res){
+              should.not.exist(err)
+              should.exist(res)
+              res.status.should.be.equal(200)
+              res.redirect.should.equal(false)
+              const r = parseResponse(res.text)
+              r.status.should.equal('LAUNCHING')
+              should.exist(r.id)
+              // simId2 can be set already, but not always
+              if (simId2) {
+                r.id.should.equal(simId2)
+              }
+              simId2  = r.id
+            })
+          })
+          soc.on('resource', res => {
+            res.resource.should.not.equal(simId1)
+            should.exist(res.resource)
+            if (res.operation == 'create') {
+              simId2 = res.resource
             }
-            simId2  = r.id
+            if (res.operation == 'update') {
+              res.resource.should.equal(simId2)
+              soc.disconnect()
+              done()
+            }
           })
         })
-        soc.on('resource', res => {
-          res.resource.should.not.equal(simId1)
-          should.exist(res.resource)
-          if (res.operation == 'create') {
-            simId2 = res.resource
-          }
-          if (res.operation == 'update') {
-            res.resource.should.equal(simId2)
-            soc.disconnect()
-            done()
-          }
-        })
-      })
     })
 
     // terminate simulator and wait for terminate event
     describe('Check Simulator Terminate event', function() {
       it('should be able to receive simulator terminate event',
-          function(done) {
+        function(done) {
 
-        // make sure both clients are ready before posting to terminate
-        // simulator
-        const socAdmin = createSocket(adminToken)
-        const socU2 = createSocket(user2Token)
+          // make sure both clients are ready before posting to terminate
+          // simulator
+          const socAdmin = createSocket(adminToken)
+          const socU2 = createSocket(user2Token)
 
-        let count = 0
-        socAdmin.once('resource', res => {
-          res.resource.should.equal(simId1)
-          // the resource is not deleted, the state is
-          // set to TERMINATING
-          res.operation.should.equal('update')
-          count += 1
-          if (count == 2) {
-            socAdmin.disconnect()
-            done()
-          }
-        })
-        socU2.once('resource', res =>{
-          count += 1
-          if (count == 2) {
-            socU2.disconnect()
-            done()
-          }
-        })
+          let count = 0
+          socAdmin.once('resource', res => {
+            res.resource.should.equal(simId1)
+            // the resource is not deleted, the state is
+            // set to TERMINATING
+            res.operation.should.equal('update')
+            count += 1
+            if (count == 2) {
+              socAdmin.disconnect()
+              done()
+            }
+          })
+          socU2.once('resource', function() {
+            count += 1
+            if (count == 2) {
+              socU2.disconnect()
+              done()
+            }
+          })
 
-        // post to terminate simulator
-        agent
-        .delete('/simulators/' + simId1)
-        .set('Accept', 'application/json')
-        .set('authorization', adminToken)
-        .end(function(err,res){
-          res.status.should.be.equal(200)
-          res.redirect.should.equal(false)
-          const r = parseResponse(res.text)
+          // post to terminate simulator
+          agent
+          .delete('/simulators/' + simId1)
+          .set('Accept', 'application/json')
+          .set('authorization', adminToken)
+          .end(function(err,res){
+            res.status.should.be.equal(200)
+            res.redirect.should.equal(false)
+          })
         })
-      })
     })
 
     describe('Check user4 was left alone', function() {
@@ -441,7 +444,7 @@ describe('<Unit Test sockets>', function() {
     })
 
     after(function(done) {
-     Simulator.remove().exec()
+      Simulator.remove().exec()
       csgrant.model.clearDb()
       done()
     })
