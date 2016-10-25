@@ -18,7 +18,7 @@ if (process.argv.length != 4) {
   console.log('  should be: aws_ssh_keyname script')
   console.log('  ex: node launch_sim.js cloudsim src_start.bash\n')
   console.log('actual args: ', process.argv.length)
-  process.argv.forEach((val, index, array) => {
+  process.argv.forEach((val, index) => {
     console.log(' ', `${index}: ${val}`);
   });
   process.exit(-3)
@@ -34,29 +34,29 @@ var script = fs.readFileSync(process.argv[3], 'utf8')
 //               security : 'gazebo',
 //               image : 'ami-ea9af68a'}
 
-var base_good = { desc: 'Trusty + nvidia (CUDA 7.5)',
-               region : 'us-west-1',
-               keyName : aws_ssh_key,
-               hardware : 'g2.2xlarge',
-               security : 'cloudsim-sim',
-               image : 'ami-610c7801'}
+// var base_good = { desc: 'Trusty + nvidia (CUDA 7.5)',
+//                region : 'us-west-1',
+//                keyName : aws_ssh_key,
+//                hardware : 'g2.2xlarge',
+//                security : 'cloudsim-sim',
+//                image : 'ami-610c7801'}
+//
+// var test_small = { desc: 'xenial t2.small',
+//                region : 'us-west-1',
+//                keyName : aws_ssh_key,
+//                hardware : 't2.small',  //  'g2.2xlarge',
+//                security : 'cloudsim-sim',
+//                image : 'ami-84423ae4' }//  'ami-610c7801'}
 
-var test_small = { desc: 'xenial t2.small',
-               region : 'us-west-1',
-               keyName : aws_ssh_key,
-               hardware : 't2.small',  //  'g2.2xlarge',
-               security : 'cloudsim-sim',
-               image : 'ami-84423ae4' }//  'ami-610c7801'}
 
-
-const test_gpu_0_1 = {
-  desc: 'cloudsim-sim-gpu-gazebo 0.1',
-  region : 'us-west-1',
-  keyName : aws_ssh_key,
-  hardware : 'g2.2xlarge',
-  security : 'cloudsim-sim',
-  image : 'ami-6fb4f10f'
-}
+// const test_gpu_0_1 = {
+//   desc: 'cloudsim-sim-gpu-gazebo 0.1',
+//   region : 'us-west-1',
+//   keyName : aws_ssh_key,
+//   hardware : 'g2.2xlarge',
+//   security : 'cloudsim-sim',
+//   image : 'ami-6fb4f10f'
+// }
 
 const test_gpu_0_2 = {
   desc: 'cloudsim-sim-gpu-gazebo 0.2',

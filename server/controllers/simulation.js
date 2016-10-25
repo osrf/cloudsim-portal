@@ -3,15 +3,11 @@
 /// Server side simulation controller.
 
 /// Module dependencies.
-var uuid = require('node-uuid');
-var mongoose = require('mongoose'),
-    Simulation = mongoose.model('Simulation'),
-    Simulator = mongoose.model('Simulator'),
-    fs = require('fs'),
-    _ = require('lodash');
-
-
-var util = require('util');
+const uuid = require('node-uuid')
+const mongoose = require('mongoose')
+const Simulation = mongoose.model('Simulation')
+const Simulator = mongoose.model('Simulator')
+const util = require('util');
 
 /////////////////////////////////////////////////
 /// format json response object
@@ -71,16 +67,17 @@ exports.create = function(req, res) {
 
   // TODO verify permission!
   Simulator.load(req.body.simulator_id, function(err, simulator) {
+    var error;
     if (err) {
       // Create an error
-      var error = {error: {
+      error = {error: {
         msg: 'Error creating simulation'
       }};
       res.jsonp(error);
     }
     else if (!simulator) {
       // Create an error
-      var error = {error: {
+      error = {error: {
         msg: 'Cannot find simulator',
         id: req.body.simulator_id
       }};
@@ -91,7 +88,7 @@ exports.create = function(req, res) {
       {
         console.log('not the owner!');
         // Create an error
-        var error = {error: {
+        error = {error: {
           msg: 'Cannot create simulation. Permission denied',
           id: req.body.simulator_id
         }};
@@ -112,11 +109,11 @@ exports.create = function(req, res) {
         if (err) {
           // Create an error
           var error = {error: {
-              msg: 'Cannot save simulation'
+            msg: 'Cannot save simulation'
           }};
           res.jsonp(error);
         } else {
-            res.jsonp(formatResponse(simulation));
+          res.jsonp(formatResponse(simulation));
         }
       }); // simulation.save
     }
@@ -128,7 +125,7 @@ exports.create = function(req, res) {
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object
 /// @return Simulation update function.
-exports.update = function(req, res) {
+exports.update = function(/*req, res*/) {
 
   // TODO verify permission!
 
@@ -207,8 +204,9 @@ exports.destroy = function(req, res) {
 
   Simulation.findOne({id: simulationId}, function(err, simulation) {
     // in case of error, hand it over to the next middleware
+    var error
     if (err) {
-      var error = {error: {
+      error = {error: {
         msg: 'Error removing simulation'
       }};
       res.jsonp(error);
@@ -217,7 +215,7 @@ exports.destroy = function(req, res) {
 
     // If a simulator instance was not found, then return an error
     if (!simulation) {
-      var error = {error: {
+      error = {error: {
         msg: 'Cannot find simulation'
       }};
       res.jsonp(error);
@@ -227,7 +225,7 @@ exports.destroy = function(req, res) {
     simulation.remove(function(err) {
       if (err) {
         // Create an error
-        var error = {error: {
+        error = {error: {
           msg: 'Error removing simulation'
         }};
         res.jsonp(error);
@@ -262,15 +260,16 @@ exports.all = function(req, res) {
     .exec(function(err, simulations) {
       if (err) {
         // Create an error
-        var error = {error: {
-          msg: 'Error finding simulations'
-        }};
-      } else {
+        // var error = {error: {
+        //   msg: 'Error finding simulations'
+        // }};
+      }
+      else {
         var result = [];
         for (var i = 0; i < simulations.length; ++i) {
           result.push(formatResponse(simulations[i].toObject()));
         }
         res.jsonp(result);
       }
-  });
+    });
 };

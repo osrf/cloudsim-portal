@@ -1,15 +1,12 @@
 'use strict';
 
 /// Module dependencies.
-var util = require('util');
 var csgrant = require('cloudsim-grant');
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
-var useFakeCloudServices = true;
 if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
   cloudServices = require('../../cloud_services.js');
-  useFakeCloudServices = false;
 } else {
   cloudServices = require('../../fake_cloud_services.js');
 }
@@ -22,9 +19,10 @@ const awsData = {region: 'us-west-1'};
 /// @param res Nodejs response object.
 /// @return Security group create function.
 exports.create = function(req, res) {
+  var error;
   if (!cloudServices) {
     // Create an error
-    var error = {
+    error = {
       success: false,
       error: 'Cloud services are not available'
     };
@@ -37,7 +35,7 @@ exports.create = function(req, res) {
 
   if (!sgroupName)
   {
-    var error = {
+    error = {
       success: false,
       error: 'Missing required fields (resource)'
     }
@@ -66,30 +64,30 @@ exports.create = function(req, res) {
                         sourceGroupName: sgroupName,
                         region: awsData.region};
       cloudServices.addSecurityGroupInboundRule(ruleInfo,
-          function (ruleErr, ruleResult) {
+          function (ruleErr) {
 
-        if (ruleErr) {
-          res.status(500).jsonp(ruleErr);
-          return;
-        }
+            if (ruleErr) {
+              res.status(500).jsonp(ruleErr);
+              return;
+            }
 
-        // add the resource to csgrant
-        csgrant.createResource(req.user, resourceName,
-            {name: sgroupName,
-             groupId: result.GroupId,
-             rules: [{type:'inbound', sourceGroupName: sgroupName}]},
-            (err, data) => {
-          let r = {};
-          if (err) {
-            res.status(500).jsonp(err);
-            return;
-          }
-          r.success = true;
-          r.result = data;
-          r.id = resourceName;
-          res.jsonp(r);
-        })
-      })
+            // add the resource to csgrant
+            csgrant.createResource(req.user, resourceName,
+                {name: sgroupName,
+                 groupId: result.GroupId,
+                 rules: [{type:'inbound', sourceGroupName: sgroupName}]},
+                (err, data) => {
+                  let r = {};
+                  if (err) {
+                    res.status(500).jsonp(err);
+                    return;
+                  }
+                  r.success = true;
+                  r.result = data;
+                  r.id = resourceName;
+                  res.jsonp(r);
+                })
+          })
     })
   })
 };
@@ -133,22 +131,18 @@ exports.destroy = function(req, res) {
     }
 
     if (!data.data.groupId) {
-      var error = {
-        success: false,
-        error: 'Invalid security group id'
-      }
       res.status(500).jsonp(err);
     }
 
     // finally remove the security group
     const info = {groupId:data.data.groupId, region:awsData.region};
-    cloudServices.deleteSecurityGroup(info, function(err, result) {
+    cloudServices.deleteSecurityGroup(info, function(err) {
       if (err) {
         res.status(500).jsonp(err);
         return;
       }
 
-      csgrant.deleteResource(req.user, sgroupName, (err, data) => {
+      csgrant.deleteResource(req.user, sgroupName, (err) => {
         let r = {};
         if (err) {
           res.status(500).jsonp(err);
@@ -235,13 +229,13 @@ exports.update = function(req, res) {
                           sourceGroupName: rule.sourceGroupName,
                           region: awsData.region};
         cloudServices.addSecurityGroupInboundRule(ruleInfo,
-            function (ruleErr, ruleResult) {
+          function (ruleErr) {
 
-          if (ruleErr) {
-            return cb(ruleErr, null);
-          }
-          addNewRules(++index, rules, cb);
-        })
+            if (ruleErr) {
+              return cb(ruleErr, null);
+            }
+            addNewRules(++index, rules, cb);
+          })
       }
       else {
         // rule exists, remove it from the array
@@ -261,21 +255,21 @@ exports.update = function(req, res) {
                         sourceGroupName: rule.sourceGroupName,
                         region: awsData.region};
       cloudServices.deleteSecurityGroupInboundRule(ruleInfo,
-            function (ruleErr, ruleResult) {
-        if (ruleErr) {
-          return cb(ruleErr, null);
-        }
-        removeOldRules(++index, rules, cb);
-      })
+        function (ruleErr) {
+          if (ruleErr) {
+            return cb(ruleErr, null);
+          }
+          removeOldRules(++index, rules, cb);
+        })
     }
 
     // update rules by chaining the add / remove rule functions
-    addNewRules(0, newData.rules, function(addRuleErr, addRuleData) {
+    addNewRules(0, newData.rules, function(addRuleErr) {
       if (addRuleErr) {
         res.status(500).jsonp(addRuleErr);
         return;
       }
-      removeOldRules(0, oldRules, function(removeRuleErr, removeRuleData) {
+      removeOldRules(0, oldRules, function(removeRuleErr) {
         if (removeRuleErr) {
           res.status(500).jsonp(removeRuleErr);
           return;
@@ -285,13 +279,13 @@ exports.update = function(req, res) {
         let futureData = oldData.data;
         futureData.rules = newData.rules
         csgrant.updateResource(req.user, sgroupName, futureData,
-            (err, data) => {
-          if(err) {
-            return res.jsonp({success: false, error: err})
-          }
-          const r = {success: true, result: data};
-          res.jsonp(r)
-        })
+          (err, data) => {
+            if(err) {
+              return res.jsonp({success: false, error: err})
+            }
+            const r = {success: true, result: data};
+            res.jsonp(r)
+          })
       })
     })
 

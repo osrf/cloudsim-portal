@@ -4,13 +4,11 @@ console.log('test/mocha/sgroup/controller.js');
 
 require('../../../server/server.js')
 
-
 /// Module dependencies.
 var app = require('../../../server/server')
 
-var util = require('util');
-var should = require('should');
-var supertest = require('supertest');
+const should = require('should');
+const supertest = require('supertest');
 
 // we need fresh keys for this test
 const csgrant = require('cloudsim-grant')
@@ -23,14 +21,10 @@ if (process.env.CLOUDSIM_ADMIN)
 
 let userToken
 const userTokenData = {identities:[adminUser]}
-let user2Token
-const user2TokenData = {identities:['user2']}
 
-var user;
-var user2;
 var agent;
 
-describe('<Unit Test>', function() {
+describe('<SGroup Unit Test>', function() {
 
   before(function(done) {
     csgrant.model.clearDb()
@@ -40,14 +34,7 @@ describe('<Unit Test>', function() {
         console.log('sign error: ' + e)
       }
       userToken = tok
-      csgrant.token.signToken(user2TokenData, (e, tok)=>{
-        console.log('token signed for user "' + user2TokenData.identities[0]  + '"')
-        if(e) {
-          console.log('sign error: ' + e)
-        }
-        user2Token = tok
-        done()
-      })
+      done()
     })
   })
 
@@ -60,19 +47,19 @@ describe('<Unit Test>', function() {
     // no security groups at beginning
     describe('Check Empty Security Groups', function() {
       it('should be no security groups at the beginning',
-          function(done) {
-        agent
-        .get('/sgroups')
-        .set('authorization', userToken)
-        .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          const data = JSON.parse(res.text);
-          data.success.should.equal(true);
-          data.result.length.should.be.exactly(0);
-          done();
+        function(done) {
+          agent
+          .get('/sgroups')
+          .set('authorization', userToken)
+          .end(function(err,res){
+            res.status.should.be.equal(200);
+            res.redirect.should.equal(false);
+            const data = JSON.parse(res.text);
+            data.success.should.equal(true);
+            data.result.length.should.be.exactly(0);
+            done();
+          });
         });
-      });
     });
 
     // create group 1

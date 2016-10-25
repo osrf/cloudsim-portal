@@ -5,7 +5,7 @@
   "main": "cloud_services.js",
   "scripts": {
     "start": "gulp",
-    "test": "gulp test"
+    "test": "./node_modules/.bin/eslint . && gulp test"
   },
   "author": {
     "name": "hugomatic",
@@ -18,7 +18,7 @@
   },
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.6.9",
+    "aws-sdk": "^2.6.12",
     "body-parser": "^1.15.1",
     "browser-sync": "^2.15.0",
     "cloudsim-grant": "0.3.1",
@@ -28,12 +28,11 @@
     "gulp": "^3.9.1",
     "gulp-mocha": "^3.0.1",
     "gulp-nodemon": "^2.0.7",
-    "lodash": "^4.12.0",
     "mongoose": "^4.6.5",
-    "node-uuid": "^1.4.7",
-    "redis": "^2.6.2"
+    "node-uuid": "^1.4.7"
   },
   "devDependencies": {
+    "eslint": "^3.8.1",
     "gulp-coveralls": "^0.1.4",
     "gulp-istanbul": "^1.1.1",
     "should": "^11.1.0",

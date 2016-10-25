@@ -16,7 +16,7 @@ if (process.argv.length != 4) {
   console.log('  should be: aws_ssh_keyname')
   console.log('  ex: node launch_sim.js cloudsim portal.bash\n')
   console.log('actual args: ', process.argv.length)
-  process.argv.forEach((val, index, array) => {
+  process.argv.forEach((val, index) => {
     console.log(' ', `${index}: ${val}`);
   });
   process.exit(-3)
