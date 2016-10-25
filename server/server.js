@@ -132,7 +132,7 @@ apiRoutes.use(function(req, res, next) {
     csgrant.verifyToken(token, (err, decoded) => {
     // verify a token
       if (err) {
-        console.log('Error: ' + err.message)
+        console.log('Verify token Error: ' + err.message)
 
         // return an error
         return res.status(401).send({
