@@ -2,7 +2,6 @@
 
 console.log('test/machinetypes.js')
 
-const util = require('util')
 const should = require('should')
 const supertest = require('supertest')
 
@@ -61,7 +60,7 @@ describe('<Unit test Machine types>', function() {
         region: 'us-west-1',
         hardware: 'hard',
         software: 'soft'
-       })
+      })
       .end(function(err,res) {
         res.status.should.be.equal(200)
         res.redirect.should.equal(false)

@@ -2,7 +2,6 @@
 
 const express = require('express')
 const app = express()
-const util = require('util')
 const fs = require('fs')
 const bodyParser = require('body-parser')
 const machinetypes = require('./machinetypes')
@@ -30,7 +29,7 @@ if (process.env.NODE_ENV === 'test') {
   permissionDbName += '-test'
 }
 
-var db = mongoose.connect(dbName);
+mongoose.connect(dbName);
 
 // cloudsim-grant
 let adminUser = 'admin'
@@ -43,7 +42,7 @@ const initialResources =  {
   'simulators': {},
   'machinetypes': {},
   'sgroups': {}
- }
+}
 
 console.log('\n\n')
 console.log('============================================')
@@ -75,9 +74,9 @@ else {
 }
 
 csgrant.init(adminUser,
- initialResources,
- permissionDbName,
- process.env.CLOUDSIM_PORTAL_DB, ()=>{
+initialResources,
+permissionDbName,
+process.env.CLOUDSIM_PORTAL_DB, ()=>{
   console.log( permissionDbName + ' redis database loaded')
 });
 
@@ -85,7 +84,6 @@ csgrant.init(adminUser,
 let io = require('socket.io')(httpServer)
 let userSockets = require('./sockets')
 userSockets.init(io);
-
 
 // use body parser so we can get info from POST and/or URL parameters
 app.use(bodyParser.json())
@@ -105,17 +103,18 @@ else {
 // Bootstrap models
 var models_path = __dirname + '/models';
 var walk = function(path) {
-    fs.readdirSync(path).forEach(function(file) {
-        var newPath = path + '/' + file;
-        var stat = fs.statSync(newPath);
-        if (stat.isFile()) {
-            if (/(.*)\.(js$|coffee$)/.test(file)) {
-                require(newPath);
-            }
-        } else if (stat.isDirectory()) {
-            walk(newPath);
-        }
-    });
+  fs.readdirSync(path).forEach(function(file) {
+    var newPath = path + '/' + file;
+    var stat = fs.statSync(newPath);
+    if (stat.isFile()) {
+      if (/(.*)\.(js$|coffee$)/.test(file)) {
+        console.log("Walking: " + newPath)
+        require(newPath);
+      }
+    } else if (stat.isDirectory()) {
+      walk(newPath);
+    }
+  });
 };
 walk(models_path);
 
@@ -139,8 +138,8 @@ apiRoutes.use(function(req, res, next) {
 
         // return an error
         return res.status(401).send({
-            success: false,
-            msg: 'Couldn\'t verify token: ' + err.message
+          success: false,
+          msg: 'Couldn\'t verify token: ' + err.message
         });
       }
       // console.log(util.inspect(decoded))
@@ -148,8 +147,8 @@ apiRoutes.use(function(req, res, next) {
         console.log('Invalid token. No identities provided')
         // return an error
         return res.status(401).send({
-            success: false,
-            msg: 'No identities field in token.'
+          success: false,
+          msg: 'No identities field in token.'
         });
       }
 
@@ -162,30 +161,30 @@ apiRoutes.use(function(req, res, next) {
     // if there is no token
     // return an error
     return res.status(401).send({
-        success: false,
-        msg: 'No token provided.'
+      success: false,
+      msg: 'No token provided.'
     });
   }
 });
 
 // Bootstrap routes
 var routes_path = __dirname + '/routes';
-var walk = function(path) {
-    fs.readdirSync(path).forEach(function(file) {
-        var newPath = path + '/' + file;
-        var stat = fs.statSync(newPath);
-        if (stat.isFile()) {
-            console.log('## loading: ' + newPath);
-            if (/(.*)\.(js$|coffee$)/.test(file)) {
-                require(newPath)(apiRoutes);
-            }
-        // We skip the app/routes/middlewares directory as it is meant to be
-        // used and shared by routes as further middlewares and is not a
-        // route by itself
-        } else if (stat.isDirectory() && file !== 'middlewares') {
-            walk(newPath);
-        }
-    });
+walk = function(path) {
+  fs.readdirSync(path).forEach(function(file) {
+    var newPath = path + '/' + file;
+    var stat = fs.statSync(newPath);
+    if (stat.isFile()) {
+      console.log('## loading: ' + newPath);
+      if (/(.*)\.(js$|coffee$)/.test(file)) {
+        require(newPath)(apiRoutes);
+      }
+    // We skip the app/routes/middlewares directory as it is meant to be
+    // used and shared by routes as further middlewares and is not a
+    // route by itself
+    } else if (stat.isDirectory() && file !== 'middlewares') {
+      walk(newPath);
+    }
+  });
 };
 walk(routes_path);
 

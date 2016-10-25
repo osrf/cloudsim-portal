@@ -3,9 +3,6 @@
 // Simulations routes use Simulations controller
 var Simulations = require('../controllers/simulation');
 
-var mongoose = require('mongoose');
-
-
 module.exports = function(router) {
   /// GET /simulations
   /// Return all the simulations, running and terminated

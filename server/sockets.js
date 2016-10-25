@@ -76,11 +76,11 @@ exports.init = function(io) {
     var token = handshakeData._query['token'];
 
     if (process.env.NODE_ENV == 'test') {
-        socket.identities = [token] || [adminUser];
-        next();
+      socket.identities = [token] || [adminUser];
+      next();
     }
     else if (token) {
-        csgrant.verifyToken(token, function(err, decoded) {
+      csgrant.verifyToken(token, function(err, decoded) {
 
         var unauthorizedAccess = function(error) {
           socket.emit('unauthorized', error, function() {
@@ -89,10 +89,11 @@ exports.init = function(io) {
         }
 
         // verify a token
+        let error
         if (err) {
           console.log('Error: ' + err.message);
 
-          var error = {"message": "unauthorized"};
+          error = {"message": "unauthorized"};
           unauthorizedAccess(error);
           return;
         }
@@ -101,7 +102,7 @@ exports.init = function(io) {
 
         if (!decoded.identities || decoded.identities.length == 0) {
           console.log('Invalid token. No identities provided');
-          var error = {"message": "no identities provided"};
+          error = {"message": "no identities provided"};
           unauthorizedAccess(error);
 
           // return an error
