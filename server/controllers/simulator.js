@@ -684,10 +684,8 @@ exports.revoke = function(req, res) {
 }
 
 function getSimulatorDataAndUserFromId(resourceId) {
-  // get the database
-  const db = csgrant.copyInternalDatabase()
-  // isolate the resource
-  const resource = db[resourceId]
+  // get the resource from the database
+  const resource= csgrant.copyInternalDatabase(resourceId)
   // we have resource permissions and data
   const permissions = resource.permissions
   const data = resource.data

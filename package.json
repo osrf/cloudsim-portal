@@ -21,7 +21,7 @@
     "aws-sdk": "^2.6.12",
     "body-parser": "^1.15.1",
     "browser-sync": "^2.15.0",
-    "cloudsim-grant": "0.3.1",
+    "cloudsim-grant": "0.3.2",
     "cors": "^2.7.1",
     "dotenv": "^2.0.0",
     "express": "^4.13.4",
