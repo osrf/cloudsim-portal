@@ -15,7 +15,7 @@ const csgrant = require('cloudsim-grant')
 const keys = csgrant.token.generateKeys()
 csgrant.token.initKeys(keys.public, keys.private)
 
-var adminUser = 'admin';
+var adminUser = 'cloudsim@osrfoundation.org';
 if (process.env.CLOUDSIM_ADMIN)
   adminUser = process.env.CLOUDSIM_ADMIN;
 
@@ -62,13 +62,13 @@ describe('<Simulator test>', function() {
     csgrant.token.signToken(userTokenData, (e, tok)=>{
       console.log('token signed for user "' + userTokenData.identities[0]  + '"')
       if(e) {
-        console.log('sign error: ' + e)
+        should.fail('sign error: ' + e)
       }
       userToken = tok
       csgrant.token.signToken(user2TokenData, (e, tok)=>{
         console.log('token signed for user "' + user2TokenData.identities[0]  + '"')
         if(e) {
-          console.log('sign error: ' + e)
+          should.fail('sign error: ' + e)
         }
         user2Token = tok
         done()
@@ -150,9 +150,9 @@ describe('<Simulator test>', function() {
           should.exist(res);
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var data = JSON.parse(res.text);
+          var data = parseResponse(res.text, true);
           data.id.should.not.be.empty();
-          simId1 = data.id;
+          simId1 = data.id
           data.status.should.equal('LAUNCHING');
           data.region.should.equal('us-west-1');
           done();

@@ -113,7 +113,7 @@ exports.create = function(req, res) {
   var simulator = {status: 'LAUNCHING'}
   simulator.region = req.body.region
   simulator.hardware = req.body.hardware
-  simulator.image = req.body.machineImage
+  simulator.image = req.body.image
   if (req.body.sgroup)
     simulator.sgroup = req.body.sgroup
   if (!simulator.region || !simulator.image || !simulator.hardware)
