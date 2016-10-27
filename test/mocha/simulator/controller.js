@@ -29,7 +29,7 @@ var agent;
 const launchData = {
   region: 'us-west-1',
   hardware:'t2.small',
-  machineImage: 'bozo'
+  image: 'bozo'
 }
 
 // parsing a response on steroids:
