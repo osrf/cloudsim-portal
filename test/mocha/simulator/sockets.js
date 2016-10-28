@@ -227,7 +227,7 @@ describe('<Unit Test sockets>', function() {
               should.exist(res)
               res.status.should.be.equal(200)
               res.redirect.should.equal(false)
-              const r = parseResponse(res.text, true)
+              const r = parseResponse(res.text)
               r.status.should.equal('LAUNCHING')
               should.exist(r.id)
             })
