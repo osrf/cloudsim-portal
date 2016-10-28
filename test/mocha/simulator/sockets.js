@@ -53,7 +53,7 @@ let user4events = []
 const launchData = {
   region: 'us-west-1',
   hardware:'t2.small',
-  machineImage: 'bozo'
+  image: 'bozo'
 }
 
 // this function creates a socket.io socket connection for the token's user.
@@ -200,7 +200,9 @@ describe('<Unit Test sockets>', function() {
           .end(function(err,res){
             res.status.should.be.equal(200)
             res.redirect.should.equal(false)
-            JSON.parse(res.text).length.should.be.exactly(0)
+            const r = parseResponse(res.text)
+            r.result.length.should.be.exactly(4)
+            r.result[0].data.status.should.equal('TERMINATING')
             done()
           })
         })
@@ -244,7 +246,7 @@ describe('<Unit Test sockets>', function() {
               res.status.should.be.equal(200)
               res.redirect.should.equal(false)
               const r = parseResponse(res.text)
-              r.status.should.equal('LAUNCHING')
+              r.result[0].status.should.equal('LAUNCHING')
               should.exist(r.id)
             })
         })

@@ -10,32 +10,38 @@ exports.setRoutes = function (app) {
   /// Return all the simulators, running and terminated
   app.get('/simulators',
     csgrant.authenticate,
-    Simulators.all)
+    csgrant.userResources,
+    function (req, res, next) {
+      const resources = req.userResources
+      req.userResources = resources.filter( (obj)=>{
+        if(obj.name.indexOf('simulator-') == 0)
+          return true
+        return false
+      })
+      next()
+    },
+    csgrant.allResources)
 
   /// DEL /simulators
   /// Delete one simulation instance
-  app.delete('/simulators/:simulatorId',
+  app.delete('/simulators/:resourceId',
     csgrant.authenticate,
-    csgrant.ownsResource(':simulatorId'),
+    csgrant.ownsResource(':resourceId'),
     Simulators.destroy)
 
   /// POST /simulators
   /// Create a new simulation
   app.post('/simulators',
     csgrant.authenticate,
-function (req, res, next) {
-  console.log('POST /simulators, body:', req.body)
-  next()
-},
     csgrant.ownsResource('simulators'),
     Simulators.create)
 
   /// GET /simulators/:simulationId
   /// Return properties for one simulation
-  app.get('/simulators/:simulatorId',
+  app.get('/simulators/:resourceId',
    csgrant.authenticate,
-   csgrant.ownsResource(':simulatorId'),
-   Simulators.show);
+   csgrant.ownsResource(':resourceId', true),
+   csgrant.resource)
 
   /// POST /permissions
   /// Grant permission for a resource.
@@ -69,5 +75,4 @@ function (req, res, next) {
     req.resourceId = id
     next()
   })
-
 }
