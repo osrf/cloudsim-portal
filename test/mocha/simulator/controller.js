@@ -600,10 +600,10 @@ describe('<Simulator controller test>', function() {
         .set('Acccept', 'application/json')
         .set('authorization', user2Token)
         .end(function(err,res){
-          res.status.should.be.equal(200);
-          res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
-          text.success.should.equal(false);
+          res.status.should.be.equal(401)
+          res.redirect.should.equal(false)
+          var text = JSON.parse(res.text)
+          text.success.should.equal(false)
           done();
         });
       });

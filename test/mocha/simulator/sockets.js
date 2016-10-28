@@ -13,10 +13,6 @@ let adminUser = 'admin'
 if (process.env.CLOUDSIM_ADMIN)
   adminUser = process.env.CLOUDSIM_ADMIN
 
-/// Module dependencies.
-const mongoose = require('mongoose')
-const Simulator = mongoose.model('Simulator')
-
 // we need fresh keys for this test
 const csgrant = require('cloudsim-grant')
 
@@ -176,20 +172,6 @@ describe('<Unit Test sockets>', function() {
     })
   })
 
-
-  describe('Simulator Sockets:', function() {
-    before(function(done) {
-      // clear the simulator collection before the tests
-      Simulator.remove({}, function(err){
-        if (err){
-          should.fail(err)
-          return
-        }
-        log('mongo delete done\n\n')
-        done()
-      })
-    })
-
     // check initial condition - no simulators running
     describe('Check Empty Running Simulator', function() {
       it('should be no running simulators at the beginning',
@@ -245,8 +227,8 @@ describe('<Unit Test sockets>', function() {
               should.exist(res)
               res.status.should.be.equal(200)
               res.redirect.should.equal(false)
-              const r = parseResponse(res.text)
-              r.result[0].status.should.equal('LAUNCHING')
+              const r = parseResponse(res.text, true)
+              r.status.should.equal('LAUNCHING')
               should.exist(r.id)
             })
         })
@@ -396,13 +378,27 @@ describe('<Unit Test sockets>', function() {
 
     // terminate simulator and wait for terminate event
     describe('Check Simulator Terminate event', function() {
-      it('should be able to receive simulator terminate event',
+      it('should be able to receive simId1 simulator terminate event',
         function(done) {
 
           // make sure both clients are ready before posting to terminate
           // simulator
-          const socAdmin = createSocket(adminToken)
-          const socU2 = createSocket(user2Token)
+          let socAdmin = createSocket(adminToken)
+          let socU2 = createSocket(user2Token)
+
+          socAdmin.on('connect', function() {
+            socU2.on('connect', function() {
+              // post to terminate simulator
+              agent
+              .delete('/simulators/' + simId1)
+              .set('Accept', 'application/json')
+              .set('authorization', adminToken)
+              .end(function(err,res){
+                res.status.should.be.equal(200)
+                res.redirect.should.equal(false)
+              })
+            })
+          })
 
           let count = 0
           socAdmin.once('resource', res => {
@@ -423,16 +419,6 @@ describe('<Unit Test sockets>', function() {
               done()
             }
           })
-
-          // post to terminate simulator
-          agent
-          .delete('/simulators/' + simId1)
-          .set('Accept', 'application/json')
-          .set('authorization', adminToken)
-          .end(function(err,res){
-            res.status.should.be.equal(200)
-            res.redirect.should.equal(false)
-          })
         })
     })
 
@@ -446,9 +432,7 @@ describe('<Unit Test sockets>', function() {
     })
 
     after(function(done) {
-      Simulator.remove().exec()
       csgrant.model.clearDb()
       done()
     })
-  })
 })

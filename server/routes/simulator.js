@@ -26,7 +26,7 @@ exports.setRoutes = function (app) {
   /// Delete one simulation instance
   app.delete('/simulators/:resourceId',
     csgrant.authenticate,
-    csgrant.ownsResource(':resourceId'),
+    csgrant.ownsResource(':resourceId', false),
     Simulators.destroy)
 
   /// POST /simulators
@@ -42,37 +42,4 @@ exports.setRoutes = function (app) {
    csgrant.authenticate,
    csgrant.ownsResource(':resourceId', true),
    csgrant.resource)
-
-  /// POST /permissions
-  /// Grant permission for a resource.
-  app.post('/permissions',
-    csgrant.authenticate,
-    Simulators.grant);
-
-  /// DEL /permissions
-  /// Revoke permissions for a resource.
-  app.delete('/permissions',
-    csgrant.authenticate,
-    Simulators.revoke);
-
-  /// query user permissions for all resources
-  app.get('/permissions',
-    csgrant.authenticate,
-    csgrant.userResources,
-    csgrant.allResources)
-
-  /// query permissions for a single resource
-  app.get('/permissions/:resourceId',
-    csgrant.authenticate,
-    csgrant.ownsResource(':resourceId', true),
-    csgrant.resource)
-
-  /// Finish with setting up the simulationId param
-  app.param('simulatorId', Simulators.simulatorId);
-
-  /// param for resource name
-  app.param('resourceId', function( req, res, next, id) {
-    req.resourceId = id
-    next()
-  })
 }

@@ -13,10 +13,6 @@ const csgrant = require('cloudsim-grant')
 // resources
 const machinetypes = require('./machinetypes')
 const sgroup = require('./routes/sgroup')
-
-// MONGO jumbo
-require('./models/simulation.js')
-require('./models/simulator.js')
 const simulator = require('./routes/simulator')
 
 dotenv.load();
@@ -25,22 +21,16 @@ dotenv.load();
 const port = process.env.PORT || 4000
 
 // Load configurations
-process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+process.env.NODE_ENV = process.env.NODE_ENV || 'development'
+process.env.CLOUDSIM_PORTAL_DB = process.env.CLOUDSIM_PORTAL_DB || 'localhost'
+
 
 // Redis
 let permissionDbName = 'cloudsim-portal'
 
-// Mongo
-const mongoose = require('mongoose');
-process.env.CLOUDSIM_PORTAL_DB = process.env.CLOUDSIM_PORTAL_DB || 'localhost'
-let dbName = 'mongodb://' + process.env.CLOUDSIM_PORTAL_DB + '/cloudsim-portal'
-
 if (process.env.NODE_ENV === 'test') {
-  dbName = dbName + '-test'
   permissionDbName += '-test'
 }
-
-mongoose.connect(dbName);
 
 // cloudsim-grant
 let adminUser = 'admin'
@@ -62,8 +52,6 @@ admin user: ${adminUser}
 environment: ${env}
 redis database name: ${permissionDbName}
 redis database url: ${process.env.CLOUDSIM_PORTAL_DB}
-mongo database name: ${dbName}
-mongo database url: ${process.env.CLOUDSIM_PORTAL_DB}
 `
   return s
 }
@@ -96,15 +84,6 @@ const initialResources =  {
   'sgroups': {}
 }
 
-csgrant.init(adminUser,
-  initialResources,
-  permissionDbName,
-  process.env.CLOUDSIM_PORTAL_DB,
-  httpServer,
-  ()=>{
-    console.log( permissionDbName + ' redis database loaded')
-  })
-
 // use body parser so we can get info from POST and/or URL parameters
 app.use(bodyParser.json())
 app.use(cors())
@@ -117,6 +96,40 @@ if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
 simulator.setRoutes(app)
 sgroup.setRoutes(app)
 machinetypes.setRoutes(app)
+
+
+// grant user permission to a resource
+// (add user to a group)
+app.post('/permissions',
+    csgrant.authenticate,
+    csgrant.grant)
+
+// revoke user permission
+// (delete user from a group)
+app.delete('/permissions',
+    csgrant.authenticate,
+    csgrant.revoke)
+
+// get all user permissions for all resources
+app.get('/permissions',
+    csgrant.authenticate,
+    csgrant.userResources,
+    csgrant.allResources
+)
+
+// get user permissions for a resource
+app.get('/permissions/:resourceId',
+    csgrant.authenticate,
+    csgrant.ownsResource(':resourceId', true),
+    csgrant.resource
+)
+
+/// param for resource name
+app.param('resourceId', function(req, res, next, id) {
+  req.resourceId = id
+  next()
+})
+
 
 app.get('/', function (req, res) {
   const info = details()
@@ -137,7 +150,18 @@ Simulators.initInstanceStatus();
 // Expose app
 exports = module.exports = app;
 
-httpServer.listen(port, function(){
-  console.log('ssl: ' + useHttps)
-  console.log('listening on port ' + port);
-})
+csgrant.init(adminUser,
+  initialResources,
+  permissionDbName,
+  process.env.CLOUDSIM_PORTAL_DB,
+  httpServer,
+  ()=>{
+    console.log( permissionDbName + ' redis database loaded')
+    httpServer.listen(port, function(){
+      console.log('ssl: ' + useHttps)
+      console.log('listening on port ' + port);
+    })
+  })
+
+
+
