@@ -41,8 +41,6 @@ exports.launchSimulator = function (region, keyName, hardware, security,
 };
 
 exports.simulatorStatus = function (machineInfo, cb) {
-
-console.trace('\n\n\nWTF??\n\n')
   var idx = fakeSims.map(
       function(e){return e.id}).indexOf(machineInfo.id);
 
