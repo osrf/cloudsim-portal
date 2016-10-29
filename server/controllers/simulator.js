@@ -33,11 +33,11 @@ if (process.env.NODE_ENV === 'test') {
 
 // The AWS server information
 var awsData = { desc: 'Trusty + nvidia (CUDA 7.5)',
-               region : 'us-west-1',
-               keyName : aws_ssh_key,
-               hardware : 'g2.2xlarge',
-               security : 'cloudsim-sim',
-               image : 'ami-d8e996b8'}
+  region : 'us-west-1',
+  keyName : aws_ssh_key,
+  hardware : 'g2.2xlarge',
+  security : 'cloudsim-sim',
+  image : 'ami-d8e996b8'}
 
 
 
@@ -155,7 +155,7 @@ exports.create = function(req, res) {
 function terminateSimulator(user, simulator, cb) {
 
   var machineInfo = {region: simulator.region,
-                     id: simulator.machine_id};
+    id: simulator.machine_id};
   cloudServices.terminateSimulator(machineInfo, function(err) {
     if(err) {
       cb(err)

@@ -61,8 +61,8 @@ exports.create = function(req, res) {
       // add traffic rule.
       // default - allow traffic from within the same group
       const ruleInfo = {groupId: result.GroupId,
-                        sourceGroupName: sgroupName,
-                        region: awsData.region};
+        sourceGroupName: sgroupName,
+        region: awsData.region};
       cloudServices.addSecurityGroupInboundRule(ruleInfo,
           function (ruleErr) {
 
@@ -73,9 +73,9 @@ exports.create = function(req, res) {
 
             // add the resource to csgrant
             csgrant.createResource(req.user, resourceName,
-                {name: sgroupName,
-                 groupId: result.GroupId,
-                 rules: [{type:'inbound', sourceGroupName: sgroupName}]},
+              {name: sgroupName,
+                groupId: result.GroupId,
+                rules: [{type:'inbound', sourceGroupName: sgroupName}]},
                 (err, data) => {
                   let r = {};
                   if (err) {
@@ -206,7 +206,7 @@ exports.update = function(req, res) {
     // update traffic rules
     if (!newData.rules || newData.rules.length <= 0) {
       return res.jsonp({success: false,
-                        error: 'Only rules can be updated for now'})
+        error: 'Only rules can be updated for now'})
     }
 
     const oldRules = JSON.parse(JSON.stringify(oldData.data.rules))
@@ -226,8 +226,8 @@ exports.update = function(req, res) {
       if (idx < 0) {
         // rule does not exist - add new one.
         const ruleInfo = {groupId: oldData.data.groupId,
-                          sourceGroupName: rule.sourceGroupName,
-                          region: awsData.region};
+          sourceGroupName: rule.sourceGroupName,
+          region: awsData.region};
         cloudServices.addSecurityGroupInboundRule(ruleInfo,
           function (ruleErr) {
 
@@ -252,8 +252,8 @@ exports.update = function(req, res) {
 
       const rule = rules[index];
       const ruleInfo = {groupId: oldData.data.groupId,
-                        sourceGroupName: rule.sourceGroupName,
-                        region: awsData.region};
+        sourceGroupName: rule.sourceGroupName,
+        region: awsData.region};
       cloudServices.deleteSecurityGroupInboundRule(ruleInfo,
         function (ruleErr) {
           if (ruleErr) {

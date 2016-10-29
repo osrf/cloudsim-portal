@@ -102,8 +102,8 @@ exports.launchSimulator = function (region, keyName, hardware, security, image, 
         // util.inspect(data.Instances[0]));
 
         var machineInfo = { id: data.Instances[0].InstanceId,
-                            region: region
-                          };
+          region: region
+        };
 
         // create tags with aws format:
         var Tags = [];

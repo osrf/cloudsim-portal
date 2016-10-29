@@ -34,8 +34,8 @@ exports.launchSimulator = function (region, keyName, hardware, security,
   var simId = 'fake-424242-' + simCounter.toString();
   simCounter++;
   var machineInfo = { id: simId,
-                      region: 'us-east-1'
-                    };
+    region: 'us-east-1'
+  };
   fakeSims.push({id: simId, state: 'pending'});
   cb(null, machineInfo);
 };
@@ -63,7 +63,7 @@ exports.simulatorStatuses = function (region, machineIds, cb) {
   var array = [];
   for (var i = 0; i < fakeSims.length; ++i) {
     array.push(
-        {InstanceId: fakeSims[i].id,
+      {InstanceId: fakeSims[i].id,
         InstanceState : {Name: fakeSims[i].state}});
   }
   out.InstanceStatuses = array;
