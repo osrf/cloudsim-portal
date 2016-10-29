@@ -58,7 +58,7 @@ exports.terminateSimulator = function (machineInfo, cb) {
   cb(null, 'terminated');
 };
 
-exports.simulatorStatuses = function (machineInfo, cb) {
+exports.simulatorStatuses = function (region, machineIds, cb) {
   var out = {};
   var array = [];
   for (var i = 0; i < fakeSims.length; ++i) {
@@ -123,7 +123,6 @@ exports.getSecurityGroups = function (info, cb) {
   cb(null, result);
 }
 
-/////////////////////////////////////////////////////////
 // add an inbound rule to a security group
 // @param info - groupId: security group id
 //               sourceGroupName: source security group to give permission to
@@ -153,7 +152,6 @@ exports.addSecurityGroupInboundRule = function (info, cb) {
   cb(null, rule);
 }
 
-/////////////////////////////////////////////////////////
 // delete an inbound rule from a security group
 // @param info - groupId: security group id,
 //               sourceGroupName: source security group to remove permission

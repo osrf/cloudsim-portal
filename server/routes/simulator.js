@@ -33,7 +33,7 @@ exports.setRoutes = function (app) {
   /// Create a new simulation
   app.post('/simulators',
     csgrant.authenticate,
-    csgrant.ownsResource('simulators'),
+    csgrant.ownsResource('simulators', false),
     simulator.create)
 
   /// GET /simulators/:simulationId

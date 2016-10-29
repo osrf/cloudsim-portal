@@ -88,81 +88,67 @@ exports.create = function(req, res) {
   simulator.machine_ip = '';
   simulator.machine_id = '';
 
-  // check permission - only users with write access to adminResource
-  // can create resources
-  csgrant.isAuthorized(req.user, adminResource, false, (err, authorized) => {
-    if (err) {
-      console.log('is authorized error:' + err)
-      return res.jsonp({success: false, error: err})
+
+  csgrant.getNextResourceId('simulator', (err, resourceName) => {
+    if(err) {
+      res.jsonp(error(err))
+      return
     }
-    if (!authorized) {
-      const msg = 'insufficient permission for user "'
-          + req.user + '"';
-      console.log(msg)
-      return res.jsonp({success: false, error: msg});
-    }
+    simulator.id = resourceName
+    // add resource to csgrant
+    csgrant.createResource(req.user, simulator.id, simulator,
+      (err) => {
+        if (err) {
+          console.log('create resource error:' + err)
+          res.jsonp(error(err));
+          return;
+        }
 
-    csgrant.getNextResourceId('simulator', (err, resourceName) => {
-      if(err) {
-        res.jsonp(error(err))
-        return
-      }
-      simulator.id = resourceName
-      // add resource to csgrant
-      csgrant.createResource(req.user, simulator.id, simulator,
-        (err) => {
-          if (err) {
-            console.log('create resource error:' + err)
-            res.jsonp(error(err));
-            return;
-          }
+        // launch the simulator!
+        const tagValue = resourceName + '_' + simulator.owner
+        const tag = {Name: tagValue}
+        // todo: use a real script
+        var scriptName = 'empty.bash';
+        const script = fs.readFileSync(scriptName, 'utf8')
 
-          // launch the simulator!
-          var tagName = simulator.owner + '_' + simulator.region + '_'
-              + Date.now();
-          var tag = {Name: tagName};
-          var scriptName = 'empty.bash';
-          var script = fs.readFileSync(scriptName, 'utf8')
+        let sgroups = [awsData.security];
+        if (req.body.sgroup)
+          sgroups.push(req.body.sgroup)
+        cloudServices.launchSimulator(simulator.region, awsData.keyName,
+          simulator.hardware, sgroups, simulator.image, tag, script,
+          function (err, machine) {
+            if (err) {
+              // Create an error
+              var error = {error: {
+                message: err.message,
+                error: err,
+                awsData: awsData
+              }};
+              console.log(error.msg)
+              res.jsonp(error);
+              return;
+            }
 
-          let sgroups = [awsData.security];
-          if (req.body.sgroup)
-            sgroups.push(req.body.sgroup)
-          cloudServices.launchSimulator(simulator.region, awsData.keyName,
-            simulator.hardware, sgroups, simulator.image, tag, script,
-            function (err, machine) {
-              if (err) {
-                // Create an error
-                var error = {error: {
-                  message: err.message,
-                  error: err,
-                  awsData: awsData
-                }};
-                console.log(error.msg)
-                res.jsonp(error);
-                return;
-              }
-
-              var info = machine;
-              simulator.machine_id = info.id;
-              // send json response object to update the
-              // caller with new simulator data.
-              res.jsonp(simulator)
-              // update resource (this triggers socket notification)
-              csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
-                console.log(simulator.id, 'launch!')
-              })
-
-              setTimeout(function() {
-                cloudServices.simulatorStatus(info, function(err, state) {
-                  // update resource (this triggers socket notification)
-                  simulator.machine_ip = state.ip
-                  csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
-                    console.log(simulator.id, 'ip:', simulator.machine_ip)
-                  })
-
-                })
-              }, instanceIpUpdateInterval);
+            var info = machine;
+            simulator.machine_id = info.id;
+            // send json response object to update the
+            // caller with new simulator data.
+            res.jsonp(simulator)
+            // update resource (this triggers socket notification)
+            csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
+              console.log(simulator.id, 'launch!')
             })
+
+            setTimeout(function() {
+              cloudServices.simulatorStatus(info, function(err, state) {
+                // update resource (this triggers socket notification)
+                simulator.machine_ip = state.ip
+                csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
+                  console.log(simulator.id, 'ip:', simulator.machine_ip)
+                })
+
+              })
+            }, instanceIpUpdateInterval);
           })
         })
       })
@@ -343,6 +329,7 @@ function updateInstanceStatus() {
 
 // used to start the periodicall resource database update (against the aws info)
 exports.initInstanceStatus = function() {
-  console.log('init instance status update');
+  console.log('starting instance status update with interval (ms): ',
+    instanceStatusUpdateInterval)
   setInterval(updateInstanceStatus, instanceStatusUpdateInterval);
 }

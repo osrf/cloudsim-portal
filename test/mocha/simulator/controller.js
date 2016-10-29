@@ -307,7 +307,7 @@ describe('<Simulator controller test>', function() {
 
         r.result[0].name.should.not.be.empty()
         r.result[0].name.should.equal(simId1)
-        r.result[0].data.status.should.equal('TERMINATING')
+        r.result[0].data.status.should.equal('TERMINATED')
         r.result[0].data.region.should.equal('us-west-1')
 
         r.result[1].name.should.not.be.empty()
@@ -332,7 +332,7 @@ describe('<Simulator controller test>', function() {
         r.success.should.equal(true)
         r.result.permissions[0].username.should.equal(adminUser)
         r.resource.should.equal(simId1)
-        r.result.data.status.should.equal('TERMINATING');
+        r.result.data.status.should.equal('TERMINATED');
         done();
       });
     });
@@ -362,7 +362,7 @@ describe('<Simulator controller test>', function() {
 
           r.result[simId1Idx].name.should.not.be.empty()
           r.result[simId1Idx].name.should.equal(simId1)
-          r.result[simId1Idx].data.status.should.equal('TERMINATING')
+          r.result[simId1Idx].data.status.should.equal('TERMINATED')
           r.result[simId1Idx].data.region.should.equal('us-west-1')
 
           r.result[simId2Idx].name.should.not.be.empty();
@@ -685,8 +685,8 @@ describe('<Simulator controller test>', function() {
         r.result[1].name.should.equal(simId2)
         r.result[1].data.region.should.equal('us-east-1')
         r.result[1].data.status.should.equal('LAUNCHING')
-        r.result[0].data.status.should.equal('TERMINATING')
-        r.result[2].data.status.should.equal('TERMINATING')
+        r.result[0].data.status.should.equal('TERMINATED')
+        r.result[2].data.status.should.equal('TERMINATED')
         done()
       })
     })
@@ -756,7 +756,7 @@ describe('<Simulator controller test>', function() {
         sims[0].permissions[0].username.should.equal('user2');
         sims[0].permissions[0].permissions.readOnly.should.equal(true);
         sims[1].name.should.equal(simId3)
-        sims[1].data.status.should.equal('TERMINATING')
+        sims[1].data.status.should.equal('TERMINATED')
         sims[2].name.should.equal(simId4)
         sims[2].permissions.length.should.be.exactly(2)
         sims[2].permissions[0].username.should.equal('user2')
@@ -918,7 +918,7 @@ describe('<Simulator controller test>', function() {
         res.redirect.should.equal(false)
         const r = parseResponse(res.text)
         r.result.length.should.be.exactly(1)
-        r.result[0].data.status.should.equal('TERMINATING')
+        r.result[0].data.status.should.equal('TERMINATED')
         done()
       });
     });
@@ -938,7 +938,7 @@ describe('<Simulator controller test>', function() {
           const sims = r.result
           sims.length.should.be.exactly(4)
           sims[0].name.should.equal(simId1)
-          sims[0].data.status.should.equal('TERMINATING')
+          sims[0].data.status.should.equal('TERMINATED')
           sims[0].permissions.length.should.be.exactly(1)
 
           sims[1].name.should.equal(simId2)
@@ -946,7 +946,7 @@ describe('<Simulator controller test>', function() {
           sims[1].permissions.length.should.be.exactly(1)
 
           sims[2].name.should.equal(simId3)
-          sims[2].data.status.should.equal('TERMINATING')
+          sims[2].data.status.should.equal('TERMINATED')
           sims[2].permissions.length.should.be.exactly(2)
 
           sims[3].name.should.equal(simId4)
