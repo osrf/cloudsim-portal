@@ -285,7 +285,6 @@ describe('<Simulator controller test>', function() {
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
       .end(function(err,res){
-        const r = parseResponse(res.text)
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         done();
@@ -815,7 +814,6 @@ describe('<Simulator controller test>', function() {
         .get('/simulators/' + simId4)
         .set('authorization', user2Token)
         .end(function(err,res){
-          const r = parseResponse(res.text)
           res.status.should.be.equal(401)
           res.redirect.should.equal(false)
           done()

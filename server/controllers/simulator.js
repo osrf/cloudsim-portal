@@ -9,11 +9,9 @@ const csgrant = require('cloudsim-grant')
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
-var useFakeCloudServices = true;
 if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
   console.log('using the real cloud services!');
   cloudServices = require('../../cloud_services.js');
-  useFakeCloudServices = false;
 } else {
   console.log(
     'process.env.AWS_ACCESS_KEY_ID not defined: using the fake cloud services');
@@ -21,7 +19,6 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
 }
 
 // global variables and settings
-var adminResource = 'simulators';
 var aws_ssh_key = 'cloudsim';
 var instanceStatusUpdateInterval = 5000;
 var instanceIpUpdateInterval = 10000;
@@ -150,8 +147,8 @@ exports.create = function(req, res) {
               })
             }, instanceIpUpdateInterval);
           })
-        })
       })
+  })
 }
 
 // Terminates a simulator.
@@ -168,7 +165,7 @@ function terminateSimulator(user, simulator, cb) {
       simulator.termination_date = Date.now();
       // update resource (this triggers socket notification)
       csgrant.updateResource(user, simulator.id, simulator, ()=>{
-          console.log(simulator.id, 'terminate')
+        console.log(simulator.id, 'terminate')
       })
       cb(null, simulator)
     }
@@ -189,32 +186,12 @@ function getUserFromResource(resource) {
   return user
 }
 
-function getSimulatorDataAndUserFromId(resourceId) {
-  // get the resource from the database
-  const resource= csgrant.copyInternalDatabase(resourceId)
-  // we have resource permissions and data
-  const permissions = resource.permissions
-  const data = resource.data
-  // look for a user with read/write
-  let user
-  for (let u in permissions) {
-    if (!permissions[u].readOnly) {
-      user = u
-      break
-    }
-  }
-  return {user: user, data: data}
-}
-
-
 /// Delete a simulator.
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
 /// @return Destroy function
 exports.destroy = function(req, res) {
-  const simulatorId = req.resourceId
   const simulator = req.resourceData
-
   if (!cloudServices) {
     // Create an error
     error = {error: {
@@ -236,17 +213,17 @@ exports.destroy = function(req, res) {
   terminateSimulator(req.user,
                      simulator.data,
                      function(err) {
-    if (err) {
-      var error = {error: {
-        msg: 'Error terminating simulator'
-      }};
-      res.jsonp(error);
-      return;
-    }
-    else {
-      res.jsonp(simulator)
-    }
-  })
+                       if (err) {
+                         var error = {error: {
+                           msg: 'Error terminating simulator'
+                         }};
+                         res.jsonp(error);
+                         return;
+                       }
+                       else {
+                         res.jsonp(simulator)
+                       }
+                     })
 }
 
 
@@ -280,51 +257,51 @@ function updateInstanceStatus() {
   const machineIds = []
   cloudServices.simulatorStatuses(awsData.region,
     machineIds, function (err, awsData) {
-    if (err) {
-      console.log(util.inspect(err))
-      return
-    }
-    if(!awsData) {
-      return
-    }
+      if (err) {
+        console.log(util.inspect(err))
+        return
+      }
+      if(!awsData) {
+        return
+      }
 
     // make a dict with machine states, from aws data
-    const awsInstanceStates = {}
-    for (var i = 0; i < awsData.InstanceStatuses.length; ++i) {
-      const awsInstanceState = awsData.InstanceStatuses[i]
-      const instanceId = awsInstanceState.InstanceId
-      const awsState = awsInstanceState.InstanceState.Name
+      const awsInstanceStates = {}
+      for (var i = 0; i < awsData.InstanceStatuses.length; ++i) {
+        const awsInstanceState = awsData.InstanceStatuses[i]
+        const instanceId = awsInstanceState.InstanceId
+        const awsState = awsInstanceState.InstanceState.Name
       // lets convert awsState to a cloudsim sate
-      const aws2cs = {
-        'pending': 'LAUNCHING',
-        'running': 'RUNNING',
-        'shutting-down': 'TERMINATING',
-        'stopping': 'TERMINATING',
-        'terminated' : 'TERMINATED',
-        'stopped' : 'TERMINATED'
-      }
-      const cloudsimState = aws2cs[awsState] || 'UNKNOWN'
+        const aws2cs = {
+          'pending': 'LAUNCHING',
+          'running': 'RUNNING',
+          'shutting-down': 'TERMINATING',
+          'stopping': 'TERMINATING',
+          'terminated' : 'TERMINATED',
+          'stopped' : 'TERMINATED'
+        }
+        const cloudsimState = aws2cs[awsState] || 'UNKNOWN'
       // add the machine state
-      awsInstanceStates[instanceId] = cloudsimState
-    }
+        awsInstanceStates[instanceId] = cloudsimState
+      }
 
     // update sims where the status is different. AWS is always right
-    for (let simId in simulators) {
-      const simulator = simulators[simId]
-      const oldState = simulator.data.status
+      for (let simId in simulators) {
+        const simulator = simulators[simId]
+        const oldState = simulator.data.status
       // state according to AWS. if simId is not in the data, the machine is gone
-      const awsState = awsInstanceStates[simId] || 'TERMINATED'
+        const awsState = awsInstanceStates[simId] || 'TERMINATED'
       // update if state has changed
-      if (oldState !== awsState) {
-        simulator.data.status = awsState
-        const user = getUserFromResource(simulator)
-        const resourceName = simulator.data.id
-        csgrant.updateResource(user, resourceName, simulator.data, ()=>{
-          console.log(simulator.data.id, 'status update', oldState, '=>', simulator.data.status)
-        })
+        if (oldState !== awsState) {
+          simulator.data.status = awsState
+          const user = getUserFromResource(simulator)
+          const resourceName = simulator.data.id
+          csgrant.updateResource(user, resourceName, simulator.data, ()=>{
+            console.log(simulator.data.id, 'status update', oldState, '=>', simulator.data.status)
+          })
+        }
       }
-    }
-  })
+    })
 }
 
 // used to start the periodicall resource database update (against the aws info)

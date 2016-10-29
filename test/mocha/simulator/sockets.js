@@ -188,7 +188,7 @@ describe('<Unit Test sockets>', function() {
           done()
         })
       })
-    })
+  })
 
   describe('Check Socket Connection', function() {
     it('should be able to connect via websockets', function(done) {
