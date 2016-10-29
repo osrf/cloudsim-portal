@@ -99,18 +99,7 @@ describe('<Simulator controller test>', function() {
       done()
     })
   })
-/*
-  describe('Simulator Controller:', function() {
-    before(function(done) {
-      // clear the simulator collection before the tests
-      Simulator.remove({}, function(err){
-        if (err){
-          should.fail(err);
-        }
-        done();
-      });
-    });
-*/
+
   describe('Check Empty Running Simulator', function() {
     it('should be no running simulators at the beginning',
       function(done) {
