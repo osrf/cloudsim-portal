@@ -1,8 +1,8 @@
-'use strict';
+'use strict'
 
 const csgrant = require('cloudsim-grant')
-// Simulators routes use Simulators controller
-var Simulators = require('../controllers/simulator');
+// simulator routes use simulator controller
+var simulator = require('../controllers/simulator')
 
 
 exports.setRoutes = function (app) {
@@ -27,14 +27,14 @@ exports.setRoutes = function (app) {
   app.delete('/simulators/:resourceId',
     csgrant.authenticate,
     csgrant.ownsResource(':resourceId', false),
-    Simulators.destroy)
+    simulator.destroy)
 
   /// POST /simulators
   /// Create a new simulation
   app.post('/simulators',
     csgrant.authenticate,
     csgrant.ownsResource('simulators'),
-    Simulators.create)
+    simulator.create)
 
   /// GET /simulators/:simulationId
   /// Return properties for one simulation

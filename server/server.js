@@ -135,7 +135,7 @@ app.get('/', function (req, res) {
   const info = details()
   const s = `
     <h1>Cloudsim-portal server</h1>
-    <div>Gazebo controller is running</div>
+    <div>Cloud service is running</div>
     <pre>
     ${info}
     </pre>

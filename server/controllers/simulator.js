@@ -23,7 +23,6 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
 // global variables and settings
 var adminResource = 'simulators';
 var aws_ssh_key = 'cloudsim';
-var instanceList = [];
 var instanceStatusUpdateInterval = 5000;
 var instanceIpUpdateInterval = 10000;
 
@@ -155,8 +154,6 @@ exports.create = function(req, res) {
 
               setTimeout(function() {
                 cloudServices.simulatorStatus(info, function(err, state) {
-                  // add to monitor list
-                  instanceList.push(simulator.machine_id);
                   // update resource (this triggers socket notification)
                   simulator.machine_ip = state.ip
                   csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
@@ -176,9 +173,6 @@ function terminateSimulator(user, simulator, cb) {
 
   var machineInfo = {region: simulator.region,
                      id: simulator.machine_id};
-
-console.log('\n\nterminateSimulator!!!!', user, machineInfo, '\n\n')
-
   cloudServices.terminateSimulator(machineInfo, function(err) {
     if(err) {
       cb(err)
@@ -196,6 +190,19 @@ console.log('\n\nterminateSimulator!!!!', user, machineInfo, '\n\n')
 }
 
 
+function getUserFromResource(resource) {
+  const permissions = resource.permissions
+  // look for a user with read/write
+  let user
+  for (let u in permissions) {
+    if (!permissions[u].readOnly) {
+      user = u
+      break
+    }
+  }
+  return user
+}
+
 function getSimulatorDataAndUserFromId(resourceId) {
   // get the resource from the database
   const resource= csgrant.copyInternalDatabase(resourceId)
@@ -212,16 +219,6 @@ function getSimulatorDataAndUserFromId(resourceId) {
   }
   return {user: user, data: data}
 }
-
-function runningSimulators(cb) {
-  const resources = csgrant.copyInternalDatabase()
-
-// console.log('\n\nXXXXX\n\n',JSON.stringify(resources, null, 2))
-  const sims = []
-
-  cb(null, sims)
-}
-
 
 
 /// Delete a simulator.
@@ -266,259 +263,86 @@ exports.destroy = function(req, res) {
   })
 }
 
-/*
-/// Show a simulator.
-/// @param[in] req Nodejs request object.
-/// @param[out] res Nodejs response object.
-exports.show = function(req, res) {
 
-  // check permission
-  csgrant.isAuthorized(req.user, req.simulator.id, true,
-    (err, authorized) => {
-      if (err) {
-        return res.jsonp({success: false, error: err})
+function getAllNonTerminatedSimulators() {
+  const resources = csgrant.copyInternalDatabase()
+  const sims = {}
+  for (let id in resources) {
+    const resource = resources[id]
+    if (id.indexOf('simulator-') == 0) {
+      // it's a simulator
+      if (resource.data.status !== 'TERMINATED') {
+        // it's not terminated
+        sims[resource.data.machine_id] = resource
       }
-
-      if (!authorized) {
-        const msg = 'insufficient permission for user "'
-            + req.user + '"'
-        return res.jsonp({success: false, error: msg})
-      }
-
-      res.jsonp(formatResponse(req.simulator.toObject()));
-    });
-};
-
-
-/// List of simulators for a user.
-/// @param[in] req Nodejs request object.
-/// @param[out] res Nodejs response object.
-/// @return Function to get all simulator instances for a user.
-exports.all = function(req, res) {
-
-  var all = req.body.all || false;
-  var result = [];
-
-  var populateSimulations = function(index, simulators, cb) {
-    if (index == simulators.length) {
-      return cb(null, result);
     }
-
-    var sim = simulators[index];
-    var filter = {simulator: sim};
-    Simulation.find(filter)
-        .exec(function(err, simulations) {
-          if (err) {
-            // Do something?
-          }
-          else {
-            result[index] = formatResponse(simulators[index].toObject());
-            result[index].simulations = simulations;
-            index++;
-            populateSimulations(index, simulators, cb);
-          }
-        });
   }
-
-
-  // filter simulators based on permission
-  var filtered = [];
-  var filterSimulators = function(s, simList, cb) {
-    if (s == simList.length) {
-      return cb(null, filtered);
-    }
-
-    // check permission - get simulators that the user has read permission to
-    csgrant.isAuthorized(req.user, simList[s].id, true,
-      (err, authorized) => {
-        if (err) {
-          return cb(err, filtered);
-        }
-
-        if (authorized) {
-          filtered.push(simList[s]);
-        }
-
-        s++;
-        filterSimulators(s, simList, cb);
-      });
-  }
-
-  var filter = {};
-  if (!all)
-    filter = {$where: 'this.status != "TERMINATED"'};
-
-  // Get all simulators
-  Simulator.find(filter).sort()
-    .exec(function(err, simulators) {
-      if (err) {
-        var error = {error: {
-          msg: 'Error finding simulators'
-        }};
-        res.jsonp(error);
-      } else {
-
-        // filter based on user permission
-        filterSimulators(0, simulators, function(err, f){
-          if (err) {
-            var error = {error: {
-              msg: 'Error filtering simulators'
-            }};
-            res.jsonp(error);
-            return;
-          }
-
-          // populate with simulations data and send response
-          populateSimulations(0, f, function(err, result) {
-            if (err) {
-              var error = {error: {
-                msg: 'Error finding simulations'
-              }};
-              res.jsonp(error);
-            } else {
-              res.jsonp(result);
-            }
-          });
-        });
-      }
-    });
-};
-
-/////////////////////////////////////////////////
-/// Get user permission on a simulator.
-/// @param[in] req Nodejs request object.
-/// @param[out] res Nodejs response object.
-/// @return user permission function
-exports.permissions = function(req, res) {
-  var responseObj = {};
-  var simulatorId = req.body.resource || adminResource;
-
-  // check write permission first
-  csgrant.isAuthorized(req.user, simulatorId, false,
-    (err, authorized) => {
-      if (err) {
-        responseObj.success = false;
-        responseObj.error = err;
-        return res.jsonp(responseObj);
-      }
-      // check read permission if no write permission
-      if (!authorized) {
-        csgrant.isAuthorized(req.user, simulatorId, true,
-          (err, authorized) => {
-            if (err) {
-              responseObj.success = false;
-              responseObj.error = err;
-              return res.jsonp(responseObj);
-            }
-            responseObj.readOnly = true;
-            responseObj.success = authorized;
-            res.jsonp(responseObj);
-            return;
-          });
-      }
-      else
-      {
-        responseObj.readOnly = false;
-        responseObj.success = true;
-        res.jsonp(responseObj);
-        return;
-      }
-    });
+  return sims
 }
-*/
 
-var updateInstanceStatus = function() {
-
-  if (instanceList.length === 0)
-    return;
-
-  var info = {};
+// This function is called periodically to check if simulators on AWS show a
+// different status to the resource database. The resource database is updated
+// if necessary
+function updateInstanceStatus() {
+  // get all active simulators in the portal
+  const simulators = getAllNonTerminatedSimulators()
+  if (simulators.length === 0)
+    return
 
   // get region for awsData for now
-  info.region = awsData.region;
   // TODO for now just get all instances instead of keeping
-  // a local cache of instance list
-  // info.machineIds = instanceList;
-  info.machineIds = [];
-
-  cloudServices.simulatorStatuses(info, function (err, data) {
+  const machineIds = []
+  cloudServices.simulatorStatuses(awsData.region,
+    machineIds, function (err, awsData) {
     if (err) {
       console.log(util.inspect(err))
       return
     }
-    if(!data)
+    if(!awsData) {
       return
+    }
 
+    // make a dict with machine states, from aws data
+    const awsInstanceStates = {}
+    for (var i = 0; i < awsData.InstanceStatuses.length; ++i) {
+      const awsInstanceState = awsData.InstanceStatuses[i]
+      const instanceId = awsInstanceState.InstanceId
+      const awsState = awsInstanceState.InstanceState.Name
+      // lets convert awsState to a cloudsim sate
+      const aws2cs = {
+        'pending': 'LAUNCHING',
+        'running': 'RUNNING',
+        'shutting-down': 'TERMINATING',
+        'stopping': 'TERMINATING',
+        'terminated' : 'TERMINATED',
+        'stopped' : 'TERMINATED'
+      }
+      const cloudsimState = aws2cs[awsState] || 'UNKNOWN'
+      // add the machine state
+      awsInstanceStates[instanceId] = cloudsimState
+    }
 
-      runningSimulators(function(err, simulators) {
-        // console.log(util.inspect(data));
-        if (simulators.length === 0)
-          return;
-
-        for (var i = 0; i < data.InstanceStatuses.length; ++i) {
-          var status = data.InstanceStatuses[i];
-          var instanceId = status.InstanceId;
-
-          var idx = simulators.map(
-              function(e){return e.machine_id}).indexOf(instanceId);
-// console.log(simulators)
-          if (idx >= 0) {
-            const sim = simulators[idx];
-            var state = status.InstanceState.Name;
-            var oldSimStatus = sim.status;
-
-            if (state === 'pending')
-              sim.status = 'LAUNCHING';
-            else if (state === 'running')
-              sim.status = 'RUNNING';
-            else if (state === 'shutting-down' || state === 'stopping')
-              sim.status = 'TERMINATING';
-            else {
-              if (state === 'terminated' || state === 'stopped')
-                sim.status = 'TERMINATED';
-              else {
-                console.log('unknown state ' + state);
-                sim.status = 'UNKNOWN';
-              }
-              // remove from monitor list
-              instanceList.splice(instanceList.indexOf(sim.machine_id), 1);
-            }
-
-            // console.log('new status ' + sim.status);
-            if (oldSimStatus !== sim.status) {
-              // update resource (this triggers socket notification)
-              const s = getSimulatorDataAndUserFromId(sim.id)
-              const simulator = s.data
-              const user = sim.user
-              csgrant.updateResource(user, sim.id, simulator, ()=>{
-                console.log(simulator.id, 'status update')
-              })
-            }
-          }
-        }
-      })
-  })
-}
-
-exports.initInstanceStatus = function() {
-
-  // clear the array
-  instanceList = []
-
-  runningSimulators(function(err, simulators) {
-    for (let i = 0; i < simulators.length; i++) {
-
-      if (simulators[i].machine_id) {
-        // don't add fake data if using real aws service
-        if (!useFakeCloudServices) {
-          if( simulators[i].machine_id.indexOf('fake') < 0) {
-            instanceList.push(simulators[i].machine_id)
-          }
-        }
+    // update sims where the status is different. AWS is always right
+    for (let simId in simulators) {
+      const simulator = simulators[simId]
+      const oldState = simulator.data.status
+      // state according to AWS. if simId is not in the data, the machine is gone
+      const awsState = awsInstanceStates[simId] || 'TERMINATED'
+      // update if state has changed
+      if (oldState !== awsState) {
+        simulator.data.status = awsState
+        const user = getUserFromResource(simulator)
+        const resourceName = simulator.data.id
+        csgrant.updateResource(user, resourceName, simulator.data, ()=>{
+          console.log(simulator.data.id, 'status update', oldState, '=>', simulator.data.status)
+        })
       }
     }
   })
+}
 
+// used to start the periodicall resource database update (against the aws info)
+exports.initInstanceStatus = function() {
   console.log('init instance status update');
   setInterval(updateInstanceStatus, instanceStatusUpdateInterval);
 }

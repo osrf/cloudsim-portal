@@ -62,7 +62,6 @@ describe('<Simulator controller test>', function() {
     // the server is launched (otherwise, root resources will be missing)
     csgrant = require('cloudsim-grant')
     csgrant.model.clearDb()
-    csgrant.dump()
     done()
   })
 
