@@ -16,7 +16,7 @@ let app
 const should = require('should')
 const supertest = require('supertest')
 
-var adminUser = process.env.CLOUDSIM_ADMIN || 'cloudsim@osrfoundation.org'
+var adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
 
 let userToken
 const userTokenData = {identities:[adminUser]}
@@ -127,7 +127,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        const data = parseResponse(res.text)
+        const data = parseResponse(res.text, true)
         data.success.should.equal(true);
         data.requester.should.equal(adminUser);
         data.result.length.should.be.greaterThanOrEqual(2);
