@@ -127,7 +127,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        const data = parseResponse(res.text, true)
+        const data = parseResponse(res.text)
         data.success.should.equal(true);
         data.requester.should.equal(adminUser);
         data.result.length.should.be.greaterThanOrEqual(2);
