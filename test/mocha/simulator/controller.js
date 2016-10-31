@@ -17,6 +17,7 @@ var adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
 let userToken
 const userTokenData = {identities:[adminUser]}
 let user2Token
+const user2TokenData = {identities:['user2']}
 
 // the server
 let agent
@@ -85,7 +86,7 @@ describe('<Simulator controller test>', function() {
   })
 
   before(function(done) {
-    csgrant.token.signToken({identities:['user2']}, (e, tok)=>{
+    csgrant.token.signToken(user2TokenData, (e, tok)=>{
       console.log('token signed for "user2"')
       if(e) {
         should.fail('sign error: ' + e)
@@ -202,6 +203,7 @@ describe('<Simulator controller test>', function() {
           r.result.data.status.should.equal('LAUNCHING')
           r.requester.should.equal(adminUser)
           r.success.should.equal(true)
+          r.result.data.region.should.equal('us-west-1')
           done();
         });
       });
@@ -222,8 +224,11 @@ describe('<Simulator controller test>', function() {
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         const r = parseResponse(res.text)
+        r.id.should.not.be.empty();
+        r.id.should.not.equal(simId1);
         simId2 = r.id
         r.status.should.equal('LAUNCHING')
+        r.region.should.equal('us-east-1')
         done();
       });
     });
@@ -443,7 +448,7 @@ describe('<Simulator controller test>', function() {
         res.redirect.should.equal(false);
         var data  = JSON.parse(res.text);
         data.success.should.equal(true);
-        data.requester.should.equal('user2')
+        data.requester.should.equal(user2TokenData.identities[0])
         data.result.length.should.be.equal(0);
         done();
       });
@@ -511,14 +516,14 @@ describe('<Simulator controller test>', function() {
       .post('/permissions')
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
-      .send({resource: simId2, grantee: 'user2', readOnly: true})
+      .send({resource: simId2, grantee: user2TokenData.identities[0], readOnly: true})
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text)
         text.success.should.equal(true);
         text.resource.should.equal(simId2);
-        text.grantee.should.equal('user2');
+        text.grantee.should.equal(user2TokenData.identities[0]);
         text.readOnly.should.equal(true);
         done();
       });
@@ -535,7 +540,7 @@ describe('<Simulator controller test>', function() {
         .set('authorization', user2Token)
         .set('Acccept', 'application/json')
         .end(function(err,res){
-          var r = JSON.parse(res.text, true)
+          const r = parseResponse(res.text)
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           r.success.should.equal(true);
@@ -544,7 +549,7 @@ describe('<Simulator controller test>', function() {
           r.result.permissions.length.should.equal(2)
           // requester user permissions are at position 0
           let puser2 = r.result.permissions[0]
-          puser2.username.should.equal('user2')
+          puser2.username.should.equal(user2TokenData.identities[0])
           puser2.permissions.readOnly.should.equal(true)
           let padmin = r.result.permissions[1]
           padmin.username.should.equal(adminUser)
@@ -567,7 +572,7 @@ describe('<Simulator controller test>', function() {
         r.result.length.should.be.exactly(1)
         r.result[0].name.should.equal(simId2)
         r.result[0].permissions.length.should.be.exactly(2)
-        r.result[0].permissions[0].username.should.equal('user2')
+        r.result[0].permissions[0].username.should.equal(user2TokenData.identities[0])
         r.result[0].permissions[0].permissions.readOnly.should.equal(true)
         done()
       });
@@ -599,14 +604,14 @@ describe('<Simulator controller test>', function() {
       .post('/permissions')
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
-      .send({resource: simId3, grantee: 'user2', readOnly: false})
+      .send({resource: simId3, grantee: user2TokenData.identities[0], readOnly: false})
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
         text.success.should.equal(true);
         text.resource.should.equal(simId3);
-        text.grantee.should.equal('user2');
+        text.grantee.should.equal(user2TokenData.identities[0]);
         text.readOnly.should.equal(false);
         done();
       });
@@ -627,12 +632,12 @@ describe('<Simulator controller test>', function() {
         r.result[0].name.should.not.be.empty();
         r.result[0].name.should.equal(simId2);
         r.result[0].permissions.length.should.be.exactly(2)
-        r.result[0].permissions[0].username.should.equal('user2')
+        r.result[0].permissions[0].username.should.equal(user2TokenData.identities[0])
         r.result[0].permissions[0].permissions.readOnly.should.equal(true);
         r.result[1].name.should.not.be.empty();
         r.result[1].name.should.equal(simId3);
         r.result[1].permissions.length.should.be.exactly(2)
-        r.result[1].permissions[0].username.should.equal('user2')
+        r.result[1].permissions[0].username.should.equal(user2TokenData.identities[0])
         r.result[1].permissions[0].permissions.readOnly.should.equal(false);
         done();
       });
@@ -709,14 +714,14 @@ describe('<Simulator controller test>', function() {
         .post('/permissions')
         .set('authorization', userToken)
         .set('Acccept', 'application/json')
-        .send({resource: simId4, grantee: 'user2', readOnly: true})
+        .send({resource: simId4, grantee: user2TokenData.identities[0], readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId4);
-          text.grantee.should.equal('user2');
+          text.grantee.should.equal(user2TokenData.identities[0]);
           text.readOnly.should.equal(true);
           done();
         });
@@ -737,13 +742,13 @@ describe('<Simulator controller test>', function() {
         const sims = r.result
         sims[0].name.should.equal(simId2);
         sims[0].permissions.length.should.be.exactly(2);
-        sims[0].permissions[0].username.should.equal('user2');
+        sims[0].permissions[0].username.should.equal(user2TokenData.identities[0]);
         sims[0].permissions[0].permissions.readOnly.should.equal(true);
         sims[1].name.should.equal(simId3)
         sims[1].data.status.should.equal('TERMINATED')
         sims[2].name.should.equal(simId4)
         sims[2].permissions.length.should.be.exactly(2)
-        sims[2].permissions[0].username.should.equal('user2')
+        sims[2].permissions[0].username.should.equal(user2TokenData.identities[0])
         sims[2].permissions[0].permissions.readOnly.should.equal(true);
         done();
       });
@@ -758,14 +763,14 @@ describe('<Simulator controller test>', function() {
         .delete('/permissions')
         .set('authorization', userToken)
         .set('Acccept', 'application/json')
-        .send({resource: simId4, grantee: 'user2', readOnly: true})
+        .send({resource: simId4, grantee: user2TokenData.identities[0], readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId4);
-          text.grantee.should.equal('user2')
+          text.grantee.should.equal(user2TokenData.identities[0])
           text.readOnly.should.equal(true);
           done();
         });
@@ -814,14 +819,14 @@ describe('<Simulator controller test>', function() {
         .post('/permissions')
         .set('Acccept', 'application/json')
         .set('authorization', userToken)
-        .send({resource: simId2, grantee: 'user2', readOnly: false})
+        .send({resource: simId2, grantee: user2TokenData.identities[0], readOnly: false})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
           var text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId2);
-          text.grantee.should.equal('user2');
+          text.grantee.should.equal(user2TokenData.identities[0]);
           text.readOnly.should.equal(false);
           done();
         });
@@ -841,8 +846,9 @@ describe('<Simulator controller test>', function() {
           const r = parseResponse(res.text)
           const sims = r.result
           sims.length.should.be.exactly(2)
+          sims[0].name.should.equal(simId2)
           sims[0].permissions.length.should.be.exactly(2)
-          sims[0].permissions[0].username.should.equal('user2')
+          sims[0].permissions[0].username.should.equal(user2TokenData.identities[0])
           sims[0].permissions[0].permissions.readOnly.should.equal(false)
           done();
         });
@@ -858,7 +864,7 @@ describe('<Simulator controller test>', function() {
         .delete('/permissions')
         .set('Acccept', 'application/json')
         .set('authorization', userToken)
-        .send({resource: simId2, grantee: 'user2', readOnly: true})
+        .send({resource: simId2, grantee: user2TokenData.identities[0], readOnly: true})
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
@@ -876,14 +882,14 @@ describe('<Simulator controller test>', function() {
       .delete('/permissions')
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
-      .send({resource: simId2, grantee: 'user2', readOnly: false})
+      .send({resource: simId2, grantee: user2TokenData.identities[0], readOnly: false})
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
         text.success.should.equal(true);
         text.resource.should.equal(simId2);
-        text.grantee.should.equal('user2')
+        text.grantee.should.equal(user2TokenData.identities[0])
         text.readOnly.should.equal(false);
         done();
       });
