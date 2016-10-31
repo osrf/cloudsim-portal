@@ -9,10 +9,6 @@ let app
 
 
 /// Module dependencies.
-
-// const mongoose = require('mongoose')
-// const Simulator = mongoose.model('Simulator')
-
 const should = require('should')
 const supertest = require('supertest')
 
