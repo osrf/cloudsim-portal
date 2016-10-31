@@ -284,7 +284,7 @@ describe('<Simulator controller test>', function() {
 
 
   describe('Check One Simulator Remaining', function() {
-    it('should be one running simulator', function(done) {
+    it('should be one running simulator and one terminated', function(done) {
       agent
       .get('/simulators')
       .set('authorization', userToken)
@@ -662,7 +662,7 @@ describe('<Simulator controller test>', function() {
 
   // verify simId3 is terminated
   describe('Check One Simulator Remaining', function() {
-    it('should be one running simulator', function(done) {
+    it('should be 1 running simulator and 2 terminated ones', function(done) {
       agent
       .get('/simulators')
       .set('authorization', userToken)
