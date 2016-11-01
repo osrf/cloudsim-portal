@@ -6,6 +6,7 @@ const fs = require('fs')
 const cors = require('cors')
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser')
+const morgan = require('morgan')
 
 // cloudsim module(s)
 const csgrant = require('cloudsim-grant')
@@ -87,6 +88,10 @@ const initialResources =  {
 // use body parser so we can get info from POST and/or URL parameters
 app.use(bodyParser.json())
 app.use(cors())
+
+// prints all requests to the terminal
+app.use(morgan('combined'))
+
 
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
   console.log('*** WARNING: No cloudsim auth public key found. \

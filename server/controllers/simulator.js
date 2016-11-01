@@ -116,21 +116,23 @@ exports.create = function(req, res) {
           function (err, machine) {
             if (err) {
               // Create an error
-              var error = {error: {
-                message: err.message,
-                error: err,
-                awsData: awsData
-              }};
+              const  error = {error:
+                {
+                  message: err.message,
+                  error: err,
+                  awsData: awsData
+                  }
+                }
               console.log(error.msg)
               res.jsonp(error);
               return;
             }
-
-            var info = machine;
+            const info = machine;
             simulator.machine_id = info.id;
             // send json response object to update the
             // caller with new simulator data.
             res.jsonp(simulator)
+
             // update resource (this triggers socket notification)
             csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
               console.log(simulator.id, 'launch!')
@@ -221,6 +223,7 @@ exports.destroy = function(req, res) {
                          return;
                        }
                        else {
+                         console.log('terminate', simulator)
                          res.jsonp(simulator)
                        }
                      })
