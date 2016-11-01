@@ -130,7 +130,6 @@ app.param('resourceId', function(req, res, next, id) {
   next()
 })
 
-
 app.get('/', function (req, res) {
   const info = details()
   const s = `
@@ -142,6 +141,8 @@ app.get('/', function (req, res) {
   `
   res.end(s)
 })
+
+app.use('/api', express.static('api'));
 
 
 const Simulators = require('./controllers/simulator');
