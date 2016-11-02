@@ -223,7 +223,6 @@ exports.destroy = function(req, res) {
                          return;
                        }
                        else {
-                         console.log('terminate', simulator)
                          res.jsonp(simulator)
                        }
                      })
