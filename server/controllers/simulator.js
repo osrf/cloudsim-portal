@@ -79,7 +79,7 @@ exports.create = function(req, res) {
   }
 
   // Set the simulator user
-  simulator.owner = req.user;
+  simulator.creator = req.user;
   simulator.launch_date = new Date();
   simulator.termination_date = null;
   simulator.machine_ip = '';
@@ -102,7 +102,7 @@ exports.create = function(req, res) {
         }
 
         // launch the simulator!
-        const tagValue = resourceName + '_' + simulator.owner
+        const tagValue = resourceName + '_' + req.user
         const tag = {Name: tagValue}
         // todo: use a real script
         var scriptName = 'empty.bash';
@@ -116,13 +116,13 @@ exports.create = function(req, res) {
           function (err, machine) {
             if (err) {
               // Create an error
-              const  error = {error:
-                {
+              const  error = {
+                error: {
                   message: err.message,
                   error: err,
                   awsData: awsData
-                  }
                 }
+              }
               console.log(error.msg)
               res.jsonp(error);
               return;
@@ -283,23 +283,25 @@ function updateInstanceStatus() {
           'stopped' : 'TERMINATED'
         }
         const cloudsimState = aws2cs[awsState] || 'UNKNOWN'
-      // add the machine state
+        // add the machine state
         awsInstanceStates[instanceId] = cloudsimState
       }
 
-    // update sims where the status is different. AWS is always right
+      // update sims where the status is different. AWS is always right
       for (let simId in simulators) {
         const simulator = simulators[simId]
         const oldState = simulator.data.status
-      // state according to AWS. if simId is not in the data, the machine is gone
+        // state according to AWS. if simId is not in the data, the machine
+        // is gone
         const awsState = awsInstanceStates[simId] || 'TERMINATED'
-      // update if state has changed
+        // update if state has changed
         if (oldState !== awsState) {
           simulator.data.status = awsState
           const user = getUserFromResource(simulator)
           const resourceName = simulator.data.id
           csgrant.updateResource(user, resourceName, simulator.data, ()=>{
-            console.log(simulator.data.id, 'status update', oldState, '=>', simulator.data.status)
+            console.log(simulator.data.id, 'status update', oldState, '=>',
+              simulator.data.status)
           })
         }
       }
