@@ -70,7 +70,7 @@ exports.create = function(req, res) {
   {
     error = {
       error: {
-        msg: 'Missing required fields (machineImage, region, hardware)'
+        msg: 'Missing required fields (image, region, hardware)'
       }
     }
     console.log(error.msg)
