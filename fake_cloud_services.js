@@ -34,8 +34,8 @@ exports.launchSimulator = function (region, keyName, hardware, security,
   var simId = 'fake-424242-' + simCounter.toString();
   simCounter++;
   var machineInfo = { id: simId,
-                      region: 'us-east-1'
-                    };
+    region: 'us-east-1'
+  };
   fakeSims.push({id: simId, state: 'pending'});
   cb(null, machineInfo);
 };
@@ -58,12 +58,12 @@ exports.terminateSimulator = function (machineInfo, cb) {
   cb(null, 'terminated');
 };
 
-exports.simulatorStatuses = function (machineInfo, cb) {
+exports.simulatorStatuses = function (region, machineIds, cb) {
   var out = {};
   var array = [];
   for (var i = 0; i < fakeSims.length; ++i) {
     array.push(
-        {InstanceId: fakeSims[i].id,
+      {InstanceId: fakeSims[i].id,
         InstanceState : {Name: fakeSims[i].state}});
   }
   out.InstanceStatuses = array;
@@ -123,7 +123,6 @@ exports.getSecurityGroups = function (info, cb) {
   cb(null, result);
 }
 
-/////////////////////////////////////////////////////////
 // add an inbound rule to a security group
 // @param info - groupId: security group id
 //               sourceGroupName: source security group to give permission to
@@ -153,7 +152,6 @@ exports.addSecurityGroupInboundRule = function (info, cb) {
   cb(null, rule);
 }
 
-/////////////////////////////////////////////////////////
 // delete an inbound rule from a security group
 // @param info - groupId: security group id,
 //               sourceGroupName: source security group to remove permission

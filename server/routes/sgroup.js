@@ -4,7 +4,7 @@ const csgrant = require('cloudsim-grant')
 var SecurityGroup = require('../controllers/sgroup');
 
 
-module.exports = function(app) {
+exports.setRoutes = function(app) {
 
   /// Create a new security group
   app.post('/sgroups',

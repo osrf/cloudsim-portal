@@ -42,8 +42,8 @@ function setRoutes(app) {
       const op = 'create machine type'
       const error = function(msg) {
         return {operation: op,
-                success: false,
-                error: msg}
+          success: false,
+          error: msg}
       }
 
       const user = req.user
@@ -61,9 +61,9 @@ function setRoutes(app) {
             }
             // step 5. success!
             const r = { success: true,
-                        operation: op,
-                        result: data,
-                        id: resourceName}
+              operation: op,
+              result: data,
+              id: resourceName}
             res.jsonp(r)
           })
       })
@@ -86,7 +86,7 @@ function setRoutes(app) {
       csgrant.readResource(user, resourceName, function(err, oldData) {
         if(err) {
           return res.jsonp({success: false,
-                            error: 'error trying to read existing data: ' + err})
+            error: 'error trying to read existing data: ' + err})
         }
 
         const futureData = oldData.data
