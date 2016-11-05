@@ -102,7 +102,6 @@ simulator.setRoutes(app)
 sgroup.setRoutes(app)
 machinetypes.setRoutes(app)
 
-
 // grant user permission to a resource
 // (add user to a group)
 app.post('/permissions',
@@ -134,7 +133,6 @@ app.param('resourceId', function(req, res, next, id) {
   req.resourceId = id
   next()
 })
-
 
 app.get('/', function (req, res) {
   const info = details()
