@@ -98,42 +98,12 @@ if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
       Did you forget to set "CLOUDSIM_AUTH_PUB_KEY"? ***')
 }
 
+// setup the /permissions routes
+csgrant.setPermissionsRoutes(app)
+
 simulator.setRoutes(app)
 sgroup.setRoutes(app)
 machinetypes.setRoutes(app)
-
-// grant user permission to a resource
-// (add user to a group)
-app.post('/permissions',
-    csgrant.authenticate,
-    csgrant.grant)
-
-// revoke user permission
-// (delete user from a group)
-app.delete('/permissions',
-    csgrant.authenticate,
-    csgrant.revoke)
-
-// get all user permissions for all resources
-app.get('/permissions',
-    csgrant.authenticate,
-    csgrant.userResources,
-    csgrant.allResources
-)
-
-// get user permissions for a resource
-app.get('/permissions/:resourceId',
-    csgrant.authenticate,
-    csgrant.ownsResource(':resourceId', true),
-    csgrant.resource
-)
-
-/// param for resource name
-app.param('resourceId', function(req, res, next, id) {
-  req.resourceId = id
-  next()
-})
-
 app.get('/', function (req, res) {
   const info = details()
   const s = `

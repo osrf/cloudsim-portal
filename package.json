@@ -1,10 +1,10 @@
 {
   "name": "cloudsim-portal",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "This is the portal  server for Cloudsim",
   "main": "cloud_services.js",
   "scripts": {
-    "start": "gulp",
+    "start": "node ./server/server",
     "test": "./node_modules/.bin/eslint . && gulp test"
   },
   "author": {
