@@ -4,7 +4,7 @@
   "description": "This is the portal  server for Cloudsim",
   "main": "cloud_services.js",
   "scripts": {
-    "start": "node ./server/server",
+    "start": "gulp",
     "test": "./node_modules/.bin/eslint . && gulp test"
   },
   "author": {
