@@ -1,39 +1,16 @@
 'use strict';
 
 var gulp = require('gulp');
-var browserSync = require('browser-sync');
 var nodemon = require('gulp-nodemon');
 var mocha = require('gulp-mocha');
 var istanbul = require('gulp-istanbul');
 var coveralls = require('gulp-coveralls');
 
-gulp.task('default', ['serve'], function () {
-});
-
-gulp.task('serve', ['browser-sync'], function () {
-});
-
-gulp.task('browser-sync', ['nodemon'], function() {
-  browserSync.init(null, {
-//      middleware: [
-//
-//      ]
-
-//     socket: {
-//      domain: "localhost:5000"
-//    }
-
-//		proxy: "http://localhost:5000",
-//        files: ["public/**/*.*"],
-//        browser: "google chrome",
-//        port: 7000,
-  });
+gulp.task('default', ['nodemon'], function () {
 });
 
 gulp.task('nodemon', function (cb) {
-
   var started = false;
-
   return nodemon({
     script: 'server/server.js',
     watch: ['server/**/*.*']
@@ -47,7 +24,6 @@ gulp.task('nodemon', function (cb) {
     }
   });
 });
-
 
 gulp.task('set-test-env', function () {
   return process.env.NODE_ENV = 'test';

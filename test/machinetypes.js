@@ -25,13 +25,36 @@ let adminToken
 
 console.log('adminTokenData', adminTokenData)
 
-function getResponse(res, print) {
-  const response = JSON.parse(res.text)
-  if(print) {
+// parsing a response on steroids:
+// this helper function parses a response into json.
+// However, pass true as second argument and it prints
+// the content of the cloudsim-grant database and the
+// response, (all pretty printed)
+function parseResponse(res, log) {
+  const text = res.text
+  if(log) {
+    console.log('\n\n========',log,'==========')
     csgrant.dump()
-    console.trace(JSON.stringify(response, null, 2 ))
   }
-  return response
+  let result
+  try {
+    result = JSON.parse(text)
+  }
+  catch (e) {
+    console.log(text)
+    throw e
+  }
+  if(log){
+    console.log('======== status:', res.status,'==========')
+    console.log(res.headers)
+    console.log('======== header ==============')
+    console.log(res.header)
+    console.log('==== response text =====')
+    const s = JSON.stringify(result, null, 2)
+    console.log(s)
+    console.log('========================================\n\n')
+  }
+  return result
 }
 
 describe('<Unit test Machine types>', function() {
@@ -62,9 +85,9 @@ describe('<Unit test Machine types>', function() {
         software: 'soft'
       })
       .end(function(err,res) {
+        const response = parseResponse(res)
         res.status.should.be.equal(200)
         res.redirect.should.equal(false)
-        const response = getResponse(res)
         response.success.should.equal(true)
         machinetypeId = response.id
         done()
@@ -83,7 +106,7 @@ describe('<Unit test Machine types>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200)
         res.redirect.should.equal(false)
-        let response = getResponse(res)
+        let response = parseResponse(res)
         response.success.should.equal(true)
         response.requester.should.equal(admin)
         response.result.length.should.equal(1)
@@ -110,7 +133,7 @@ describe('<Unit test Machine types>', function() {
       })
       .end(function(err,res){
         res.status.should.be.equal(200)
-        const response = getResponse(res)
+        const response = parseResponse(res)
         response.success.should.equal(true)
         done()
       })
@@ -128,7 +151,7 @@ describe('<Unit test Machine types>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200)
         res.redirect.should.equal(false)
-        let response = getResponse(res)
+        let response = parseResponse(res)
         response.success.should.equal(true)
         response.requester.should.equal(admin)
         response.result.length.should.equal(1)
@@ -152,7 +175,7 @@ describe('<Unit test Machine types>', function() {
       .send({})
       .end(function(err,res){
         res.status.should.be.equal(200)
-        const response = getResponse(res)
+        const response = parseResponse(res)
         response.success.should.equal(true)
         done()
       })
@@ -170,7 +193,7 @@ describe('<Unit test Machine types>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200)
         res.redirect.should.equal(false)
-        let response = getResponse(res)
+        let response = parseResponse(res)
         response.success.should.equal(true)
         response.requester.should.equal(admin)
         response.result.length.should.equal(0)
