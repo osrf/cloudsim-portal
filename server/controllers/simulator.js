@@ -3,7 +3,6 @@
 /// Server side simulator controller.
 
 /// Module dependencies.
-const fs = require('fs')
 const util = require('util')
 const csgrant = require('cloudsim-grant')
 
@@ -19,7 +18,6 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
 }
 
 // global variables and settings
-var aws_ssh_key = 'cloudsim';
 var instanceStatusUpdateInterval = 5000;
 var instanceIpUpdateInterval = 10000;
 
@@ -32,14 +30,57 @@ if (process.env.NODE_ENV === 'test') {
 
 
 // The AWS server information
-var awsData = { desc: 'Trusty + nvidia (CUDA 7.5)',
+const awsDefaults = {
   region : 'us-west-1',
-  keyName : aws_ssh_key,
-  hardware : 'g2.2xlarge',
+  keyName : 'cloudsim',
   security : 'cloudsim-sim',
-  image : 'ami-d8e996b8'}
+  script: 'cloudsim_env.bash'
+}
+
+// this function creates a string from
+function script(user) {
+  const rawKey = process.env.CLOUDSIM_AUTH_PUB_KEY
+  const key = rawKey.replace( new RegExp( "\n", "g" ),"\\n")
+  /*eslint no-control-regex: "off"*/
+  const script = `#!/usr/bin/env bash
+# This script creates a bash file that launches a docker container
+# The container runs a webservice through which gzserver can be
+# controlled
+
+directory="/home/ubuntu/code"
+fullpath="$directory/cloudsim-env.bash"
+logpath="$directory/cloudsim.log"
+
+date > $logpath
+echo "writing $fullpath file" >> $logpath
+
+# This script is generated as part of the cloud-init when the ec2 instance is
+# launched. However it is too early at that tim to launch the container because
+# the docker daemon is not running yet.
+# see cloudsim-portal/docker_cloudsim_env.bash for the source code
+# A custom upstart service running on the host will source this script
+# when it starts.
+
+cat <<DELIM > $fullpath
+#!/usr/bin/env bash
+
+PORT=6060
+CLOUDSIM_AUTH_PUB_KEY="${key}"
+CLOUDSIM_ADMIN="${user}"
 
 
+date >> $logpath
+echo "$fullpath data loaded" >> $logpath
+
+DELIM
+
+date >> $logpath
+echo "cloud-init is done" >> $logpath
+`
+  return script
+}
+
+exports.script = script
 
 /// Create a simulator
 /// @param[in] req Nodejs request object.
@@ -85,7 +126,6 @@ exports.create = function(req, res) {
   simulator.machine_ip = '';
   simulator.machine_id = '';
 
-
   csgrant.getNextResourceId('simulator', (err, resourceName) => {
     if(err) {
       res.jsonp(error(err))
@@ -105,14 +145,18 @@ exports.create = function(req, res) {
         const tagValue = resourceName + '_' + req.user
         const tag = {Name: tagValue}
         // todo: use a real script
-        var scriptName = 'empty.bash';
-        const script = fs.readFileSync(scriptName, 'utf8')
-
-        let sgroups = [awsData.security];
+        const scriptTxt = script(req.user)
+        let sgroups = [awsDefaults.security];
         if (req.body.sgroup)
           sgroups.push(req.body.sgroup)
-        cloudServices.launchSimulator(simulator.region, awsData.keyName,
-          simulator.hardware, sgroups, simulator.image, tag, script,
+        cloudServices.launchSimulator(
+          simulator.region,
+          awsDefaults.keyName,
+          simulator.hardware,
+          sgroups,
+          simulator.image,
+          tag,
+          scriptTxt,
           function (err, machine) {
             if (err) {
               // Create an error
@@ -120,7 +164,7 @@ exports.create = function(req, res) {
                 error: {
                   message: err.message,
                   error: err,
-                  awsData: awsData
+                  simulator: simulator
                 }
               }
               console.log(error.msg)
@@ -254,10 +298,9 @@ function updateInstanceStatus() {
   if (simulators.length === 0)
     return
 
-  // get region for awsData for now
-  // TODO for now just get all instances instead of keeping
+  // get region for awsDefaults
   const machineIds = []
-  cloudServices.simulatorStatuses(awsData.region,
+  cloudServices.simulatorStatuses(awsDefaults.region,
     machineIds, function (err, awsData) {
       if (err) {
         console.log(util.inspect(err))
