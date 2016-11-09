@@ -37,51 +37,6 @@ const awsDefaults = {
   script: 'cloudsim_env.bash'
 }
 
-// this function creates a string from
-function script(user) {
-  const rawKey = process.env.CLOUDSIM_AUTH_PUB_KEY
-  const key = rawKey.replace( new RegExp( "\n", "g" ),"\\n")
-  /*eslint no-control-regex: "off"*/
-  const script = `#!/usr/bin/env bash
-# This script creates a bash file that launches a docker container
-# The container runs a webservice through which gzserver can be
-# controlled
-
-directory="/home/ubuntu/code"
-fullpath="$directory/cloudsim-env.bash"
-logpath="$directory/cloudsim.log"
-
-date > $logpath
-echo "writing $fullpath file" >> $logpath
-
-# This script is generated as part of the cloud-init when the ec2 instance is
-# launched. However it is too early at that tim to launch the container because
-# the docker daemon is not running yet.
-# see cloudsim-portal/docker_cloudsim_env.bash for the source code
-# A custom upstart service running on the host will source this script
-# when it starts.
-
-cat <<DELIM > $fullpath
-#!/usr/bin/env bash
-
-PORT=6060
-CLOUDSIM_AUTH_PUB_KEY="${key}"
-CLOUDSIM_ADMIN="${user}"
-
-
-date >> $logpath
-echo "$fullpath data loaded" >> $logpath
-
-DELIM
-
-date >> $logpath
-echo "cloud-init is done" >> $logpath
-`
-  return script
-}
-
-exports.script = script
-
 /// Create a simulator
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
@@ -144,8 +99,8 @@ exports.create = function(req, res) {
         // launch the simulator!
         const tagValue = resourceName + '_' + req.user
         const tag = {Name: tagValue}
-        // todo: use a real script
-        const scriptTxt = script(req.user)
+        // use a script that will pass on the username,
+        const scriptTxt = cloudServices.generateScript(req.user)
         let sgroups = [awsDefaults.security];
         if (req.body.sgroup)
           sgroups.push(req.body.sgroup)

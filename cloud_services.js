@@ -15,7 +15,6 @@ console.log('process.env.CLOUDSIM_DRY_RUN (true means enabled): ' +  process.env
 // AWS is the only supported one for now
 
 
-//////////////////////////////////////////////////////////////////
 // Generates a new ssh key, registers the public key on the cloud
 // provider and saves the private key
 // @param[in] keyName the key name
@@ -38,7 +37,6 @@ exports.generateKey = function (keyName, region, cb) {
 };
 
 
-///////////////////////////////////////////////////////////
 // Deletes a public ssh key from AWS
 // @param[in] keyName the key name
 // @param[in] region the region where the key is located
@@ -59,7 +57,6 @@ exports.deleteKey = function (keyName, region, cb) {
 };
 
 
-/////////////////////////////////////////////////////////////
 // Launch a simulator machine, given:
 // @param[in] username Username (for info on the AWS console)
 // @param[in] keyName Public ssh key name (must exist on AWS for that region)
@@ -133,8 +130,6 @@ exports.launchSimulator = function (region, keyName, hardware, security, image, 
   });
 };
 
-
-/////////////////////////////////////////////////////////
 // Get the ip address and status of a simulator machine
 // @params[in] machineInfo machineInfo must contain:
 //      id: the AWS instance id
@@ -168,8 +163,6 @@ exports.simulatorStatus = function (machineInfo, cb) {
   });
 };
 
-
-////////////////////////////////////////////////////
 // Terminates a simulator machine.
 // machineInfo must contain:
 //       id: the AWS instance id
@@ -198,7 +191,6 @@ exports.terminateSimulator = function (machineInfo, cb) {
 };
 
 
-//////////////////////////////////////////////////////
 // Uploads a public ssh key to a specific AWS region
 // The key name on AWS is 'cs-' + the specified username
 exports.setupPublicKey = function (keyname, keydata, region, cb) {
@@ -279,7 +271,6 @@ exports.simulatorStatuses = function (region, machineIds, cb) {
   getAWSStatusData()
 }
 
-/////////////////////////////////////////////////////////
 // Create a security group
 // @params info - groupName: Name of security group, and region: ec2 region
 // @param cb - Callback function to use when this function is complete.
@@ -301,7 +292,6 @@ exports.createSecurityGroup = function (info, cb) {
   });
 }
 
-/////////////////////////////////////////////////////////
 // Delete a security group
 // @param info - groupId: security group id, region: ec2 region
 // @param cb - Callback function to use when this function is complete.
@@ -322,7 +312,6 @@ exports.deleteSecurityGroup = function (info, cb) {
   });
 }
 
-/////////////////////////////////////////////////////////
 // Get a list of security groups
 // @param info - filters: array of filters [{Name: 'string', Value: ['string']}]
 //               groupIds: array of security group ids ['string']
@@ -345,7 +334,6 @@ exports.getSecurityGroups = function (info, cb) {
   });
 }
 
-/////////////////////////////////////////////////////////
 // add an inbound rule to a security group
 // @param info - groupId: security group id
 //               sourceGroupName: source security group to give permission to
@@ -369,7 +357,6 @@ exports.addSecurityGroupInboundRule = function (info, cb) {
   });
 }
 
-/////////////////////////////////////////////////////////
 // delete an inbound rule from a security group
 // @param info - groupId: security group id,
 //               sourceGroupName: source security group to remove permission
@@ -393,3 +380,58 @@ exports.deleteSecurityGroupInboundRule = function (info, cb) {
     }
   });
 }
+
+// generate a cloud-init script that will run once the aws instance
+// starts
+// @param user - the launching user name
+exports.generateScript = function (user) {
+  const rawKey = process.env.CLOUDSIM_AUTH_PUB_KEY
+  const key = rawKey.replace( new RegExp( "\n", "g" ),"\\n")
+  /*eslint no-control-regex: "off"*/
+  const script = `#!/usr/bin/env bash
+# This script creates a bash file that launches a docker container
+# The container runs a webservice through which gzserver can be
+# controlled
+
+directory="/home/ubuntu/code"
+fullpath="$directory/cloudsim-env.bash"
+logpath="$directory/cloudsim.log"
+deploypath="$directory/cloudsim_deploy.bash"
+
+date > $logpath
+echo "writing $fullpath file" >> $logpath
+
+# This script is generated as part of the cloud-init when the ec2 instance is
+# launched. However it is too early at that tim to launch the container because
+# the docker daemon is not running yet.
+# see cloudsim-portal/docker_cloudsim_env.bash for the source code
+# A custom upstart service running on the host will source this script
+# when it starts.
+
+cat <<DELIM > $fullpath
+#!/usr/bin/env bash
+
+PORT=4000
+CLOUDSIM_AUTH_PUB_KEY="${key}"
+CLOUDSIM_ADMIN="${user}"
+
+date >> $logpath
+echo "$fullpath data loaded" >> $logpath
+
+DELIM
+
+if [ -f "$deploypath" ]; then
+  $deploypath
+else
+  date >> $logpath
+  echo "can't find script \"$deploypath\"" >> $logpath
+fi
+
+
+date >> $logpath
+echo "cloud-init is done" >> $logpath
+`
+  return script
+}
+
+
