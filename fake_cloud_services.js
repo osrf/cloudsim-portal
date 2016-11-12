@@ -177,3 +177,7 @@ exports.deleteSecurityGroupInboundRule = function (info, cb) {
   }
   cb(null, response);
 }
+
+exports.generateScript = function (user) {
+  return "generateScript for user: " + user
+}

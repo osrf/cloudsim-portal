@@ -421,7 +421,13 @@ echo "$fullpath data loaded" >> $logpath
 DELIM
 
 if [ -f "$deploypath" ]; then
+  date >> $logpath
+  echo "invoking script \"$deploypath\"" >> $logpath
+
   $deploypath
+
+  date >> $logpath
+  echo "executed: \"$deploypath\"" >> $logpath
 else
   date >> $logpath
   echo "can't find script \"$deploypath\"" >> $logpath
