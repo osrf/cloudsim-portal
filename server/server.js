@@ -7,6 +7,7 @@ const cors = require('cors')
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser')
 const morgan = require('morgan')
+const path = require('path')
 
 // cloudsim module(s)
 const csgrant = require('cloudsim-grant')
@@ -90,8 +91,16 @@ app.use(bodyParser.json())
 app.use(cors())
 
 // prints all requests to the terminal
-app.use(morgan('combined'))
-
+app.use(morgan('combined', {
+  skip: function (req) {
+    // skip /api stuff
+    const isApi = req.originalUrl.startsWith('/api/')
+    if (isApi) {
+      return true
+    }
+    return false
+  }
+}))
 
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
   console.log('*** WARNING: No cloudsim auth public key found. \
@@ -116,6 +125,7 @@ app.get('/', function (req, res) {
   res.end(s)
 })
 
+app.use("/api", express.static(path.join(__dirname, '/../api')));
 
 const Simulators = require('./controllers/simulator');
 Simulators.initInstanceStatus();
