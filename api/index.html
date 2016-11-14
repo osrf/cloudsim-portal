@@ -63,6 +63,10 @@
             "name": "simulators",
             "description": "Manage simulators",
           },
+          {
+            "name": "sgroups",
+            "description": "Manage security groups",
+          },
         ],
         paths: {
           // /permissions
@@ -321,7 +325,7 @@
                 {
                   "in": "body",
                   "name": "body",
-                  "description": "Object with grant information",
+                  "description": "Object with simulator information",
                   "required": true,
                   "schema": {
                     "type": "object",
@@ -503,12 +507,62 @@
                 }
               ]
             },
-            // PUT
-            "put": {
+          },
+          // /sgroups
+          "\/sgroups": {
+            // GET
+            "get": {
               "tags": [
-                "simulators"
+                "sgroups"
               ],
-              "summary": "Change the data of a simulator.",
+              "summary": "Get all security groups for a user",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "result": {
+                        "type" : "array",
+                        "items": {
+                          "$ref": "#\/definitions\/ResourceWithoutPerm"
+                        },
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // POST
+            "post": {
+              "tags": [
+                "sgroups"
+              ],
+              "summary": "Create a security group.",
               "consumes": [
                 "application\/json",
               ],
@@ -517,26 +571,15 @@
               ],
               "parameters": [
                 {
-                  "name": "resourceId",
-                  "in": "path",
-                  "description": "Id of signup resource",
-                  "required": true,
-                  "type": "string",
-                },
-                {
                   "in": "body",
                   "name": "body",
-                  "description": "Object with grant information",
                   "required": true,
                   "schema": {
                     "type": "object",
                     "properties" : {
-                      "cmd": {
+                      "resource": {
                         "type": "string",
-                        "default": "Command to be run",
-                      },
-                      "auto": {
-                        "type": "boolean",
+                        "default": "Security group name",
                       },
                     },
                   }
@@ -551,14 +594,151 @@
                       "success": {
                         "type": "boolean",
                       },
-                      "result TODO: standardize": {
+                      "result": {
+                        "$ref": "#\/definitions\/ResourceWithId"
+                      },
+                    }
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
+          // /sgroups/{resourceId}
+          "\/sgroups\/{resourceId}": {
+            // DELETE
+            "delete": {
+              "tags": [
+                "sgroups"
+              ],
+              "summary": "Delete a security group.",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of signup resource",
+                  "required": true,
+                  "type": "string",
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                        "default": false,
+                      },
+                      "resource": {
                         "$ref": "#\/definitions\/Resource"
                       },
                     },
                   },
                 },
                 "401": {
+                  "description": "Not authorized",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                        "default": false,
+                      },
+                      "error": {
+                        "type": "string",
+                      },
+                    },
+                  },
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // PUT
+            "put": {
+              "tags": [
+                "sgroups"
+              ],
+              "summary": "Get a specific security group",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of resource",
+                  "required": true,
+                  "type": "string",
+                },
+                {
+                  "name": "body",
+                  "in": "body",
+                  "description": "Object with security group information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "rules": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "default": "inbound / outbound",
+                            },
+                            "sourceGroupName": {
+                              "type": "string",
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/Resource"
+                      },
+                    }
+                  }
+                },
+                "401": {
                   "description": "Not authorized"
+                }
+                "500": {
+                  "description": "Internal error"
                 }
               },
               "security": [
@@ -597,6 +777,20 @@
               },
               "permissions": {
                 "$ref": "#\/definitions\/Permissions"
+              },
+            },
+          },
+          "ResourceWithId": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+              },
+              "permissions": {
+                "$ref": "#\/definitions\/Permissions"
+              },
+              "id": {
+                "$ref": "#\/definitions\/ResourceId"
               },
             },
           },
