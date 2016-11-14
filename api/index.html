@@ -67,6 +67,10 @@
             "name": "sgroups",
             "description": "Manage security groups",
           },
+          {
+            "name": "machinetypes",
+            "description": "Manage machine types",
+          },
         ],
         paths: {
           // /permissions
@@ -739,6 +743,314 @@
                 },
                 "500": {
                   "description": "Internal error"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
+          // /machinetypes
+          "\/machinetypes": {
+            // GET
+            "get": {
+              "tags": [
+                "machinetypes"
+              ],
+              "summary": "Get all machine types for a user",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "result": {
+                        "type" : "array",
+                        "items": {
+                          "$ref": "#\/definitions\/ResourceWithoutPerm"
+                        },
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // POST
+            "post": {
+              "tags": [
+                "machinetypes"
+              ],
+              "summary": "Create a machine type.",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Object with machine type information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "name": {
+                        "type": "string",
+                        "default": "Name",
+                      },
+                      "region": {
+                        "type": "string",
+                        "default": "AWS region",
+                      },
+                      "hardware": {
+                        "type": "string",
+                        "default": "AWS hardware type",
+                      },
+                      "software": {
+                        "type": "string",
+                        "default": "AWS ami",
+                      },
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/ResourceWithId"
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
+          // /machinetypes/{resourceId}
+          "\/machinetypes\/{resourceId}": {
+            // DELETE
+            "delete": {
+              "tags": [
+                "machinetypes"
+              ],
+              "summary": "Delete a machine type.",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of signup resource",
+                  "required": true,
+                  "type": "string",
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                        "default": false,
+                      },
+                      "error": {
+                        "type": "string",
+                      },
+                    },
+                  },
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // GET
+            "get": {
+              "tags": [
+                "machinetypes"
+              ],
+              "summary": "Get a specific machine type",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of resource",
+                  "required": true,
+                  "type": "string",
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "resource": {
+                        "$ref": "#\/definitions\/ResourceId"
+                      },
+                      "id": {
+                        "$ref": "#\/definitions\/ResourceId"
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/Resource"
+                      },
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // PUT
+            "put": {
+              "tags": [
+                "machinetypes"
+              ],
+              "summary": "Update a machine type",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of resource",
+                  "required": true,
+                  "type": "string",
+                },
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Object with machine type information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "name": {
+                        "type": "string",
+                        "default": "Name",
+                      },
+                      "region": {
+                        "type": "string",
+                        "default": "AWS region",
+                      },
+                      "hardware": {
+                        "type": "string",
+                        "default": "AWS hardware type",
+                      },
+                      "software": {
+                        "type": "string",
+                        "default": "AWS ami",
+                      },
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/Resource"
+                      },
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Not authorized"
                 }
               },
               "security": [
