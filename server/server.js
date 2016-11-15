@@ -131,6 +131,8 @@ app.get('/', function (req, res) {
   res.end(s)
 })
 
+app.get('/badges/pulls', csgrant.bitbucketBadgeOpenPrs('osrf/cloudsim-portal'))
+
 app.use("/api", express.static(path.join(__dirname, '/../api')));
 
 const Simulators = require('./controllers/simulator');

@@ -1,6 +1,6 @@
 {
   "name": "cloudsim-portal",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "This is the portal  server for Cloudsim",
   "main": "cloud_services.js",
   "scripts": {
@@ -20,7 +20,7 @@
   "dependencies": {
     "aws-sdk": "^2.6.12",
     "body-parser": "^1.15.1",
-    "cloudsim-grant": "0.3.3",
+    "cloudsim-grant": "0.3.4",
     "cors": "^2.7.1",
     "dotenv": "^2.0.0",
     "express": "^4.13.4",
@@ -28,7 +28,8 @@
     "gulp-mocha": "^3.0.1",
     "gulp-nodemon": "^2.0.7",
     "morgan": "^1.7.0",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "request": "^2.78.0"
   },
   "devDependencies": {
     "eslint": "^3.8.1",
