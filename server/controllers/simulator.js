@@ -265,13 +265,13 @@ function updateInstanceStatus() {
         return
       }
 
-    // make a dict with machine states, from aws data
+      // make a dict with machine states, from aws data
       const awsInstanceStates = {}
       for (var i = 0; i < awsData.InstanceStatuses.length; ++i) {
         const awsInstanceState = awsData.InstanceStatuses[i]
         const instanceId = awsInstanceState.InstanceId
         const awsState = awsInstanceState.InstanceState.Name
-      // lets convert awsState to a cloudsim sate
+        // lets convert awsState to a cloudsim sate
         const aws2cs = {
           'pending': 'LAUNCHING',
           'running': 'RUNNING',
@@ -298,7 +298,12 @@ function updateInstanceStatus() {
           const user = getUserFromResource(simulator)
           const resourceName = simulator.data.id
           csgrant.updateResource(user, resourceName, simulator.data, ()=>{
-            console.log(simulator.data.id, 'status update', oldState, '=>',
+            if (simulator.data.status === 'TERMINATED') {
+              // extra console.log for issue 13
+              console.log('\n\n', awsInstanceStates,'\n*\n', simulator.data)
+            }
+            console.log(simId,simulator.data.id,
+              'status update', oldState, '=>',
               simulator.data.status)
           })
         }
