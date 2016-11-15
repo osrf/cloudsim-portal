@@ -116,11 +116,17 @@ machinetypes.setRoutes(app)
 app.get('/', function (req, res) {
   const info = details()
   const s = `
+    <html>
+    <body>
+    <img src="api/images/cloudsim.svg" style="height: 2em"/>
     <h1>Cloudsim-portal server</h1>
     <div>Cloud service is running</div>
     <pre>
     ${info}
     </pre>
+    <a href='/api'>API documentation</a>
+    </body>
+    </html>
   `
   res.end(s)
 })
