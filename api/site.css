@@ -1,0 +1,7 @@
+/* some css */
+/* put this under /public/* */
+body {
+    font-family: 'Helvetica';
+    color: blue;
+    font-size:24px;
+}
