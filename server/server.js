@@ -133,7 +133,9 @@ app.get('/', function (req, res) {
 
 app.use("/api", express.static(path.join(__dirname, '/../api')))
 
+app.get('/badges/pulls.svg', csgrant.bitbucketBadgeOpenPrs('osrf/cloudsim-portal'))
 
+// start the periodical aws status merge
 simulator.initInstanceStatus()
 
 // Expose app
