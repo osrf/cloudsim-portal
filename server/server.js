@@ -131,9 +131,10 @@ app.get('/', function (req, res) {
   res.end(s)
 })
 
+app.use("/api", express.static(path.join(__dirname, '/../api')))
+
 app.get('/badges/pulls.svg', csgrant.bitbucketBadgeOpenPrs('osrf/cloudsim-portal'))
 
-app.use("/api", express.static(path.join(__dirname, '/../api')));
 
 simulator.initInstanceStatus()
 
