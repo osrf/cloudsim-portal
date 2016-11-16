@@ -6,9 +6,9 @@ var csgrant = require('cloudsim-grant');
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
 if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
-  cloudServices = require('../../cloud_services.js');
+  cloudServices = require('../cloud_services.js');
 } else {
-  cloudServices = require('../../fake_cloud_services.js');
+  cloudServices = require('../fake_cloud_services.js');
 }
 
 const awsData = {region: 'us-west-1'};
@@ -18,7 +18,7 @@ const awsData = {region: 'us-west-1'};
 /// @param req Nodejs request object.
 /// @param res Nodejs response object.
 /// @return Security group create function.
-exports.create = function(req, res) {
+const create = function(req, res) {
   var error;
   if (!cloudServices) {
     // Create an error
@@ -97,7 +97,7 @@ exports.create = function(req, res) {
 /// @param req Nodejs request object.
 /// @param res Nodejs response object.
 /// @return Destroy function
-exports.destroy = function(req, res) {
+const destroy = function(req, res) {
 
   if (!cloudServices) {
     // Create an error
@@ -161,7 +161,7 @@ exports.destroy = function(req, res) {
 /// @param req Nodejs request object.
 /// @param res Nodejs response object.
 /// @return Update sgroup function
-exports.update = function(req, res) {
+const update = function(req, res) {
 
   if (!cloudServices) {
     // Create an error
@@ -290,4 +290,49 @@ exports.update = function(req, res) {
     })
 
   });
+}
+
+exports.setRoutes = function(app) {
+
+  /// Create a new security group
+  app.post('/sgroups',
+              csgrant.authenticate,
+              csgrant.ownsResource('sgroups', false),
+              create);
+
+  /// Get a list of security groups
+  app.get('/sgroups',
+             csgrant.authenticate,
+             csgrant.userResources,
+             function (req, res, next) {
+               // we're going to filter out the non
+               // groups types before the next middleware.
+               req.allResources = req.userResources
+               req.userResources = req.allResources.filter( (obj)=>{
+                 if(obj.name.indexOf('sgroup-') == 0)
+                   return true
+                 return false
+               })
+               next()
+             },
+             csgrant.allResources)
+
+  /// Delete a security group
+  app.delete('/sgroups/:sgroup',
+                csgrant.authenticate,
+                csgrant.ownsResource(':sgroup', false),
+                destroy);
+
+
+  /// Update security group rules
+  app.put('/sgroups/:sgroup',
+             csgrant.authenticate,
+             csgrant.ownsResource(':sgroup', false),
+             update)
+
+  // sgroup route parameter
+  app.param('sgroup', function(req, res, next, id) {
+    req.sgroup = id
+    next()
+  })
 }

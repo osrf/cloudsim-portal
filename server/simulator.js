@@ -11,11 +11,11 @@ const csgrant = require('cloudsim-grant')
 var cloudServices = null;
 if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
   console.log('using the real cloud services!');
-  cloudServices = require('../../cloud_services.js');
+  cloudServices = require('../cloud_services.js');
 } else {
   console.log(
     'process.env.AWS_ACCESS_KEY_ID not defined: using the fake cloud services');
-  cloudServices = require('../../fake_cloud_services.js');
+  cloudServices = require('../fake_cloud_services.js');
 }
 
 // global variables and settings
@@ -45,7 +45,7 @@ var awsData = { desc: 'Trusty + nvidia (CUDA 7.5)',
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
 /// @return Simulator create function.
-exports.create = function(req, res) {
+const create = function(req, res) {
   // console.log('simulator controller create')
   // Create a new simulator instance based on the content of the request
   let error
@@ -192,7 +192,7 @@ function getUserFromResource(resource) {
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
 /// @return Destroy function
-exports.destroy = function(req, res) {
+const destroy = function(req, res) {
   const simulator = req.resourceData
   if (!cloudServices) {
     // Create an error
@@ -314,3 +314,43 @@ exports.initInstanceStatus = function() {
     instanceStatusUpdateInterval)
   setInterval(updateInstanceStatus, instanceStatusUpdateInterval);
 }
+
+exports.setRoutes = function (app) {
+  /// GET /simulators
+  /// Return all the simulators, running and terminated
+  app.get('/simulators',
+    csgrant.authenticate,
+    csgrant.userResources,
+    function (req, res, next) {
+      const resources = req.userResources
+      req.userResources = resources.filter( (obj)=>{
+        if(obj.name.indexOf('simulator-') == 0)
+          return true
+        return false
+      })
+      next()
+    },
+    csgrant.allResources)
+
+  /// DEL /simulators
+  /// Delete one simulation instance
+  app.delete('/simulators/:resourceId',
+    csgrant.authenticate,
+    csgrant.ownsResource(':resourceId', false),
+    destroy)
+
+  /// POST /simulators
+  /// Create a new simulation
+  app.post('/simulators',
+    csgrant.authenticate,
+    csgrant.ownsResource('simulators', false),
+    create)
+
+  /// GET /simulators/:simulationId
+  /// Return properties for one simulation
+  app.get('/simulators/:resourceId',
+   csgrant.authenticate,
+   csgrant.ownsResource(':resourceId', true),
+   csgrant.resource)
+}
+

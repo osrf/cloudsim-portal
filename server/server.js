@@ -14,8 +14,8 @@ const csgrant = require('cloudsim-grant')
 
 // resources
 const machinetypes = require('./machinetypes')
-const sgroup = require('./routes/sgroup')
-const simulator = require('./routes/simulator')
+const sgroup = require('./sgroup')
+const simulator = require('./simulator')
 
 dotenv.load();
 
@@ -131,13 +131,13 @@ app.get('/', function (req, res) {
   res.end(s)
 })
 
-app.use("/api", express.static(path.join(__dirname, '/../api')));
+app.use("/api", express.static(path.join(__dirname, '/../api')))
 
-const Simulators = require('./controllers/simulator');
-Simulators.initInstanceStatus();
+
+simulator.initInstanceStatus()
 
 // Expose app
-exports = module.exports = app;
+exports = module.exports = app
 
 csgrant.init(adminUser,
   initialResources,
