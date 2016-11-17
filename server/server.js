@@ -7,14 +7,15 @@ const cors = require('cors')
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser')
 const morgan = require('morgan')
+const path = require('path')
 
 // cloudsim module(s)
 const csgrant = require('cloudsim-grant')
 
 // resources
 const machinetypes = require('./machinetypes')
-const sgroup = require('./routes/sgroup')
-const simulator = require('./routes/simulator')
+const sgroup = require('./sgroup')
+const simulator = require('./simulator')
 
 dotenv.load();
 
@@ -90,8 +91,16 @@ app.use(bodyParser.json())
 app.use(cors())
 
 // prints all requests to the terminal
-app.use(morgan('combined'))
-
+app.use(morgan('combined', {
+  skip: function (req) {
+    // skip /api stuff
+    const isApi = req.originalUrl.startsWith('/api/')
+    if (isApi) {
+      return true
+    }
+    return false
+  }
+}))
 
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
   console.log('*** WARNING: No cloudsim auth public key found. \
@@ -107,21 +116,30 @@ machinetypes.setRoutes(app)
 app.get('/', function (req, res) {
   const info = details()
   const s = `
+    <html>
+    <body>
+    <img src="api/images/cloudsim.svg" style="height: 2em"/>
     <h1>Cloudsim-portal server</h1>
     <div>Cloud service is running</div>
     <pre>
     ${info}
     </pre>
+    <a href='/api'>API documentation</a>
+    </body>
+    </html>
   `
   res.end(s)
 })
 
+app.use("/api", express.static(path.join(__dirname, '/../api')))
 
-const Simulators = require('./controllers/simulator');
-Simulators.initInstanceStatus();
+app.get('/badges/pulls.svg', csgrant.bitbucketBadgeOpenPrs('osrf/cloudsim-portal'))
+
+// start the periodical aws status merge
+simulator.initInstanceStatus()
 
 // Expose app
-exports = module.exports = app;
+exports = module.exports = app
 
 csgrant.init(adminUser,
   initialResources,
