@@ -388,8 +388,9 @@ exports.deleteSecurityGroupInboundRule = function (info, cb) {
 exports.generateScript = function (user, options) {
   const rawKey = process.env.CLOUDSIM_AUTH_PUB_KEY
   const key = rawKey.replace( new RegExp( "\n", "g" ),"\\n")
-
-  const optionsStr = JSON.stringify(options, null, 2)
+  // use empty dict if options is null or undefined
+  const opts = options?options:{}
+  const optionsStr = JSON.stringify(opts, null, 2)
 
   /*eslint no-control-regex: "off"*/
   const script = `#!/usr/bin/env bash
@@ -402,6 +403,8 @@ fullpath="$directory/cloudsim-env.bash"
 logpath="$directory/cloudsim.log"
 deploypath="$directory/cloudsim_deploy.bash"
 optionspath="$directory/cloudsim-options.json"
+
+mkdir -p $directory
 
 date > $logpath
 echo "writing $fullpath file" >> $logpath
