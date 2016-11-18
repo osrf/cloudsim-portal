@@ -60,6 +60,7 @@ const create = function(req, res) {
   simulator.region = req.body.region
   simulator.hardware = req.body.hardware
   simulator.image = req.body.image
+  simulator.options = req.body.options
   if (req.body.sgroup)
     simulator.sgroup = req.body.sgroup
   if (!simulator.region || !simulator.image || !simulator.hardware)
@@ -100,7 +101,9 @@ const create = function(req, res) {
         const tagValue = resourceName + '_' + req.user
         const tag = {Name: tagValue}
         // use a script that will pass on the username,
-        const scriptTxt = cloudServices.generateScript(req.user)
+        const scriptTxt = cloudServices.generateScript(
+          simulator.creator,
+          simulator.options )
         let sgroups = [awsDefaults.security];
         if (req.body.sgroup)
           sgroups.push(req.body.sgroup)
