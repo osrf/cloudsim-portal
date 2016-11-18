@@ -157,26 +157,6 @@ https://ip_address:4000 (if port 4000 is open)
 
 https://ip_address (if the port 4000 is redirected to 443)
 
-
-### MongoDB ###
-
-Set up mongo with an admin user:
-
-    $ mongo
-
-    > show dbs
-    > use cloudsim-portal
-    > db.users.insert({"username": "admin"})
-
-
-other useful mongo commands for retrieving data from collections:
-
-    > db.users.find().pretty()
-    > db.simulators.find().pretty()
-    > db.simulations.find().pretty()
-    > db.simulators.remove({})
-
-
 ## Testing ##
 
 ### How to run tests ###
