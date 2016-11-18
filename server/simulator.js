@@ -3,7 +3,6 @@
 /// Server side simulator controller.
 
 /// Module dependencies.
-const fs = require('fs')
 const util = require('util')
 const csgrant = require('cloudsim-grant')
 
@@ -19,7 +18,6 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
 }
 
 // global variables and settings
-var aws_ssh_key = 'cloudsim';
 var instanceStatusUpdateInterval = 5000;
 var instanceIpUpdateInterval = 10000;
 
@@ -32,14 +30,12 @@ if (process.env.NODE_ENV === 'test') {
 
 
 // The AWS server information
-var awsData = { desc: 'Trusty + nvidia (CUDA 7.5)',
+const awsDefaults = {
   region : 'us-west-1',
-  keyName : aws_ssh_key,
-  hardware : 'g2.2xlarge',
+  keyName : 'cloudsim',
   security : 'cloudsim-sim',
-  image : 'ami-d8e996b8'}
-
-
+  script: 'cloudsim_env.bash'
+}
 
 /// Create a simulator
 /// @param[in] req Nodejs request object.
@@ -85,7 +81,6 @@ const create = function(req, res) {
   simulator.machine_ip = '';
   simulator.machine_id = '';
 
-
   csgrant.getNextResourceId('simulator', (err, resourceName) => {
     if(err) {
       res.jsonp(error(err))
@@ -104,15 +99,19 @@ const create = function(req, res) {
         // launch the simulator!
         const tagValue = resourceName + '_' + req.user
         const tag = {Name: tagValue}
-        // todo: use a real script
-        var scriptName = 'empty.bash';
-        const script = fs.readFileSync(scriptName, 'utf8')
-
-        let sgroups = [awsData.security];
+        // use a script that will pass on the username,
+        const scriptTxt = cloudServices.generateScript(req.user)
+        let sgroups = [awsDefaults.security];
         if (req.body.sgroup)
           sgroups.push(req.body.sgroup)
-        cloudServices.launchSimulator(simulator.region, awsData.keyName,
-          simulator.hardware, sgroups, simulator.image, tag, script,
+        cloudServices.launchSimulator(
+          simulator.region,
+          awsDefaults.keyName,
+          simulator.hardware,
+          sgroups,
+          simulator.image,
+          tag,
+          scriptTxt,
           function (err, machine) {
             if (err) {
               // Create an error
@@ -120,7 +119,7 @@ const create = function(req, res) {
                 error: {
                   message: err.message,
                   error: err,
-                  awsData: awsData
+                  simulator: simulator
                 }
               }
               console.log(error.msg)
@@ -254,10 +253,9 @@ function updateInstanceStatus() {
   if (simulators.length === 0)
     return
 
-  // get region for awsData for now
-  // TODO for now just get all instances instead of keeping
+  // get region for awsDefaults
   const machineIds = []
-  cloudServices.simulatorStatuses(awsData.region,
+  cloudServices.simulatorStatuses(awsDefaults.region,
     machineIds, function (err, awsData) {
       if (err) {
         console.log(util.inspect(err))
@@ -267,13 +265,13 @@ function updateInstanceStatus() {
         return
       }
 
-    // make a dict with machine states, from aws data
+      // make a dict with machine states, from aws data
       const awsInstanceStates = {}
       for (var i = 0; i < awsData.InstanceStatuses.length; ++i) {
         const awsInstanceState = awsData.InstanceStatuses[i]
         const instanceId = awsInstanceState.InstanceId
         const awsState = awsInstanceState.InstanceState.Name
-      // lets convert awsState to a cloudsim sate
+        // lets convert awsState to a cloudsim sate
         const aws2cs = {
           'pending': 'LAUNCHING',
           'running': 'RUNNING',
@@ -300,7 +298,12 @@ function updateInstanceStatus() {
           const user = getUserFromResource(simulator)
           const resourceName = simulator.data.id
           csgrant.updateResource(user, resourceName, simulator.data, ()=>{
-            console.log(simulator.data.id, 'status update', oldState, '=>',
+            if (simulator.data.status === 'TERMINATED') {
+              // extra console.log for issue 13
+              console.log('\n\n', awsInstanceStates,'\n*\n', simulator.data)
+            }
+            console.log(simId,simulator.data.id,
+              'status update', oldState, '=>',
               simulator.data.status)
           })
         }
