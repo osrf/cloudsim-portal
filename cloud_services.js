@@ -384,9 +384,13 @@ exports.deleteSecurityGroupInboundRule = function (info, cb) {
 // generate a cloud-init script that will run once the aws instance
 // starts
 // @param user - the launching user name
-exports.generateScript = function (user) {
+// @param opions - the extra options (a json dict) passed to the instance
+exports.generateScript = function (user, options) {
   const rawKey = process.env.CLOUDSIM_AUTH_PUB_KEY
   const key = rawKey.replace( new RegExp( "\n", "g" ),"\\n")
+
+  const optionsStr = JSON.stringify(options, null, 2)
+
   /*eslint no-control-regex: "off"*/
   const script = `#!/usr/bin/env bash
 # This script creates a bash file that launches a docker container
@@ -397,6 +401,7 @@ directory="/home/ubuntu/code"
 fullpath="$directory/cloudsim-env.bash"
 logpath="$directory/cloudsim.log"
 deploypath="$directory/cloudsim_deploy.bash"
+optionspath="$directory/cloudsim-options.json"
 
 date > $logpath
 echo "writing $fullpath file" >> $logpath
@@ -407,6 +412,10 @@ echo "writing $fullpath file" >> $logpath
 # see cloudsim-portal/docker_cloudsim_env.bash for the source code
 # A custom upstart service running on the host will source this script
 # when it starts.
+
+cat <<DELIM > $optionspath
+${optionsStr}
+DELIM
 
 cat <<DELIM > $fullpath
 #!/usr/bin/env bash
@@ -432,7 +441,6 @@ else
   date >> $logpath
   echo "can't find script \"$deploypath\"" >> $logpath
 fi
-
 
 date >> $logpath
 echo "cloud-init is done" >> $logpath
