@@ -295,6 +295,9 @@ function updateInstanceStatus() {
         // state according to AWS. if simId is not in the data, the machine
         // is gone
         const awsState = awsInstanceStates[simId] || 'TERMINATED'
+        // special case: launching new machine and there's no aws info yet
+        if (!awsInstanceStates[simId] && oldState == 'LAUNCHING')
+          continue  // skip changes for missing 'LAUNCHING' machines
         // update if state has changed
         if (oldState !== awsState) {
           simulator.data.status = awsState
