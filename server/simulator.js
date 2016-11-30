@@ -18,7 +18,7 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
 }
 
 // global variables and settings
-var instanceStatusUpdateInterval = 5000;
+var instanceStatusUpdateInterval = 15000;
 var instanceIpUpdateInterval = 10000;
 
 if (process.env.NODE_ENV === 'test') {
@@ -362,4 +362,3 @@ exports.setRoutes = function (app) {
    csgrant.ownsResource(':resourceId', true),
    csgrant.resource)
 }
-
