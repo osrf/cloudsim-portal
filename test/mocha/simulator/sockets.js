@@ -393,6 +393,7 @@ describe('<Unit Test sockets>', function() {
             .set('Accept', 'application/json')
             .set('authorization', adminToken)
             .end(function(err,res){
+console.log('\n\n\n=========lkjasdlug\n',res.text)
               res.status.should.be.equal(200)
               res.redirect.should.equal(false)
             })

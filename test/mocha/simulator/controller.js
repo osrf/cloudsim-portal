@@ -169,20 +169,16 @@ describe('<Simulator controller test>', function() {
     });
   });
 
-  describe('Check One Simulator Launched', function() {
-    it('should be one running simulator', function(done) {
+  describe('Check key', function() {
+    it('ssh key for the simulator', function(done) {
       agent
-      .get('/simulators')
+      .get('/keys/' + simId1 + '/ssh.zip')
       .set('authorization', userToken)
       .end(function(err,res){
         res.status.should.be.equal(200)
         res.redirect.should.equal(false)
-        const data  = parseResponse(res.text)
-        data.result.length.should.be.exactly(1)
-        data.result[0].permissions[0].username.should.equal(adminUser)
-        data.result[0].name.should.equal(simId1)
-        data.result[0].data.status.should.equal('LAUNCHING')
-        data.result[0].data.region.should.equal('us-west-1')
+        const data  = res.text
+        data.indexOf('fake ssh key').should.be.aboveOrEqual(0)
         done()
       })
     })
@@ -208,6 +204,29 @@ describe('<Simulator controller test>', function() {
         });
       });
   });
+
+
+    describe('Check Get Simulatior by ID', function() {
+    it('should be possible to get the first running simulator',
+      function(done) {
+        const route = '/simulators/' + simId1
+        agent
+        .get(route)
+        .set('authorization', userToken)
+        .end(function(err,res){
+          res.status.should.be.equal(200);
+          res.redirect.should.equal(false);
+          const r = parseResponse(res.text)
+          r.result.data.id.should.equal(simId1)
+          r.result.data.status.should.equal('LAUNCHING')
+          r.requester.should.equal(adminUser)
+          r.success.should.equal(true)
+          r.result.data.region.should.equal('us-west-1')
+          done();
+        });
+      });
+  });
+
 
   var simId2 ='';
   describe('Check Launch Second Simulator', function() {

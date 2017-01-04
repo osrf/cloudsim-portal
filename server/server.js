@@ -16,6 +16,7 @@ const csgrant = require('cloudsim-grant')
 const machinetypes = require('./machinetypes')
 const sgroup = require('./sgroup')
 const simulator = require('./simulator')
+const keys = require('./keys')
 
 dotenv.load();
 
@@ -113,6 +114,8 @@ csgrant.setPermissionsRoutes(app)
 simulator.setRoutes(app)
 sgroup.setRoutes(app)
 machinetypes.setRoutes(app)
+keys.setRoutes(app)
+
 app.get('/', function (req, res) {
   const info = details()
   const s = `
