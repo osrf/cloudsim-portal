@@ -11,8 +11,13 @@ require('dotenv').config()
 var dryRun = process.env.CLOUDSIM_DRY_RUN === 'true';
 console.log('process.env.CLOUDSIM_DRY_RUN (true means enabled): ' +  process.env.CLOUDSIM_DRY_RUN);
 
-// Async functions to launch machines on a cloud provider
-// AWS is the only supported one for now
+// useful defaults for AWS server information
+exports.awsDefaults = {
+  region : 'us-west-1',
+  keyName : 'cloudsim',
+  security : 'cloudsim-sim',
+}
+
 
 
 // Generates a new ssh key, registers the public key on the cloud

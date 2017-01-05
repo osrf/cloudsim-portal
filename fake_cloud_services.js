@@ -18,6 +18,13 @@ let fakeSecurityGroups = [];
 let fakeSecurityGroupInboundRules = [];
 let sgCounter = 0;
 
+// useful defaults for AWS server information
+exports.awsDefaults = {
+  region : 'us-west-1',
+  keyName : 'cloudsim',
+  security : 'cloudsim-sim',
+}
+
 exports.generateKey = function (keyName, region, cb) {
   log('FAKE generate Key ' + keyName + ' in region ' + region);
   cb(null, 'START FAKE KEY\n=====346785893bjhdfgsd847edjhvcs\nEND FAKE KEY');

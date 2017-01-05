@@ -28,14 +28,7 @@ if (process.env.NODE_ENV === 'test') {
 }
 //var terminatingInstanceList = [];
 
-
-// The AWS server information
-const awsDefaults = {
-  region : 'us-west-1',
-  keyName : 'cloudsim',
-  security : 'cloudsim-sim',
-  script: 'cloudsim_env.bash'
-}
+const awsDefaults = cloudServices.awsDefaults
 
 /// Create a simulator
 /// @param[in] req Nodejs request object.
@@ -60,7 +53,12 @@ const create = function(req, res) {
   simulator.region = req.body.region
   simulator.hardware = req.body.hardware
   simulator.image = req.body.image
+  simulator.sshkey = req.body.sshkey
+  if (!simulator.sshkey) {
+    simulator.sshkey = awsDefaults.keyName
+  }
   simulator.options = req.body.options
+
   if (req.body.sgroup)
     simulator.sgroup = req.body.sgroup
   if (!simulator.region || !simulator.image || !simulator.hardware)
@@ -109,7 +107,7 @@ const create = function(req, res) {
           sgroups.push(req.body.sgroup)
         cloudServices.launchSimulator(
           simulator.region,
-          awsDefaults.keyName,
+          simulator.sshkey,
           simulator.hardware,
           sgroups,
           simulator.image,
