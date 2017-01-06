@@ -1,7 +1,11 @@
 'use strict'
 
 const fs = require('fs')
+const archiver = require('archiver')
 const csgrant = require('cloudsim-grant')
+const zip = require('./zip')
+
+const log = console.log
 
 // initialise cloudServices, depending on the environment
 let cloudServices = null
@@ -22,7 +26,7 @@ const awsDefaults = {
 // app: the express app
 // keysFilePath: the full path to the keys.zip file
 function setRoutes(app) {
-  console.log('DOWNLOADS setRoutes')
+  console.log('sshkeys setRoutes')
 
   app.get('/sshkeys/:sshkey',
     // user must have valid token (in req.query)
@@ -33,17 +37,19 @@ function setRoutes(app) {
     // this middleware sets the file download information from
     // the resource in req.resourceData
     function(req,res, next) {
-
-      const shortName = 'keys.zip'
-      const localPath = '/tmp/' + ssshResource
-
-      fs.writeFileSync(localPath, req.sshkey.data)
-
-      req.fileInfo = { path: localPath ,
-        type: 'application/zip',
-        name: shortName
-      }
-      next()
+      const localPath = '/tmp/' + req.resourceName
+      const zipContents = {'cloudsim.pem' : req.resourceData.data.ssh}
+      zip.compressTextFilesToZip(localPath, zipContents, (err)=>{
+        if(err) {
+          throw err
+        }
+        // setup the download
+        req.fileInfo = { path: localPath ,
+          type: 'application/zip',
+          name: 'keys.zip'
+        }
+        next()
+      })
     },
     // with a req.fileInfo in place, this middleware will
     // download the file from the disk
@@ -89,8 +95,8 @@ function setRoutes(app) {
           }
           // save key to db
           const data = {
-            name: keyName,
-            data: sshkeyData
+            keyname: keyName,
+            ssh: sshkeyData
           }
           csgrant.createResource(req.user, resourceName, data, (err)=>{
             if(err) {
@@ -114,7 +120,7 @@ function setRoutes(app) {
 
   // route parameter for ssh key
   app.param('sshkey', function( req, res, next, id) {
-    req.simkey = id
+    req.sshkey = id
     next()
   })
 }

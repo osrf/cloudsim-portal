@@ -18,6 +18,7 @@
   },
   "license": "ISC",
   "dependencies": {
+    "archiver": "^1.3.0",
     "aws-sdk": "^2.6.12",
     "body-parser": "^1.15.1",
     "cloudsim-grant": "0.3.5",

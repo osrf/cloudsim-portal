@@ -190,15 +190,15 @@ describe('<Simulator controller test>', function() {
 
   describe('Check key', function() {
     it('ssh key for the simulator', function(done) {
-console.log('asddas@ASDD DSAASD ASDDSA', sshId)
+      const url = '/sshkeys/' + sshId
       agent
-      .get('/sshkeys/' + sshId)
+      .get(url)
       .set('authorization', userToken)
       .end(function(err,res){
-console.log('asddas@ASDD DSAASD ASDDSA', res.text)
         res.status.should.be.equal(200)
         res.redirect.should.equal(false)
         const data  = res.text
+        // for some reason, the text in the zip file is not compressed
         data.indexOf('START FAKE KEY').should.be.aboveOrEqual(0)
         done()
       })
