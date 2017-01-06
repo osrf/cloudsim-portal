@@ -16,6 +16,7 @@ const csgrant = require('cloudsim-grant')
 const machinetypes = require('./machinetypes')
 const sgroup = require('./sgroup')
 const simulator = require('./simulator')
+const sshkeys = require('./sshkeys')
 
 dotenv.load();
 
@@ -91,16 +92,18 @@ app.use(bodyParser.json())
 app.use(cors())
 
 // prints all requests to the terminal
-app.use(morgan('combined', {
-  skip: function (req) {
-    // skip /api stuff
-    const isApi = req.originalUrl.startsWith('/api/')
-    if (isApi) {
-      return true
+if (app.get('env') != 'test') {
+  app.use(morgan('combined', {
+    skip: function (req) {
+      // skip /api stuff
+      const isApi = req.originalUrl.startsWith('/api/')
+      if (isApi) {
+        return true
+      }
+      return false
     }
-    return false
-  }
-}))
+  }))
+}
 
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
   console.log('*** WARNING: No cloudsim auth public key found. \
@@ -113,6 +116,9 @@ csgrant.setPermissionsRoutes(app)
 simulator.setRoutes(app)
 sgroup.setRoutes(app)
 machinetypes.setRoutes(app)
+sshkeys.setRoutes(app)
+
+// a little home page for general info
 app.get('/', function (req, res) {
   const info = details()
   const s = `
