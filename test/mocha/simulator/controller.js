@@ -3,8 +3,6 @@
 console.log('test/mocha/simulator/controller.js');
 
 let csgrant
-
-
 let app
 
 
@@ -115,7 +113,8 @@ describe('<Simulator controller test>', function() {
 
   // verify admin permissions to root resources
   describe('Check All Admin Permissions', function() {
-    it('admin should have write permission to all root resources', function(done) {
+    it('admin should have write permission to all root resources',
+    function(done) {
       agent
       .get('/permissions')
       .set('Acccept', 'application/json')
@@ -241,13 +240,11 @@ describe('<Simulator controller test>', function() {
       .set('authorization', userToken)
       .end(function(err,res){
         res.status.should.be.equal(401)
-        const data  = res.text
         done()
       })
     })
   })
 
-
   describe('Check Get Simulatior by ID', function() {
     it('should be possible to get the first running simulator',
       function(done) {
@@ -289,7 +286,6 @@ describe('<Simulator controller test>', function() {
         });
       });
   });
-
 
   var simId2 ='';
   describe('Check Launch Second Simulator', function() {
@@ -686,8 +682,9 @@ describe('<Simulator controller test>', function() {
       .post('/permissions')
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
-      .send({resource: simId3, grantee: user2TokenData.identities[0], readOnly: false})
-      .end(function(err,res){
+      .send({resource: simId3, grantee: user2TokenData.identities[0],
+        readOnly: false
+      }).end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
@@ -714,7 +711,9 @@ describe('<Simulator controller test>', function() {
         r.result[0].name.should.not.be.empty();
         r.result[0].name.should.equal(simId2);
         r.result[0].permissions.length.should.be.exactly(2)
-        r.result[0].permissions[0].username.should.equal(user2TokenData.identities[0])
+        r.result[0].permissions[0].username.should.equal(
+          user2TokenData.identities[0]
+        )
         r.result[0].permissions[0].permissions.readOnly.should.equal(true);
         r.result[1].name.should.not.be.empty();
         r.result[1].name.should.equal(simId3);
