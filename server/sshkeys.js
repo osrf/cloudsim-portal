@@ -5,7 +5,7 @@ const archiver = require('archiver')
 const csgrant = require('cloudsim-grant')
 const zip = require('./zip')
 
-const log = console.log
+const log = function(){} // console.log
 
 // initialise cloudServices, depending on the environment
 let cloudServices = null
@@ -72,10 +72,8 @@ function setRoutes(app) {
           success: false,
           error: msg}
       }
-
-      console.log('ssh key name: ' + keyName)
-      console.log('user: ' + user)
-
+      log('ssh key name: ' + keyName)
+      log('user: ' + user)
       if (!keyName || keyName.length === 0) {
         res.jsonp(error('Invalid key name: ' + keyName))
         return
