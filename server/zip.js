@@ -15,27 +15,27 @@ exports.compressTextFilesToZip = function(filePath, zipContent, cb)
   // create a file to stream archive data to.
   var output = fs.createWriteStream( filePath ) //__dirname + '/example.zip');
   var archive = archiver('zip', {
-      store: true // Sets the compression method to STORE.
-  });
+    store: true // Sets the compression method to STORE.
+  })
 
   // listen for all archive data to be written
   output.on('close', function() {
     console.log(archive.pointer() + ' total bytes')
     log(filePath + ' created')
     cb (null)
-  });
+  })
 
   // good practice to catch this error explicitly
   archive.on('error', function(err) {
     cb(err)
-  });
+  })
 
   // pipe archive data to the file
   archive.pipe(output);
   for (fname in zipContent) {
     const data = zipContent[fname]
     // append a file from string
-    archive.append(data, { name: fname });
+    archive.append(data, { name: fname })
   }
   // finalize the archive. We are done appending files but streams have
   // yet to finish

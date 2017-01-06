@@ -1,7 +1,5 @@
 'use strict'
 
-const fs = require('fs')
-const archiver = require('archiver')
 const csgrant = require('cloudsim-grant')
 const zip = require('./zip')
 
@@ -14,12 +12,6 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
   cloudServices = require('../cloud_services.js')
 } else {
   cloudServices = require('../fake_cloud_services.js')
-}
-
-// The AWS server information
-const awsDefaults = {
-  region : 'us-west-1',
-  keyName : 'cloudsim',
 }
 
 // Sets the routes for downloading the keys
@@ -56,40 +48,37 @@ function setRoutes(app) {
     csgrant.downloadFilePath
   )
 
-
   // create vpn key resource
   app.post('/sshkeys',
     csgrant.authenticate,
     // you can create a key if you can create a simulation
-    csgrant.ownsResource('simulators', false),
-    function (req, res) {
+    csgrant.ownsResource('simulators', false), function (req, res) {
       const op = 'create ssh Key'
       const user = req.user
       const keyName = req.body.name
 
+      // function to report errors
       const error = function(msg) {
-        return {operation: op,
+        res.status(400).jsonp({operation: op,
           success: false,
-          error: msg}
+          error: msg})
       }
+
       log('ssh key name: ' + keyName)
       log('user: ' + user)
       if (!keyName || keyName.length === 0) {
-        res.jsonp(error('Invalid key name: ' + keyName))
-        return
+        return error('Invalid key name: ' + keyName)
       }
       // reserve a resource name, we'll use it with aws
       csgrant.getNextResourceId('sshkey', (err, resourceName)=>{
         if (err) {
-          res.jsonp(error(err))
-          return
+          return error(err)
         }
         // generate the key using the resource name
         const region = cloudServices.awsDefaults.region
         cloudServices.generateKey(resourceName, region, (err, sshkeyData )=>{
           if(err) {
-            res.jsonp(error(err))
-            return
+            return error(err)
           }
           // save key to db
           const data = {
@@ -98,8 +87,7 @@ function setRoutes(app) {
           }
           csgrant.createResource(req.user, resourceName, data, (err)=>{
             if(err) {
-              res.jsonp(error(err))
-              return
+              return error(err)
             }
               // key is saved
             let r = { success: true,
@@ -109,12 +97,32 @@ function setRoutes(app) {
               id: resourceName,
               requester: req.user
             }
+            // success
             res.jsonp(r)
-
           })
         })
       })
-  })
+    })
+
+  // Delete ssh key
+  app.delete('/sshkeys/:sshkey',
+    csgrant.authenticate,
+    csgrant.ownsResource(':sshkey', false),
+    function(req, res) {
+      log('delete sshkey "' + req.resourceName + '"')
+      const r = {success: false}
+      const user = req.user  // from previous middleware
+      const resource = req.resourceName // from app.param (see below)
+      csgrant.deleteResource(user, resource, (err, data) => {
+        if(err) {
+          return res.jsonp({success: false, error: err})
+        }
+        r.success = true
+        r.result = data
+        // success
+        res.jsonp(r)
+      })
+    })
 
   // route parameter for ssh key
   app.param('sshkey', function( req, res, next, id) {

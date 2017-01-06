@@ -171,6 +171,19 @@ describe('<Simulator controller test>', function() {
 
   let sshId
   describe('generate ssh key', function() {
+    it('should be an error to generate a sshkey without a name', function(done) {
+      agent
+      .post('/sshkeys')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(400)
+        const r = parseResponse(res.text, res.status != 400)
+        r.success.should.equal(false)
+        done()
+      })
+    })
+
     it('should be possible to generate an sshkey', function(done) {
       agent
       .post('/sshkeys')
@@ -205,6 +218,36 @@ describe('<Simulator controller test>', function() {
     })
   })
 
+  describe('Remove ssh key', function() {
+    it('ssh key for the simulator', function(done) {
+      const url = '/sshkeys/' + sshId
+      agent
+      .delete(url)
+      .set('authorization', userToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200)
+        const r = parseResponse(res.text, res.status != 200)
+        r.success.should.equal(true)
+        done()
+      })
+    })
+  })
+
+  describe('Check key again', function() {
+    it('ssh key should be gone', function(done) {
+      const url = '/sshkeys/' + sshId
+      agent
+      .get(url)
+      .set('authorization', userToken)
+      .end(function(err,res){
+        res.status.should.be.equal(401)
+        const data  = res.text
+        done()
+      })
+    })
+  })
+
+
   describe('Check Get Simulatior by ID', function() {
     it('should be possible to get the first running simulator',
       function(done) {
@@ -226,8 +269,7 @@ describe('<Simulator controller test>', function() {
       });
   });
 
-
-    describe('Check Get Simulatior by ID', function() {
+  describe('Check Get Simulatior by ID', function() {
     it('should be possible to get the first running simulator',
       function(done) {
         const route = '/simulators/' + simId1
