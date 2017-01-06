@@ -53,6 +53,9 @@ const create = function(req, res) {
   simulator.region = req.body.region
   simulator.hardware = req.body.hardware
   simulator.image = req.body.image
+  // TODO: Check if user owns this SSH key resource, otherwise someone can
+  // launch a machine with an ssh key they don't own, and download the key
+  // from the machine later using the /download route
   simulator.sshkey = req.body.sshkey
   if (!simulator.sshkey) {
     simulator.sshkey = awsDefaults.keyName

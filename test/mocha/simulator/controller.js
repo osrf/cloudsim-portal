@@ -168,6 +168,25 @@ describe('<Simulator controller test>', function() {
     });
   });
 
+  describe('Check One Simulator Launched', function() {
+    it('should be one running simulator', function(done) {
+      agent
+      .get('/simulators')
+      .set('authorization', userToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200)
+        res.redirect.should.equal(false)
+        const data  = parseResponse(res.text)
+        data.result.length.should.be.exactly(1)
+        data.result[0].permissions[0].username.should.equal(adminUser)
+        data.result[0].name.should.equal(simId1)
+        data.result[0].data.status.should.equal('LAUNCHING')
+        data.result[0].data.region.should.equal('us-west-1')
+        done()
+      })
+    })
+  })
+
   let sshId
   describe('generate ssh key', function() {
     it('should be an error to generate a sshkey without a name', function(done) {
