@@ -113,14 +113,23 @@ function setRoutes(app) {
       const r = {success: false}
       const user = req.user  // from previous middleware
       const resource = req.resourceName // from app.param (see below)
+      const error = function(err) {
+        res.status(500).jsonp({success: false, error: err})
+      }
       csgrant.deleteResource(user, resource, (err, data) => {
         if(err) {
-          return res.jsonp({success: false, error: err})
+          return error(err)
         }
-        r.success = true
-        r.result = data
-        // success
-        res.jsonp(r)
+        const region = cloudServices.awsDefaults.region
+        // remove key from AWS
+        cloudServices.deleteKey(resource, region, (err)=> {
+          if(err) {
+            return error(err)
+          }
+          r.success = true
+          r.result = data
+          res.jsonp(r)
+        })
       })
     })
 
