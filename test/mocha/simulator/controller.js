@@ -232,14 +232,17 @@ describe('<Simulator controller test>', function() {
     })
   })
 
-  describe('Check key again', function() {
+  describe('Check key after removal', function() {
     it('ssh key should be gone', function(done) {
-      const url = '/sshkeys/' + sshId
+      const url = '/sshkeys'
       agent
       .get(url)
       .set('authorization', userToken)
       .end(function(err,res){
-        res.status.should.be.equal(401)
+        res.status.should.be.equal(200)
+        const r = parseResponse(res.text, res.status != 200)
+        r.success.should.equal(true)
+        r.result.length.should.equal(0)
         done()
       })
     })

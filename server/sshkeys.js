@@ -20,6 +20,23 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
 function setRoutes(app) {
   console.log('sshkeys setRoutes')
 
+  // list all resources
+  app.get('/sshkeys',
+    csgrant.authenticate,
+    csgrant.userResources,
+    function(req, res, next) {
+      // we're going to filter out the non
+      // machine types before the next middleware.
+      req.allResources = req.userResources
+      req.userResources = req.allResources.filter( (obj)=>{
+        if(obj.name.indexOf('sshkey-') == 0)
+          return true
+        return false
+      })
+      next()
+    },
+    csgrant.allResources)
+
   app.get('/sshkeys/:sshkey',
     // user must have valid token (in req.query)
     csgrant.authenticate,
