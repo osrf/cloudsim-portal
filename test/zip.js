@@ -7,11 +7,8 @@ const child_process = require('child_process')
 const fs = require('fs')
 const zip = require('../server/zip')
 
-
-const zipData = {"toto.txt": "this is toto content"}
 const resourceName = 'sshkey-007'
 const filePath = '/tmp/' + resourceName + '.zip'
-
 
 describe('<Unit test Zip>', function() {
 
@@ -20,10 +17,10 @@ describe('<Unit test Zip>', function() {
     done()
   })
 
-
   describe('Create zip', function() {
     it('should be possible to create zip file', function(done) {
-      zip.compressTextFilesToZip(filePath, zipData, (err)=>{
+      // zip.compressTextFilesToZip(filePath, zipData, (err)=>{
+      zip.zipSshKey(filePath, 'toto.txt', 'this is toto content', (err)=>{
         if(err) {
           should.fail(err)
         }
@@ -48,5 +45,4 @@ describe('<Unit test Zip>', function() {
     child_process.execSync( 'rm -f ' + filePath)
     done()
   })
-
 })

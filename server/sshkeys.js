@@ -46,16 +46,17 @@ function setRoutes(app) {
     // this middleware sets the file download information from
     // the resource in req.resourceData
     function(req,res, next) {
-      const localPath = '/tmp/' + req.resourceName
-      const zipContents = {'cloudsim.pem' : req.resourceData.data.ssh}
-      zip.compressTextFilesToZip(localPath, zipContents, (err)=>{
+      const zipName = 'keys.zip'
+      const zipPath = '/tmp/' + zipName
+      const keyData = req.resourceData.data.ssh
+      zip.zipSshKey(zipName, 'cloudsim.pem', keyData, (err)=>{
         if(err) {
           throw err
         }
         // setup the download
-        req.fileInfo = { path: localPath ,
+        req.fileInfo = { path: zipPath ,
           type: 'application/zip',
-          name: 'keys.zip'
+          name: zipName
         }
         next()
       })
