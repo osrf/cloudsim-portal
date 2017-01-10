@@ -1,46 +1,31 @@
 // require modules
-const fs = require('fs');
-const archiver = require('archiver');
+const fs = require('fs')
+const child_process = require('child_process')
 
-const log = function () {}
-
-// write a zip file to disk that contains multiple text files
-// @param[in] filePath The zip file path on disk
-// @param[in] zipContent An object that contains file names and data in the
-// archive (ex: {'toto.txt': 'toto file content', 'file2.txt': 'lorem ipsum'}
-// @param[in] cb The callback function with the following params: (err)
-exports.compressTextFilesToZip = function(filePath, zipContent, cb)
+// using zip (which must be installed on machine), this function creates a zipFile
+// that contains an ssh key
+// @param[in] zipFileName The short file name of the zip archive. This file
+// will be created in the /tmp directory
+// @param[in] keyFileName The name of the ssh key file inside the zip archive.
+// @param[in] keyData The ssh key information (will be saved in /tmp)
+// @param[in] cb Callback function with the following params: err (error).
+exports.zipSshKey = function(zipFileName, keyFileName, keyData, cb)
 {
+  // save file in /tmp
+  const fpath = "/tmp/" + keyFileName
 
-  // create a file to stream archive data to.
-  var output = fs.createWriteStream( filePath ) //__dirname + '/example.zip');
-  var archive = archiver('zip', {
-    store: true // Sets the compression method to STORE.
+  fs.writeFile( fpath, keyData, (err)=> {
+    if(err) {
+      return cb(err)
+    }
+    console.log(fpath + ' written')
+    const cmd = 'cd /tmp && zip ' + zipFileName + ' ' + keyFileName
+    console.log(cmd)
+    child_process.exec(cmd, (err) => {
+      if(err) {
+        return cb(err)
+      }
+      cb()
+    })
   })
-
-  // listen for all archive data to be written
-  output.on('close', function() {
-    console.log(archive.pointer() + ' total bytes')
-    log(filePath + ' created')
-    cb (null)
-  })
-
-  // good practice to catch this error explicitly
-  archive.on('error', function(err) {
-    cb(err)
-  })
-
-  // pipe archive data to the file
-  archive.pipe(output);
-  for (fname in zipContent) {
-    const data = zipContent[fname]
-    // append a file from string
-    archive.append(data, { name: fname })
-  }
-  // finalize the archive. We are done appending files but streams have
-  // yet to finish
-  archive.finalize()
 }
-
-
-

@@ -85,7 +85,7 @@ describe('<Unit test Machine types>', function() {
         software: 'soft'
       })
       .end(function(err,res) {
-        const response = parseResponse(res)
+        const response = parseResponse(res, res.status != 200)
         res.status.should.be.equal(200)
         res.redirect.should.equal(false)
         response.success.should.equal(true)

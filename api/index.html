@@ -264,6 +264,167 @@
               ]
             },
           },
+
+
+          // /sshkeys
+          "\/sshkeys": {
+            // POST
+            "post": {
+              "tags": [
+                "sshkeys"
+              ],
+              "summary": "Sets the routes for downloading ssh keys",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Key information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                      },
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+
+          },
+
+
+          // /tap/sasc/server/:resourceId
+          "\/sshkeys\/{resourceId}": {
+            // GET
+            "get": {
+              "tags": [
+                "sshkeys"
+              ],
+              "summary": "Download server keys",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of resource",
+                  "required": true,
+                  "type": "string",
+                },
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "file",
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+
+
+            // DELETE
+            "delete": {
+              "tags": [
+                "sshkeys"
+              ],
+              "summary": "Delete an ssh key end remove it from AWS.",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of the key",
+                  "required": true,
+                  "type": "string",
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "$ref": "#\/definitions\/Resource"
+                  },
+                },
+                "401": {
+                  "description": "Not authorized",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                        "default": false,
+                      },
+                      "error": {
+                        "type": "string",
+                      },
+                    },
+                  },
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+
+
+          },
+
+
+
           // /simulators
           "\/simulators": {
             // GET

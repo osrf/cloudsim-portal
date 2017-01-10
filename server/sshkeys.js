@@ -20,6 +20,23 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
 function setRoutes(app) {
   console.log('sshkeys setRoutes')
 
+  // list all resources
+  app.get('/sshkeys',
+    csgrant.authenticate,
+    csgrant.userResources,
+    function(req, res, next) {
+      // we're going to filter out the non
+      // machine types before the next middleware.
+      req.allResources = req.userResources
+      req.userResources = req.allResources.filter( (obj)=>{
+        if(obj.name.indexOf('sshkey-') == 0)
+          return true
+        return false
+      })
+      next()
+    },
+    csgrant.allResources)
+
   app.get('/sshkeys/:sshkey',
     // user must have valid token (in req.query)
     csgrant.authenticate,
@@ -29,16 +46,17 @@ function setRoutes(app) {
     // this middleware sets the file download information from
     // the resource in req.resourceData
     function(req,res, next) {
-      const localPath = '/tmp/' + req.resourceName
-      const zipContents = {'cloudsim.pem' : req.resourceData.data.ssh}
-      zip.compressTextFilesToZip(localPath, zipContents, (err)=>{
+      const zipName = 'keys.zip'
+      const zipPath = '/tmp/' + zipName
+      const keyData = req.resourceData.data.ssh
+      zip.zipSshKey(zipName, 'cloudsim.pem', keyData, (err)=>{
         if(err) {
           throw err
         }
         // setup the download
-        req.fileInfo = { path: localPath ,
+        req.fileInfo = { path: zipPath ,
           type: 'application/zip',
-          name: 'keys.zip'
+          name: zipName
         }
         next()
       })
@@ -113,14 +131,23 @@ function setRoutes(app) {
       const r = {success: false}
       const user = req.user  // from previous middleware
       const resource = req.resourceName // from app.param (see below)
+      const error = function(err) {
+        res.status(500).jsonp({success: false, error: err})
+      }
       csgrant.deleteResource(user, resource, (err, data) => {
         if(err) {
-          return res.jsonp({success: false, error: err})
+          return error(err)
         }
-        r.success = true
-        r.result = data
-        // success
-        res.jsonp(r)
+        const region = cloudServices.awsDefaults.region
+        // remove key from AWS
+        cloudServices.deleteKey(resource, region, (err)=> {
+          if(err) {
+            return error(err)
+          }
+          r.success = true
+          r.result = data
+          res.jsonp(r)
+        })
       })
     })
 
