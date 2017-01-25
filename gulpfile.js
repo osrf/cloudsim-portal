@@ -45,7 +45,7 @@ gulp.task('test', ['set-test-env', 'pre-test'], function() {
     // Creating the reports after tests ran
     .pipe(istanbul.writeReports())
     // Enforce a coverage of at least 45%
-    .pipe(istanbul.enforceThresholds({ thresholds: { global: 60 } }))
+    .pipe(istanbul.enforceThresholds({ thresholds: { statements: 60 } }))
     .once('end', function () {
       process.exit();
     });

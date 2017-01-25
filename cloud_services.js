@@ -7,12 +7,19 @@ const util = require ('util');
 // read environment
 require('dotenv').config()
 
+const log = console.log
+
 // configure what to do for cloud API calls:
 var dryRun = process.env.CLOUDSIM_DRY_RUN === 'true';
-console.log('process.env.CLOUDSIM_DRY_RUN (true means enabled): ' +  process.env.CLOUDSIM_DRY_RUN);
+log('process.env.CLOUDSIM_DRY_RUN (true means enabled): ' +  process.env.CLOUDSIM_DRY_RUN);
 
-// Async functions to launch machines on a cloud provider
-// AWS is the only supported one for now
+// useful defaults for AWS server information
+exports.awsDefaults = {
+  region : 'us-west-1',
+  keyName : 'cloudsim',
+  security : 'cloudsim-sim',
+}
+
 
 
 // Generates a new ssh key, registers the public key on the cloud
@@ -58,25 +65,31 @@ exports.deleteKey = function (keyName, region, cb) {
 
 
 // Launch a simulator machine, given:
-// @param[in] username Username (for info on the AWS console)
-// @param[in] keyName Public ssh key name (must exist on AWS for that region)
-// @param[in] simId Simulation id (for info on the AWS console)
 // @param[in] region The region in which to launch the machine.
-// @param[in] hardware A hardware type
-// @param[in] image An AMI (image id registered in that region)
-// @param[in] a call back function
-exports.launchSimulator = function (region, keyName, hardware, security, image, tags, script, cb) {
+// @param[in] keyName Public ssh key name (an existing key on that AWS region).
+// @param[in] hardware AWS AMI disk image.
+// @param[in] security AWS security group (or a list of groups).
+// @param[in] image An AMI (image id registered in that region).
+// @param[in] tags AWS tags for that instance (object with key value pairs)
+// @param[in] script Cloud-init user data (bash script to be run on launch)
+// @param[in] cb Callback (err, data) where data is instance information.
+exports.launchSimulator = function (region,
+  keyName, hardware, security, image, tags, script, cb) {
   // set AWS region
-  AWS.config.region = region;
-  console.log('Launching simulator');
-  console.log('- SSH key: ' +  keyName);
-  console.log('- region:' + region);
-  console.log('- hardware: ' +  hardware);
-  console.log('- image: ' + image);
-  console.log('- tags: ' + util.inspect(tags));
-  console.log('');
+  AWS.config.region = region
+
+  log('Launching simulator')
+  log('- region:' + region)
+  log('- SSH key: ' +  keyName)
+  log('- hardware: ' +  hardware)
+  log('- security: ' +  security)
+  log('- image: ' + image)
+  log('- tags: ' + util.inspect(tags))
+  log('- script size:' + script.length)
+  log('')
+  const securityGroups = Array.isArray(security)?security:[security]
   // AWS requires the script to be Base64-encoded MIME
-  var userData = new Buffer(script).toString('base64');
+  var userData = new Buffer(script).toString('base64')
   var awsParams = {
     KeyName: keyName,
     ImageId: image,
@@ -84,51 +97,51 @@ exports.launchSimulator = function (region, keyName, hardware, security, image, 
     MinCount:1,
     MaxCount: 1,
     UserData: userData,
-    SecurityGroups: security,
+    SecurityGroups: securityGroups,
+    InstanceInitiatedShutdownBehavior : 'terminate',
     DryRun: dryRun
-  };
+  }
   var ec2 = new AWS.EC2();
   ec2.runInstances(awsParams, function (err, data) {
     if(err) {
-      console.log('AWS launch error: ' + util.inspect(err));
-      cb(err);
+      console.log('AWS launch error: ' + util.inspect(err))
+      cb(err)
     }
     else {
       if(data.Instances.length > 0 && data.Instances[0]) {
         // console.log("data.instances[0]:  " +
         // util.inspect(data.Instances[0]));
-
         var machineInfo = { id: data.Instances[0].InstanceId,
           region: region
-        };
+        }
 
         // create tags with aws format:
         var Tags = [];
         for (var k in tags) {
           // make sure value is a string
           var v = '' + tags[k];
-          var t = {Key: k, Value: v};
+          var t = {Key: k, Value: v}
           Tags.push(t);
         }
-
-        var params = {Resources: [machineInfo.id], Tags: Tags};
+        // add tags (they will be visible on the AWS console)
+        var params = {Resources: [machineInfo.id], Tags: Tags}
         ec2.createTags(params, function(err) {
           if (err) {
-            console.log('Error creating tags for server: ' + util.inspect(err));
-            cb(err);
+            console.log('Error creating tags for server: ' + util.inspect(err))
+            cb(err)
           }
           else {
-            cb(null, machineInfo);
+            cb(null, machineInfo)
           }
-        });
+        })
       }
       else
       {
-        cb('No instance returned!');
+        cb('No instance returned!')
       }
     }
-  });
-};
+  })
+}
 
 // Get the ip address and status of a simulator machine
 // @params[in] machineInfo machineInfo must contain:

@@ -3,8 +3,6 @@
 console.log('test/mocha/simulator/controller.js');
 
 let csgrant
-
-
 let app
 
 
@@ -115,7 +113,8 @@ describe('<Simulator controller test>', function() {
 
   // verify admin permissions to root resources
   describe('Check All Admin Permissions', function() {
-    it('admin should have write permission to all root resources', function(done) {
+    it('admin should have write permission to all root resources',
+    function(done) {
       agent
       .get('/permissions')
       .set('Acccept', 'application/json')
@@ -187,6 +186,106 @@ describe('<Simulator controller test>', function() {
       })
     })
   })
+
+  let sshId
+  describe('generate ssh key', function() {
+    it('should be an error to generate a sshkey without a name', function(done) {
+      agent
+      .post('/sshkeys')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(400)
+        const r = parseResponse(res.text, res.status != 400)
+        r.success.should.equal(false)
+        done()
+      })
+    })
+
+    it('should be possible to generate an sshkey', function(done) {
+      agent
+      .post('/sshkeys')
+      .set('authorization', userToken)
+      .send({name: 'my key'})
+      .end(function(err,res){
+        res.status.should.be.equal(200)
+        const r = parseResponse(res.text, res.status != 200)
+        r.success.should.equal(true)
+        r.result.name.should.equal('my key')
+        sshId = r.id
+        r.id.indexOf('sshkey-').should.equal(0)
+        done()
+      })
+    })
+  })
+
+  describe('Check key', function() {
+    it('ssh key for the simulator', function(done) {
+      const url = '/sshkeys/' + sshId
+      agent
+      .get(url)
+      .set('authorization', userToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200)
+        res.redirect.should.equal(false)
+        // no test to verify the data because it is compressed
+        // see the zip test for that
+        done()
+      })
+    })
+  })
+
+  describe('Remove ssh key', function() {
+    it('ssh key for the simulator', function(done) {
+      const url = '/sshkeys/' + sshId
+      agent
+      .delete(url)
+      .set('authorization', userToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200)
+        const r = parseResponse(res.text, res.status != 200)
+        r.success.should.equal(true)
+        done()
+      })
+    })
+  })
+
+  describe('Check key after removal', function() {
+    it('ssh key should be gone', function(done) {
+      const url = '/sshkeys'
+      agent
+      .get(url)
+      .set('authorization', userToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200)
+        const r = parseResponse(res.text, res.status != 200)
+        r.success.should.equal(true)
+        r.result.length.should.equal(0)
+        done()
+      })
+    })
+  })
+
+  describe('Check Get Simulatior by ID', function() {
+    it('should be possible to get the first running simulator',
+      function(done) {
+        const route = '/simulators/' + simId1
+        agent
+        .get(route)
+        .set('authorization', userToken)
+        .end(function(err,res){
+          res.status.should.be.equal(200);
+          res.redirect.should.equal(false);
+          const r = parseResponse(res.text)
+          r.result.data.id.should.equal(simId1)
+          r.result.data.status.should.equal('LAUNCHING')
+          r.requester.should.equal(adminUser)
+          r.success.should.equal(true)
+          r.result.data.region.should.equal('us-west-1')
+          done();
+        });
+      });
+  });
 
   describe('Check Get Simulatior by ID', function() {
     it('should be possible to get the first running simulator',
@@ -604,8 +703,9 @@ describe('<Simulator controller test>', function() {
       .post('/permissions')
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
-      .send({resource: simId3, grantee: user2TokenData.identities[0], readOnly: false})
-      .end(function(err,res){
+      .send({resource: simId3, grantee: user2TokenData.identities[0],
+        readOnly: false
+      }).end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
@@ -632,7 +732,9 @@ describe('<Simulator controller test>', function() {
         r.result[0].name.should.not.be.empty();
         r.result[0].name.should.equal(simId2);
         r.result[0].permissions.length.should.be.exactly(2)
-        r.result[0].permissions[0].username.should.equal(user2TokenData.identities[0])
+        r.result[0].permissions[0].username.should.equal(
+          user2TokenData.identities[0]
+        )
         r.result[0].permissions[0].permissions.readOnly.should.equal(true);
         r.result[1].name.should.not.be.empty();
         r.result[1].name.should.equal(simId3);
