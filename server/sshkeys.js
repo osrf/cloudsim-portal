@@ -9,9 +9,9 @@ const log = function(){} // console.log
 let cloudServices = null
 
 if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
-  cloudServices = require('../cloud_services.js')
+  cloudServices = require('./cloud_services.js')
 } else {
-  cloudServices = require('../fake_cloud_services.js')
+  cloudServices = require('./fake_cloud_services.js')
 }
 
 // Sets the routes for downloading the keys

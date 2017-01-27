@@ -6,9 +6,9 @@ var csgrant = require('cloudsim-grant');
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
 if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
-  cloudServices = require('../cloud_services.js');
+  cloudServices = require('./cloud_services.js');
 } else {
-  cloudServices = require('../fake_cloud_services.js');
+  cloudServices = require('./fake_cloud_services.js');
 }
 
 const awsData = {region: 'us-west-1'};
