@@ -91,9 +91,9 @@ const initialResources =  {
 app.use(bodyParser.json())
 app.use(cors())
 
-// prints all requests to the terminal
+// prints all requests to the terminal, but ignores the swagger api requests.
 if (app.get('env') != 'test') {
-  app.use(morgan('combined', {
+  app.use(morgan('dev', {
     skip: function (req) {
       // skip /api stuff
       const isApi = req.originalUrl.startsWith('/api/')
