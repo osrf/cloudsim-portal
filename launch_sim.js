@@ -2,7 +2,6 @@
 
 "use strict"
 
-let fs = require('fs')
 let xcloud = require('./cloud_services.js')
 let process = require('process')
 //

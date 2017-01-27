@@ -14,8 +14,8 @@ const csgrant = require('cloudsim-grant')
 
 // resources
 const machinetypes = require('./machinetypes')
-const sgroup = require('./sgroup')
-const simulator = require('./simulator')
+const sgroups = require('./sgroups')
+const simulators = require('./simulators')
 const sshkeys = require('./sshkeys')
 
 dotenv.load();
@@ -113,8 +113,8 @@ if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
 // setup the /permissions routes
 csgrant.setPermissionsRoutes(app)
 
-simulator.setRoutes(app)
-sgroup.setRoutes(app)
+simulators.setRoutes(app)
+sgroups.setRoutes(app)
 machinetypes.setRoutes(app)
 sshkeys.setRoutes(app)
 
@@ -142,7 +142,7 @@ app.use("/api", express.static(path.join(__dirname, '/../api')))
 app.get('/badges/pulls.svg', csgrant.bitbucketBadgeOpenPrs('osrf/cloudsim-portal'))
 
 // start the periodical aws status merge
-simulator.initInstanceStatus()
+simulators.initInstanceStatus()
 
 // Expose app
 exports = module.exports = app
@@ -159,6 +159,3 @@ csgrant.init(adminUser,
       console.log('listening on port ' + port);
     })
   })
-
-
-
