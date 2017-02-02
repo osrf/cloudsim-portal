@@ -2,7 +2,7 @@
 
 console.log('test/mocha/simulator/sockets.js')
 
-const app = require('../../../server/server.js')
+const app = require('../server/cloudsim_portal.js')
 
 const util = require('util')
 const should = require('should')

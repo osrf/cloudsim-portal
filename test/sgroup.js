@@ -2,10 +2,8 @@
 
 console.log('test/mocha/sgroup/controller.js');
 
-require('../../../server/server.js')
-
 /// Module dependencies.
-var app = require('../../../server/server')
+var app = require('../server/cloudsim_portal')
 
 const should = require('should');
 const supertest = require('supertest');

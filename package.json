@@ -1,11 +1,13 @@
 {
   "name": "cloudsim-portal",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "description": "This is the portal  server for Cloudsim",
-  "main": "cloud_services.js",
+  "main": "server/cloudsim_portal.js",
   "scripts": {
-    "start": "gulp",
-    "test": "./node_modules/.bin/eslint . && gulp test"
+    "start": "node server/cloudsim_portal.js",
+    "test": "./node_modules/.bin/eslint . && export NODE_ENV=test; istanbul cover --print both _mocha -- -u exports -R spec",
+    "dev": "node ./node_modules/nodemon/bin/nodemon.js",
+    "coveralls": "./node_modules/.bin/eslint . && export NODE_ENV=test; istanbul cover _mocha -- -u exports -R spec && istanbul-coveralls"
   },
   "author": {
     "name": "hugomatic",
@@ -24,16 +26,17 @@
     "cors": "^2.7.1",
     "dotenv": "^2.0.0",
     "express": "^4.13.4",
-    "gulp": "^3.9.1",
-    "gulp-mocha": "^3.0.1",
-    "gulp-nodemon": "^2.0.7",
     "morgan": "^1.7.0",
     "path": "^0.12.7"
   },
   "devDependencies": {
-    "eslint": "^3.8.1",
-    "gulp-coveralls": "^0.1.4",
-    "gulp-istanbul": "^1.1.1",
+    "coveralls": "^2.11.15",
+    "eslint": "^3.14.1",
+    "istanbul": "^0.4.5",
+    "istanbul-coveralls": "^1.0.3",
+    "lcov-result-merger": "^1.2.0",
+    "mocha": "^3.2.0",
+    "nodemon": "^1.11.0",
     "should": "^11.1.0",
     "socket.io-client": "^1.4.8",
     "supertest": "^2.0.0"

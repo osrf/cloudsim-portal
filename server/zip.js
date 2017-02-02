@@ -3,7 +3,7 @@ const fs = require('fs')
 const child_process = require('child_process')
 
 // using zip (which must be installed on machine), this function creates a zipFile
-// that contains an ssh key
+// that contains an ssh key (with 600 permisssions)
 // @param[in] zipFileName The short file name of the zip archive. This file
 // will be created in the /tmp directory
 // @param[in] keyFileName The name of the ssh key file inside the zip archive.
@@ -19,7 +19,7 @@ exports.zipSshKey = function(zipFileName, keyFileName, keyData, cb)
       return cb(err)
     }
     console.log(fpath + ' written')
-    const cmd = 'cd /tmp && zip ' + zipFileName + ' ' + keyFileName
+    const cmd = 'cd /tmp && chmod 600 ' + keyFileName + '  && zip ' + zipFileName + ' ' + keyFileName
     console.log(cmd)
     child_process.exec(cmd, (err) => {
       if(err) {
