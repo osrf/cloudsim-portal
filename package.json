@@ -5,7 +5,9 @@
   "main": "server/cloudsim_portal.js",
   "scripts": {
     "start": "node server/cloudsim_portal.js",
-    "test": "./node_modules/.bin/eslint . && gulp test"
+    "test":  "./node_modules/.bin/eslint server/** && export NODE_ENV=test && istanbul report --root coverage lcov && ./node_modules/mocha/bin/mocha"
+
+
   },
   "author": {
     "name": "hugomatic",

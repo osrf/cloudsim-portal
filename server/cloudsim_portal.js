@@ -70,8 +70,8 @@ console.log('\n')
 let httpServer = null
 const useHttps = false
 if(useHttps) {
-  const keyPath = __dirname + '/key.pem'
-  const certPath = __dirname + '/key-cert.pem'
+  const keyPath = __dirname + '/../key.pem'
+  const certPath = __dirname + '/../key-cert.pem'
   const privateKey  = fs.readFileSync(keyPath, 'utf8')
   const certificate = fs.readFileSync(certPath, 'utf8')
   httpServer = require('https').Server(
