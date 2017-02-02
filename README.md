@@ -8,7 +8,7 @@ cloudsim-portal is part of the [cloudsim](https://bitbucket.org/osrf/cloudsim) p
 
 [![Coverage Status](https://coveralls.io/repos/bitbucket/osrf/cloudsim-portal/badge.svg?branch=default)](https://coveralls.io/bitbucket/osrf/cloudsim-portal?branch=default)
 
-This is the portal server for Cloudsim
+This is the cloud interface micro service for Cloudsim
 
 ## What is this repository for? ##
 
