@@ -5,7 +5,7 @@
   "main": "server/cloudsim_portal.js",
   "scripts": {
     "start": "node server/cloudsim_portal.js",
-    "test": "./node_modules/.bin/eslint server/** && export NODE_ENV=test && istanbul report --root coverage lcov && ./node_modules/mocha/bin/mocha",
+    "test": "./node_modules/.bin/eslint . && export NODE_ENV=test; istanbul cover --print both _mocha -- -u exports -R spec",
     "dev": "node ./node_modules/nodemon/bin/nodemon.js",
     "coveralls": "./node_modules/.bin/eslint . && export NODE_ENV=test; istanbul cover _mocha -- -u exports -R spec && istanbul-coveralls"
   },
