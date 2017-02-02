@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server/cloudsim_portal.js",
     "test": "./node_modules/.bin/eslint server/** && export NODE_ENV=test && istanbul report --root coverage lcov && ./node_modules/mocha/bin/mocha",
-    "dev": "node ./node_modules/nodemon/bin/nodemon.js"
+    "dev": "node ./node_modules/nodemon/bin/nodemon.js",
+    "coveralls": "rm -rf coverage/ && mkdir coverage && ./node_modules/lcov-result-merger/bin/lcov-result-merger.js 'coverage*/lcov.info' 'coverage/lcov.info' && istanbul-coveralls"
   },
   "author": {
     "name": "hugomatic",
