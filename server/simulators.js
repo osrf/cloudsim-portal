@@ -17,6 +17,77 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
   cloudServices = require('./fake_cloud_services.js');
 }
 
+// TODO This is a workaround for limiting number of instances
+// This should probably be done with the use of machineTypes?
+// A mockup machineTypes resource is temporarily added to keep track of
+// instance limit. Remove me once machineTypes is integrated
+let machineTypeResources = {};
+machineTypeResources['machineType-001'] = {
+  data : {
+    hardware: 'g2.2xlarge',
+    limit: 50,
+    count: 0
+  }
+}
+
+function getAllMachineTypes() {
+  return machineTypeResources
+}
+
+const instanceLimitReached = function(req, res, next) {
+
+  const machineType = req.body.hardware
+  let error = null
+  if (!machineType) {
+    error = {
+      error: {
+        msg: 'Missing required field (hardware)'
+      }
+    }
+    console.log(error.msg)
+    res.status(403).jsonp(error);
+    return;
+  }
+
+  const machineTypes = getAllMachineTypes();
+  let machine = null;
+
+  // check machine hardware type
+  for (let mId in machineTypes) {
+    let m = machineTypes[mId]
+    if (m.data.hardware === machineType) {
+      machine = m;
+      break
+    }
+  }
+
+  const reached =
+      (machine !== null && machine.data.count >= machine.data.limit)
+  // load the machine type resource and check for limit
+  // Don't launch machines if limit is reached.
+  if (reached) {
+    error = {
+      error: {
+        msg: 'Unable to launch more instances. Instance Limit reached'
+      }
+    }
+    res.status(403).jsonp(error);
+    return
+  }
+
+  // increment machineTypes count (this will be later overwritten by more
+  // accurate data in the updateInstanceStatus function)
+  for (let mId in machineTypeResources) {
+    let m = machineTypeResources[mId]
+    if (m.data.hardware === machineType) {
+      m.data.count += 1
+      break
+    }
+  }
+
+  next()
+}
+
 // global variables and settings
 var instanceStatusUpdateInterval = 5000;
 var instanceIpUpdateInterval = 10000;
@@ -25,6 +96,11 @@ if (process.env.NODE_ENV === 'test') {
   // reduce delays during testing
   instanceStatusUpdateInterval = 1;
   instanceIpUpdateInterval = 1;
+
+  // reduce launch limit for testing
+  for (let m in machineTypeResources) {
+    machineTypeResources[m].data.limit = 10
+  }
 }
 //var terminatingInstanceList = [];
 
@@ -231,7 +307,6 @@ const destroy = function(req, res) {
                      })
 }
 
-
 function getAllNonTerminatedSimulators() {
   const resources = csgrant.copyInternalDatabase()
   const sims = {}
@@ -287,6 +362,29 @@ function updateInstanceStatus() {
         const cloudsimState = aws2cs[awsState] || 'UNKNOWN'
         // add the machine state
         awsInstanceStates[instanceId] = cloudsimState
+      }
+
+      // update machineTypes count
+      // TODO may need to update code once machine type limit is
+      // properly implemented
+      const machineTypesCount = {};
+      for (let simId in simulators) {
+        const simulator = simulators[simId]
+        const machineTypeId = simulator.data.hardware
+        if (!machineTypesCount[machineTypeId])
+          machineTypesCount[machineTypeId] = 1
+        else
+          machineTypesCount[machineTypeId] += 1
+      }
+      let machineTypes = getAllMachineTypes()
+      for (var mId in machineTypes) {
+        let machine = machineTypes[mId]
+        const machineTypeId = machine.data.hardware
+        const count = machineTypesCount[machineTypeId]
+        if (count != undefined) {
+          // update database
+          machineTypeResources[mId].data.count = count;
+        }
       }
 
       // update sims where the status is different. AWS is always right
@@ -354,6 +452,7 @@ exports.setRoutes = function (app) {
   app.post('/simulators',
     csgrant.authenticate,
     csgrant.ownsResource('simulators', false),
+    instanceLimitReached,
     create)
 
   /// GET /simulators/:simulationId

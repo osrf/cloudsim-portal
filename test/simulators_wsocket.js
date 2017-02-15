@@ -183,7 +183,7 @@ describe('<Unit Test sockets>', function() {
           res.status.should.be.equal(200)
           res.redirect.should.equal(false)
           const r = parseResponse(res.text)
-          r.result.length.should.be.exactly(4)
+          r.result.length.should.be.exactly(14)
           r.result[0].data.status.should.equal('TERMINATED')
           done()
         })

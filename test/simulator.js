@@ -1047,6 +1047,57 @@ describe('<Simulator controller test>', function() {
       });
   });
 
+  describe('Check Launch Simulator Limit', function() {
+    it('should be possible to launch simulators until limit is reached', function(done) {
+      let count = 0
+      const limit = 10
+      const newData = {region: 'us-west-1', hardware: 'g2.2xlarge', image: 'abc'}
+      function launch() {
+
+        // simulators should not launch when limit is reached
+        if (count >= limit) {
+          agent
+          .post('/simulators')
+          .set('Acccept', 'application/json')
+          .set('authorization', userToken)
+          .send(newData)
+          .end(function(err,res){
+            should.not.exist(err);
+            should.exist(res);
+            res.status.should.be.equal(403);
+            res.redirect.should.equal(false);
+            const data = parseResponse(res.text)
+            data.error.should.not.be.empty();
+            done()
+            return
+          });
+        }
+        count++
+
+        // simulators should launch before limit is reached
+        agent
+        .post('/simulators')
+        .set('Acccept', 'application/json')
+        .set('authorization', userToken)
+        .send(newData)
+        .end(function(err,res){
+          should.not.exist(err);
+          should.exist(res);
+          res.status.should.be.equal(200);
+          res.redirect.should.equal(false);
+          const data = parseResponse(res.text)
+          data.id.should.not.be.empty();
+          data.status.should.equal('LAUNCHING');
+          data.region.should.equal('us-west-1');
+
+          launch()
+        });
+      }
+
+      launch()
+    });
+  });
+
   after(function(done) {
     csgrant.model.clearDb();
     done();
