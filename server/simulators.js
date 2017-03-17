@@ -10,11 +10,11 @@ const csgrant = require('cloudsim-grant')
 var cloudServices = null;
 if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
   console.log('using the real cloud services!');
-  cloudServices = require('../cloud_services.js');
+  cloudServices = require('./cloud_services.js');
 } else {
   console.log(
     'process.env.AWS_ACCESS_KEY_ID not defined: using the fake cloud services');
-  cloudServices = require('../fake_cloud_services.js');
+  cloudServices = require('./fake_cloud_services.js');
 }
 
 // global variables and settings

@@ -6,7 +6,7 @@ const should = require('should')
 const supertest = require('supertest')
 
 // current dir: test
-const app = require('../server/server')
+const app = require('../server/cloudsim_portal')
 const agent = supertest.agent(app)
 
 const csgrant = require('cloudsim-grant')

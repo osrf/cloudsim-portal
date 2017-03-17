@@ -2,8 +2,7 @@
 
 "use strict"
 
-let fs = require('fs')
-let xcloud = require('./cloud_services.js')
+let xcloud = require('./server/cloud_services.js')
 let process = require('process')
 //
 //  Don't forget to load the AWS credentials in the environment
