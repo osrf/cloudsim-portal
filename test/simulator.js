@@ -1,6 +1,5 @@
 'use strict';
 
-console.log('test/mocha/simulator/controller.js');
 
 let csgrant
 let app
@@ -61,7 +60,7 @@ describe('<Simulator controller test>', function() {
   })
 
   before(function(done) {
-    app = require('../../../server/server')
+    app = require('../server/cloudsim_portal')
     agent = supertest.agent(app)
     done()
   })

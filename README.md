@@ -1,12 +1,14 @@
 # Cloudsim Portal
 
+cloudsim-portal is part of the [cloudsim](https://bitbucket.org/osrf/cloudsim) project
+
 [ ![Codeship Status for osrf/cloudsim-portal](https://codeship.com/projects/915a1070-0a4d-0134-bce0-06f29080c625/status?branch=default)](https://codeship.com/projects/155557)
 
 [![Dependency Status](https://www.versioneye.com/user/projects/57ca2d8c939fc600508e90a4/badge.svg?style=flat-square)](https://www.versioneye.com/user/projects/57ca2d8c939fc600508e90a4)
 
 [![Coverage Status](https://coveralls.io/repos/bitbucket/osrf/cloudsim-portal/badge.svg?branch=default)](https://coveralls.io/bitbucket/osrf/cloudsim-portal?branch=default)
 
-This is the portal server for Cloudsim
+This is the cloud interface micro service for Cloudsim
 
 ## What is this repository for? ##
 
