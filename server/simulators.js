@@ -53,17 +53,7 @@ const create = function(req, res) {
   simulator.region = req.body.region
   simulator.hardware = req.body.hardware
   simulator.image = req.body.image
-  // TODO: Check if user owns this SSH key resource, otherwise someone can
-  // launch a machine with an ssh key they don't own, and download the key
-  // from the machine later using the /download route
-  simulator.sshkey = req.body.sshkey
-  if (!simulator.sshkey) {
-    simulator.sshkey = awsDefaults.keyName
-  }
-  simulator.options = req.body.options
 
-  if (req.body.sgroup)
-    simulator.sgroup = req.body.sgroup
   if (!simulator.region || !simulator.image || !simulator.hardware)
   {
     error = {
@@ -76,6 +66,17 @@ const create = function(req, res) {
     return;
   }
 
+  // TODO: Check if user owns this SSH key resource, otherwise someone can
+  // launch a machine with an ssh key they don't own, and download the key
+  // from the machine later using the /download route
+  simulator.sshkey = req.body.sshkey
+  if (!simulator.sshkey) {
+    simulator.sshkey = awsDefaults.keyName
+  }
+  simulator.options = req.body.options
+
+  if (req.body.sgroup)
+    simulator.sgroup = req.body.sgroup
   // Set the simulator user
   simulator.creator = req.user;
   simulator.launch_date = new Date();
@@ -89,6 +90,11 @@ const create = function(req, res) {
       return
     }
     simulator.id = resourceName
+
+    // add id to the options file
+    if (simulator.options)
+      simulator.options.sim_id = simulator.id
+
     // add resource to csgrant
     csgrant.createResource(req.user, simulator.id, simulator,
       (err) => {
