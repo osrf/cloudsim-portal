@@ -330,6 +330,7 @@ describe('<Simulator controller test>', function() {
         r.region.should.equal('us-east-1')
         r.options.user_data.should.equal('test-data')
         r.options.sim_id.should.equal(simId2)
+        r.options.portal_url.indexOf('localhost').should.be.greaterThan(0)
         done();
       });
     });

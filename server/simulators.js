@@ -30,6 +30,9 @@ if (process.env.NODE_ENV === 'test') {
 
 const awsDefaults = cloudServices.awsDefaults
 
+const portalurl = process.env.CLOUDSIM_PORTAL_URL || 'http://localhost:'
+    + process.env.PORT;
+
 /// Create a simulator
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
@@ -92,8 +95,10 @@ const create = function(req, res) {
     simulator.id = resourceName
 
     // add id to the options file
-    if (simulator.options)
+    if (simulator.options) {
       simulator.options.sim_id = simulator.id
+      simulator.options.portal_url = portalurl
+    }
 
     // add resource to csgrant
     csgrant.createResource(req.user, simulator.id, simulator,
