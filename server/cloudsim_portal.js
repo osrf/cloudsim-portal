@@ -155,7 +155,7 @@ const initialResources = [
     ]
   },
   {
-    name: 'machineTypes',
+    name: 'machinetypes',
     data:{},
     permissions: [
       {
