@@ -313,6 +313,7 @@ describe('<Simulator controller test>', function() {
       // let's change the region
       const data = JSON.parse(JSON.stringify(launchData))
       data.region = 'us-east-1'
+      data.options = {user_data: 'test-data'};
       agent
       .post('/simulators')
       .set('Acccept', 'application/json')
@@ -327,6 +328,9 @@ describe('<Simulator controller test>', function() {
         simId2 = r.id
         r.status.should.equal('LAUNCHING')
         r.region.should.equal('us-east-1')
+        r.options.user_data.should.equal('test-data')
+        r.options.sim_id.should.equal(simId2)
+        r.options.portal_url.indexOf('localhost').should.be.greaterThan(0)
         done();
       });
     });
