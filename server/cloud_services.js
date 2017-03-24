@@ -181,6 +181,8 @@ exports.simulatorStatus = function (machineInfo, cb) {
       if (instance.StateTransitionReason) {
         // Example of aws returned value:
         // "StateTransitionReason":"User initiated (2017-03-24 18:42:25 GMT)"
+        // The following is an ugly block of code, but it is the only format that
+        // aws returns for the termination time
         let timeStr = instance.StateTransitionReason
                           .slice(16, -1)
                           .replace(' GMT', '.000Z')
