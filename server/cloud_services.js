@@ -169,8 +169,24 @@ exports.simulatorStatus = function (machineInfo, cb) {
       var instance = data.Reservations[0].Instances[0];
       var info = {
         ip: instance.PublicIpAddress,
-        state: instance.State.Name
+        state: instance.State.Name,
+        launchTime: instance.LaunchTime
       };
+      // This field may not be available if the instance was already terminated
+      // We use it as a hack to know the "creation" time of the instance.
+      if (instance.BlockDeviceMappings[0]) {
+        info.creationTime = instance.BlockDeviceMappings[0].Ebs.AttachTime
+      }
+      // Field only available when the instance is terminating or terminated
+      if (instance.StateTransitionReason) {
+        // Example of aws returned value:
+        // "StateTransitionReason":"User initiated (2017-03-24 18:42:25 GMT)"
+        let timeStr = instance.StateTransitionReason
+                          .slice(16, -1)
+                          .replace(' GMT', '.000Z')
+                          .replace(' ', 'T')
+        info.terminationTime = new Date(timeStr)
+      }
       cb(null, info);
     }
   });
@@ -192,11 +208,9 @@ exports.terminateSimulator = function (machineInfo, cb) {
   var ec2 = new AWS.EC2();
   ec2.terminateInstances(params, function(err, data) {
     if (err) {
-      // console.log('terminate err: ' + err, err.stack);
       // an error occurred
       cb(err);
     } else  {
-      // console.log('terminate data: ' + util.inspect(data));
       var info = data.TerminatingInstances[0].CurrentState;
       cb(null, info);
     }
@@ -268,7 +282,7 @@ exports.simulatorStatuses = function (region, machineIds, cb) {
         }
         if (data.NextToken) {
           params.NextToken = data.NextToken;
-          // call ourselves agin
+          // call ourselves again
           getAWSStatusData()
         }
         else {

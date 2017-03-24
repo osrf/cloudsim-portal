@@ -26,7 +26,6 @@ if (process.env.NODE_ENV === 'test') {
   instanceStatusUpdateInterval = 1;
   instanceIpUpdateInterval = 1;
 }
-//var terminatingInstanceList = [];
 
 const awsDefaults = cloudServices.awsDefaults
 
@@ -156,6 +155,8 @@ const create = function(req, res) {
               cloudServices.simulatorStatus(info, function(err, state) {
                 // update resource (this triggers socket notification)
                 simulator.machine_ip = state.ip
+                simulator.aws_launch_time = state.launchTime
+                simulator.aws_creation_time = state.creationTime
                 csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
                   console.log(simulator.id, 'ip:', simulator.machine_ip)
                 })
@@ -178,12 +179,19 @@ function terminateSimulator(user, simulator, cb) {
     }
     else {
       simulator.status = 'TERMINATING';
-      simulator.termination_date = Date.now();
-      // update resource (this triggers socket notification)
-      csgrant.updateResource(user, simulator.id, simulator, ()=>{
-        console.log(simulator.id, 'terminate')
-      })
+      simulator.termination_date = new Date();
+      // send response . Aws timestamps will be updated afterwards
       cb(null, simulator)
+
+      setTimeout(function() {
+        cloudServices.simulatorStatus(machineInfo, function(err, state) {
+          simulator.aws_termination_request_time = state.terminationTime
+          // update resource (this triggers socket notification)
+          csgrant.updateResource(user, simulator.id, simulator, ()=>{
+            console.log(simulator.id, 'terminate')
+          })
+        })
+      }, instanceIpUpdateInterval);
     }
   }) // terminate
 }
