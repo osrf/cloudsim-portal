@@ -504,7 +504,7 @@ describe('<Simulator controller test>', function() {
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
         text.result[0].username.should.not.be.empty();
-        text.result[0].username.should.equal('cloudsim@osrfoundation.org');
+        text.result[0].username.should.equal(adminUser);
         text.result[0].running_time.should.equal(3);
         done();
       });
