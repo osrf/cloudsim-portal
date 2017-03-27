@@ -5,6 +5,7 @@
 /// Module dependencies.
 const util = require('util')
 const csgrant = require('cloudsim-grant')
+const moment = require('moment')
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
@@ -196,7 +197,6 @@ function terminateSimulator(user, simulator, cb) {
   }) // terminate
 }
 
-
 function getUserFromResource(resource) {
   const permissions = resource.permissions
   // look for a user with read/write
@@ -249,7 +249,6 @@ const destroy = function(req, res) {
                        }
                      })
 }
-
 
 function getAllNonTerminatedSimulators() {
   const resources = csgrant.copyInternalDatabase()
@@ -334,7 +333,65 @@ function updateInstanceStatus() {
           })
         }
       }
-    })
+  })
+}
+
+/**
+ * Returns simulator metrics associated grouped by user
+ */
+function getSimulatorMetrics(req, res) {
+  const simulators = req.userResources
+  // result
+  const metrics = {}
+  // at a minimum, the current user must be returned
+  metrics[req.user] = {
+    'username': req.user,
+    'running_time': 0
+  }
+  for(let sId in simulators) {
+    const s = simulators[sId]
+    // compute time in running status
+    const launchTime = moment.utc(s.data.aws_launch_time || s.data.launch_date)
+    let terminationTime = moment.utc(s.data.aws_termination_request_time
+      || s.data.termination_date
+      || new Date())
+    const runningTime = moment.duration(terminationTime.diff(launchTime))
+    const roundUpHours = Math.floor(runningTime.asHours() + 1)
+    for(let pId in s.permissions) {
+      const username = s.permissions[pId].username
+      if (!metrics[username]) {
+        metrics[username] = {
+          'username': username,
+          'running_time': 0
+        }
+      }
+      metrics[username].running_time += roundUpHours
+    }
+  }
+
+  // prepare response
+  const r = {
+    success: false,
+    operation: 'get simulator metrics for user',
+    requester: req.user,
+  }
+  r.success = true
+  r.result = []
+  for(let uId in metrics) {
+    r.result.push(metrics[uId])
+  }
+  res.jsonp(r)
+}
+
+// middleware to filter simulators
+function filterSimulators(req, res, next) {
+  const resources = req.userResources
+  req.userResources = resources.filter( (obj)=>{
+    if(obj.name.indexOf('simulator-') == 0)
+      return true
+    return false
+  })
+  next()
 }
 
 // used to start the periodicall resource database update (against the aws info)
@@ -350,15 +407,7 @@ exports.setRoutes = function (app) {
   app.get('/simulators',
     csgrant.authenticate,
     csgrant.userResources,
-    function (req, res, next) {
-      const resources = req.userResources
-      req.userResources = resources.filter( (obj)=>{
-        if(obj.name.indexOf('simulator-') == 0)
-          return true
-        return false
-      })
-      next()
-    },
+    filterSimulators,
     csgrant.allResources)
 
   /// DEL /simulators
@@ -381,5 +430,13 @@ exports.setRoutes = function (app) {
    csgrant.authenticate,
    csgrant.ownsResource(':resourceId', true),
    csgrant.resource)
+
+    /// GET /metrics/simulators
+  /// Return metrics associated to simulators grouped by user
+  app.get('/metrics/simulators',
+    csgrant.authenticate,
+    csgrant.userResources,
+    filterSimulators,
+    getSimulatorMetrics)
 }
 

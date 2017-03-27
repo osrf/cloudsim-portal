@@ -492,6 +492,67 @@ describe('<Simulator controller test>', function() {
     });
   });
 
+  describe('Check Get Simulator Metrics', function() {
+    it('should be possible to get metrics for the current 3 running simulators', function(done) {
+      agent
+      .get('/metrics/simulators')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text);
+        text.result[0].username.should.not.be.empty();
+        text.result[0].username.should.equal('cloudsim@osrfoundation.org');
+        text.result[0].running_time.should.equal(3);
+        done();
+      });
+    });
+  });
+
+  describe('Check Simulator Metrics', function() {
+    it('should not be possible to POST to metrics url', function(done) {
+      agent
+      .post('/metrics/simulators')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(404);
+        done();
+      });
+    });
+  });
+
+  describe('Check Simulator Metrics', function() {
+    it('should not be possible to DEL to metrics url', function(done) {
+      agent
+      .delete('/metrics/simulators')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(404);
+        done();
+      });
+    });
+  });
+
+  describe('Check Simulator Metrics', function() {
+    it('should not be possible to PUT to metrics url', function(done) {
+      agent
+      .put('/metrics/simulators')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(404);
+        done();
+      });
+    });
+  });
+
   // verify admin permission query for launching simulator
   describe('Check Admin Permission to Launch Simulator', function() {
     it('should be possible for admins to access root resource', function(done) {
