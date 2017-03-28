@@ -17,6 +17,7 @@ const machinetypes = require('./machinetypes')
 const sgroups = require('./sgroups')
 const simulators = require('./simulators')
 const sshkeys = require('./sshkeys')
+const srcrounds = require('./src/rounds')
 
 dotenv.load();
 
@@ -84,7 +85,8 @@ else {
 const initialResources =  {
   'simulators': {},
   'machinetypes': {},
-  'sgroups': {}
+  'sgroups': {},
+  'srcrounds': {}
 }
 
 // use body parser so we can get info from POST and/or URL parameters
@@ -117,6 +119,7 @@ simulators.setRoutes(app)
 sgroups.setRoutes(app)
 machinetypes.setRoutes(app)
 sshkeys.setRoutes(app)
+srcrounds.setRoutes(app)
 
 // a little home page for general info
 app.get('/', function (req, res) {
