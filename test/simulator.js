@@ -509,9 +509,164 @@ describe('<Simulator controller test>', function() {
         done();
       });
     });
+    it('should be possible to get metrics for the user2, but returning 0', function(done) {
+      agent
+      .get('/metrics/simulators')
+      .set('Acccept', 'application/json')
+      .set('authorization', user2Token)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text);
+        text.result[0].username.should.not.be.empty();
+        text.result[0].username.should.equal(user2TokenData.identities[0]);
+        text.result[0].running_time.should.equal(0);
+        done();
+      });
+    });
   });
 
-  describe('Check Simulator Metrics', function() {
+  describe('Check Metrics Config', function() {
+    it('should be possible to get config for the admin user', function(done) {
+      agent
+      .get('/metrics/config')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text);
+        text.result.data.should.not.be.empty();
+        text.result.data.check_enabled.should.equal(true);
+        done();
+      });
+    });
+    it('should be possible to update config for the admin user', function(done) {
+      agent
+      .put('/metrics/config')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({ check_enabled: false, max_instance_hours: 400 })
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text);
+        text.result.data.should.not.be.empty();
+        text.result.data.check_enabled.should.equal(false);
+        text.result.data.max_instance_hours.should.equal(400);
+        done();
+      });
+    });
+    it('should NOT be possible to get config for a non admin user', function(done) {
+      agent
+      .get('/metrics/config')
+      .set('Acccept', 'application/json')
+      .set('authorization', user2Token)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(401);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text);
+        text.success.should.equal(false);
+        done();
+      });
+    });
+    it('should NOT be possible to update config for a non admin user', function(done) {
+      agent
+      .put('/metrics/config')
+      .set('Acccept', 'application/json')
+      .set('authorization', user2Token)
+      .send({ check_enabled: false})
+      .end(function(err,res){
+        res.status.should.be.equal(401);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text);
+        text.success.should.equal(false);
+        done();
+      });
+    });
+  });
+
+  describe('Metrics: Grant user2 Write Permission on simulators and try to launch', function() {
+    it('should be possible to update config for the admin user', function(done) {
+      agent
+      .put('/metrics/config')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({ check_enabled: true, max_instance_hours: 0 })
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text);
+        text.result.data.should.not.be.empty();
+        text.result.data.check_enabled.should.equal(true);
+        text.result.data.max_instance_hours.should.equal(0);
+        done();
+      });
+    });
+    it('should be possible to grant user2 write permission', function(done) {
+      agent
+      .post('/permissions')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({resource: 'simulators', grantee: user2TokenData.identities[0], readOnly: false})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.resource.should.equal('simulators');
+        text.grantee.should.equal(user2TokenData.identities[0]);
+        text.readOnly.should.equal(false);
+        done();
+      });
+    });
+    it('should NOT be possible to create the another simulator due to balance', function(done) {
+      agent
+      .post('/simulators')
+      .set('authorization', user2Token)
+      .set('Acccept', 'application/json')
+      .send(launchData)
+      .end(function(err,res){
+        res.status.should.be.equal(403);
+        res.redirect.should.equal(false);
+        done();
+      });
+    });
+    it('should be possible to revoke user2 write permission over simulators', function(done) {
+      agent
+      .delete('/permissions')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({resource: 'simulators', grantee: user2TokenData.identities[0], readOnly: false})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text);
+        text.success.should.equal(true);
+        text.resource.should.equal('simulators');
+        text.grantee.should.equal(user2TokenData.identities[0])
+        text.readOnly.should.equal(false);
+        done();
+      });
+    });
+    it('should NOT be possible to launch a simulator due missing permissions', function(done) {
+      agent
+      .post('/simulators')
+      .set('authorization', user2Token)
+      .set('Acccept', 'application/json')
+      .send(launchData)
+      .end(function(err,res){
+        res.status.should.be.equal(401);
+        res.redirect.should.equal(false);
+        done();
+      });
+    });
+  });
+
+  describe('Check Simulator Metrics Invalid HTTP Methods', function() {
     it('should not be possible to POST to metrics url', function(done) {
       agent
       .post('/metrics/simulators')
@@ -523,9 +678,6 @@ describe('<Simulator controller test>', function() {
         done();
       });
     });
-  });
-
-  describe('Check Simulator Metrics', function() {
     it('should not be possible to DEL to metrics url', function(done) {
       agent
       .delete('/metrics/simulators')
@@ -537,12 +689,31 @@ describe('<Simulator controller test>', function() {
         done();
       });
     });
-  });
-
-  describe('Check Simulator Metrics', function() {
     it('should not be possible to PUT to metrics url', function(done) {
       agent
       .put('/metrics/simulators')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(404);
+        done();
+      });
+    });
+    it('should not be possible to DEL to metrics/config', function(done) {
+      agent
+      .del('/metrics/config')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(404);
+        done();
+      });
+    });
+    it('should not be possible to POST to metrics/config', function(done) {
+      agent
+      .post('/metrics/config')
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
       .send({})

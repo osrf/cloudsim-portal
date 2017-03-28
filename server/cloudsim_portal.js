@@ -27,7 +27,6 @@ const port = process.env.PORT || 4000
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 process.env.CLOUDSIM_PORTAL_DB = process.env.CLOUDSIM_PORTAL_DB || 'localhost'
 
-
 // Redis
 let permissionDbName = 'cloudsim-portal'
 
@@ -84,7 +83,8 @@ else {
 const initialResources =  {
   'simulators': {},
   'machinetypes': {},
-  'sgroups': {}
+  'sgroups': {},
+  'metrics-config': { max_instance_hours: 500, check_enabled: true }
 }
 
 // use body parser so we can get info from POST and/or URL parameters

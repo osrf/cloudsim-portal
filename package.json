@@ -28,7 +28,8 @@
     "express": "^4.13.4",
     "moment": "^2.18.1",
     "morgan": "^1.7.0",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "underscore": "^1.8.3"
   },
   "devDependencies": {
     "coveralls": "^2.11.15",

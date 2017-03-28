@@ -6,6 +6,7 @@
 const util = require('util')
 const csgrant = require('cloudsim-grant')
 const moment = require('moment')
+const _ = require('underscore')
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
@@ -333,19 +334,21 @@ function updateInstanceStatus() {
           })
         }
       }
-  })
+    })
 }
 
 /**
- * Returns simulator metrics associated grouped by user
+ * Internal function that calculates and returns metrics corresponding 
+ * to all the simulators accessible by the invoking user, grouped by groups/roles.
+ * Retuns an array in which the values are the grouped simulator metrics.
  */
-function getSimulatorMetrics(req, res) {
-  const simulators = req.userResources
+function _computeSimulatorMetrics(user, simulators) {
+  //const simulators = req.userResources
   // result
   const metrics = {}
   // at a minimum, the current user must be returned
-  metrics[req.user] = {
-    'username': req.user,
+  metrics[user] = {
+    'username': user,
     'running_time': 0
   }
   for(let sId in simulators) {
@@ -368,7 +371,29 @@ function getSimulatorMetrics(req, res) {
       metrics[username].running_time += roundUpHours
     }
   }
+  let result = []
+  for(let uId in metrics) {
+    result.push(metrics[uId])
+  }
+  return result
+}
 
+/**
+ * Returns simulator metrics grouped by user.
+ * If the request has a team parameter then the returned result will only contain
+ * the metrics for the given team name, if applicable.
+ * The queried simulators are gathered just from the list of simulators for which the
+ * current user has read permissions.
+ */
+function getSimulatorMetrics(req, res) {
+  let metrics = _computeSimulatorMetrics(req.user, req.userResources)
+
+  if (req.query.team) {
+    metrics = metrics.filter((metric) => {
+      return metric.username === req.query.team
+    })
+  }
+  
   // prepare response
   const r = {
     success: false,
@@ -376,22 +401,124 @@ function getSimulatorMetrics(req, res) {
     requester: req.user,
   }
   r.success = true
-  r.result = []
-  for(let uId in metrics) {
-    r.result.push(metrics[uId])
-  }
+  r.result = metrics
   res.jsonp(r)
 }
 
-// middleware to filter simulators
-function filterSimulators(req, res, next) {
-  const resources = req.userResources
-  req.userResources = resources.filter( (obj)=>{
+function isAdmin(req) {
+  return req.user === (process.env.CLOUDSIM_ADMIN || 'admin')
+}
+
+/**
+ * Reads the current Metrics Configuration, and invokes the given cb 
+ * with the resulting config as argument.
+ * @param {*} cb Callback with one arg: the config.
+ */
+function getMetricsConfig(cb) {
+  // HACK: we impersonate the admin ir order to internally read the metrics config.
+  // This is done this way until we have a way to set multiple grants in parallel to 
+  // intance-launching users
+  csgrant.readResource((process.env.CLOUDSIM_ADMIN || 'admin'), 
+    'metrics-config', function(err, config) {
+      if(err) {
+        cb(err)
+      } else
+        cb(null, config.data)
+      return
+    }
+  )
+}
+
+/**
+ * Middleware to check instance-hours availability for the current user's identities.
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ */
+function checkAvailableInstanceHours(req, res, next) {
+  if (isAdmin(req)) {
+    next()
+    return
+  }
+  getMetricsConfig((err, config) => {
+    if (err) {
+      return res.status(500).jsonp({
+        success: false, error: 'Error trying to read existing data: ' + err
+      })
+    }
+    if (!config.check_enabled) {
+      next()
+      return
+    }
+
+    csgrant.readAllResourcesForUser(req.identities, (err2, items) => {
+      if(err2) {
+        return res.status(500).jsonp({
+          success: false,
+          "error": err2
+        })
+      }
+      const simulators = filterSimulators(items)
+      const metrics = _computeSimulatorMetrics(req.user, simulators)
+      const exhausted = metrics.find( (metrics) => {
+        return metrics.running_time >= config.max_instance_hours
+      })
+      if (!exhausted) {
+        next()
+        return
+      }
+      // Don't launch machines if limit is reached.
+      if (exhausted) {
+        const error = {
+          success: false,
+          error: 'Unable to launch more instances. Instance-hours limit reached'
+        }
+        return res.status(403).jsonp(error);
+      }
+    })
+  })
+}
+
+function filterSimulators(resources) {
+  return resources.filter( (obj)=>{
     if(obj.name.indexOf('simulator-') == 0)
       return true
     return false
   })
+}
+
+// middleware to filter simulators
+function filterSimulatorsMiddleware(req, res, next) {
+  const resources = req.userResources
+  req.userResources = filterSimulators(resources)
   next()
+}
+
+function updateMetricsConfig(req, res) {
+  const resourceName = req.resourceName
+  const newData = req.body
+  console.log(' Update Metrics config, with new data: ', JSON.stringify(newData))
+  const user = req.user
+  const r = {success: false}
+  csgrant.readResource(user, resourceName, function(err, oldData) {
+    if(err) {
+      return res.jsonp({success: false,
+        error: 'Error trying to read existing data: ' + err})
+    }
+
+    const futureData = oldData.data
+    // merge with existing fields of the newData... thus keeping old fields intact
+    _.extend(futureData, _.pick(newData, 'max_instance_hours', 'check_enabled'))
+    csgrant.updateResource(user, resourceName, futureData, (err, data) => {
+      if(err) {
+        return res.jsonp({success: false, error: err})
+      }
+      r.success = true
+      r.result = data
+      // success
+      res.jsonp(r)
+    })
+  })
 }
 
 // used to start the periodicall resource database update (against the aws info)
@@ -407,7 +534,7 @@ exports.setRoutes = function (app) {
   app.get('/simulators',
     csgrant.authenticate,
     csgrant.userResources,
-    filterSimulators,
+    filterSimulatorsMiddleware,
     csgrant.allResources)
 
   /// DEL /simulators
@@ -422,6 +549,7 @@ exports.setRoutes = function (app) {
   app.post('/simulators',
     csgrant.authenticate,
     csgrant.ownsResource('simulators', false),
+    checkAvailableInstanceHours,
     create)
 
   /// GET /simulators/:simulationId
@@ -431,12 +559,25 @@ exports.setRoutes = function (app) {
    csgrant.ownsResource(':resourceId', true),
    csgrant.resource)
 
-    /// GET /metrics/simulators
+  /// GET /metrics/simulators
   /// Return metrics associated to simulators grouped by user
   app.get('/metrics/simulators',
     csgrant.authenticate,
     csgrant.userResources,
-    filterSimulators,
+    filterSimulatorsMiddleware,
     getSimulatorMetrics)
-}
 
+  /// GET /metrics/config
+  /// Return config associated to allowed instance-hours by team
+  app.get('/metrics/config',
+    csgrant.authenticate,
+    csgrant.ownsResource('metrics-config', true),
+    csgrant.resource)
+
+  /// PUT /metrics/config
+  /// Updates the config associated to available instance-hours
+  app.put('/metrics/config',
+    csgrant.authenticate,
+    csgrant.ownsResource('metrics-config', false),
+    updateMetricsConfig)
+}

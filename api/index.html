@@ -437,7 +437,15 @@
               "produces": [
                 "application\/json"
               ],
-              "parameters": [],
+              "parameters": [
+                {
+                  "name": "team",
+                  "in": "query",
+                  "description": "Team name for which to return grouped simulator metrics",
+                  "required": false,
+                  "type": "string",
+                }                
+              ],
               "responses": {
                 "200": {
                   "description": "Success",
@@ -472,6 +480,116 @@
                 }
               ]
             }
+          },
+          // /metrics/config
+          "\/metrics/config": {
+            // GET
+            "get": {
+              "tags": [
+                "metrics"
+              ],
+              "summary": "Get the metrics config",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "resource": {
+                        "$ref": "#\/definitions\/ResourceId"
+                      },
+                      "id": {
+                        "$ref": "#\/definitions\/ResourceId"
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/Resource"
+                      },
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            "put": {
+              "tags": [
+                "metrics"
+              ],
+              "summary": "Update the metrics config",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Object with metrics config information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "max_instance_hours": {
+                        "type": "string",
+                        "default": "500",
+                      },
+                      "check_enabled": {
+                        "type": "boolean",
+                        "default": "true",
+                      },
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/Resource"
+                      },
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },            
           },
 
           // /simulators
