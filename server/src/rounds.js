@@ -77,7 +77,7 @@ function setRoutes(app) {
         isCompetitor = false
 
       if (!isAdmin && !isCompetitor) {
-        res.status(401).jsonp('{"error":"Only SRC admins or competitors can start rounds."}')
+        res.status(403).jsonp('{"error":"Only SRC admins or competitors can start rounds."}')
         return
       }
 
@@ -87,7 +87,7 @@ function setRoutes(app) {
       // A competitor can't start a round for another team
       if (isCompetitor && resourceData.team != undefined && resourceData.team != team) {
 
-        res.status(401).jsonp('{"error":"Attempting to create a round for another team."}')
+        res.status(403).jsonp('{"error":"Attempting to create a round for another team."}')
         return
       }
 

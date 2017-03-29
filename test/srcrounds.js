@@ -148,7 +148,7 @@ describe('<Unit test SRC rounds>', function() {
       .set('Accept', 'application/json')
       .set('authorization', notCompetitorToken)
       .end(function(err,res) {
-        res.status.should.be.equal(401)
+        res.status.should.be.equal(403)
         done()
       })
     })
@@ -388,7 +388,7 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', competitorAToken)
       .send({'dockerurl': dockerUrl, 'team': teamB})
       .end(function(err,res) {
-        res.status.should.be.equal(401)
+        res.status.should.be.equal(403)
         done()
       })
     })
