@@ -11,10 +11,21 @@ const supertest = require('supertest')
 
 var adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
 
+// Users
 let userToken
 const userTokenData = {identities:[adminUser]}
 let user2Token
 const user2TokenData = {identities:['user2']}
+
+const competitorA = "competitor-A"
+const teamA = "SRC-TeamA"
+const competitorATokenData = {identities: [competitorA, teamA]}
+let competitorAToken
+
+const competitorB = "competitor-B"
+const teamB = "SRC-teamB"
+const competitorBTokenData = {identities: [competitorB, teamB]}
+let competitorBToken
 
 // the server
 let agent
@@ -91,6 +102,22 @@ describe('<Simulator controller test>', function() {
       user2Token = tok
       should.exist(user2Token)
       done()
+    })
+  })
+
+  before(function(done) {
+    csgrant.token.signToken(competitorATokenData, (e, tok)=>{
+      if(e) {
+        console.log('sign error: ' + e)
+      }
+      competitorAToken = tok
+      csgrant.token.signToken(competitorBTokenData, (e, tok)=>{
+        if(e) {
+          console.log('sign error: ' + e)
+        }
+        competitorBToken = tok
+        done()
+      })
     })
   })
 
@@ -527,57 +554,79 @@ describe('<Simulator controller test>', function() {
     });
   });
 
-  describe('Check Metrics Config', function() {
-    it('should be possible to get config for the admin user', function(done) {
+  describe('Check Metrics Configs', function() {
+    it('should be possible to get all configs accessible by admin user', function(done) {
       agent
-      .get('/metrics/config')
+      .get('/metrics/configs')
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
       .send({})
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
+        console.log('res', res.text)
+        var text = JSON.parse(res.text);
+        text.result[0].data.should.not.be.empty();
+        text.result[0].data.identity.should.equal(adminUser);
+        done();
+      });
+    });
+    it('the admin should be possible to post a new metrics config targetting TeamA', function(done) {
+      agent
+      .post('/metrics/configs/')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({ identity: teamA, check_enabled: true, max_instance_hours: 1 })
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
         text.result.data.should.not.be.empty();
+        text.result.data.identity.should.equal(teamA);
+        should.not.exist(text.result.data.whitelisted);
         text.result.data.check_enabled.should.equal(true);
+        text.result.data.max_instance_hours.should.equal(1);
+        should.exist(text.result.permissions[teamA])
+        text.result.permissions[teamA].readOnly.should.equal(true);
         done();
       });
     });
-    it('should be possible to update config for the admin user', function(done) {
+    it('should be possible to get configs by users from the targetted team', function(done) {
       agent
-      .put('/metrics/config')
+      .get('/metrics/configs')
       .set('Acccept', 'application/json')
-      .set('authorization', userToken)
-      .send({ check_enabled: false, max_instance_hours: 400 })
+      .set('authorization', competitorAToken)
+      .send({})
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
-        text.result.data.should.not.be.empty();
-        text.result.data.check_enabled.should.equal(false);
-        text.result.data.max_instance_hours.should.equal(400);
+        text.result[0].data.should.not.be.empty();
+        text.result[0].data.identity.should.equal(teamA);
+        text.result[0].data.check_enabled.should.equal(true);
         done();
       });
     });
-    it('should NOT be possible to get config for a non admin user', function(done) {
+    it('should not be possible to get configs by non authorized users', function(done) {
       agent
-      .get('/metrics/config')
+      .get('/metrics/configs')
       .set('Acccept', 'application/json')
-      .set('authorization', user2Token)
+      .set('authorization', competitorBToken)
       .send({})
       .end(function(err,res){
-        res.status.should.be.equal(401);
+        res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
-        text.success.should.equal(false);
+        text.result.should.be.empty();
         done();
       });
     });
-    it('should NOT be possible to update config for a non admin user', function(done) {
+
+    it('should NOT be possible to update main config 000 by a non admin user', function(done) {
       agent
-      .put('/metrics/config')
+      .put('/metrics/configs/metrics-configs-000')
       .set('Acccept', 'application/json')
-      .set('authorization', user2Token)
+      .set('authorization', competitorAToken)
       .send({ check_enabled: false})
       .end(function(err,res){
         res.status.should.be.equal(401);
@@ -589,77 +638,110 @@ describe('<Simulator controller test>', function() {
     });
   });
 
-  describe('Metrics: Grant user2 Write Permission on simulators and try to launch', function() {
-    it('should be possible to update config for the admin user', function(done) {
-      agent
-      .put('/metrics/config')
-      .set('Acccept', 'application/json')
-      .set('authorization', userToken)
-      .send({ check_enabled: true, max_instance_hours: 0 })
-      .end(function(err,res){
-        res.status.should.be.equal(200);
-        res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
-        text.result.data.should.not.be.empty();
-        text.result.data.check_enabled.should.equal(true);
-        text.result.data.max_instance_hours.should.equal(0);
-        done();
-      });
-    });
-    it('should be possible to grant user2 write permission', function(done) {
+  describe('Metrics: Grant competitors write permissions on simulators and try launching', function() {
+    it('should be possible to grant competitorA write permission on simulators', function(done) {
       agent
       .post('/permissions')
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
-      .send({resource: 'simulators', grantee: user2TokenData.identities[0], readOnly: false})
+      .send({resource: 'simulators', grantee: competitorA, readOnly: false})
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text)
         text.success.should.equal(true);
         text.resource.should.equal('simulators');
-        text.grantee.should.equal(user2TokenData.identities[0]);
+        text.grantee.should.equal(competitorATokenData.identities[0]);
         text.readOnly.should.equal(false);
         done();
       });
     });
-    it('should NOT be possible to create the another simulator due to balance', function(done) {
+    it('should be possible to grant competitorB write permission on simulators', function(done) {
+      agent
+      .post('/permissions')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({resource: 'simulators', grantee: competitorB, readOnly: false})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.resource.should.equal('simulators');
+        text.grantee.should.equal(competitorBTokenData.identities[0]);
+        text.readOnly.should.equal(false);
+        done();
+      });
+    });
+    let simA
+    it('competitorA should be able to launch simulator', function(done) {
       agent
       .post('/simulators')
-      .set('authorization', user2Token)
+      .set('authorization', competitorAToken)
+      .set('Acccept', 'application/json')
+      .send(launchData)
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        const r = parseResponse(res.text)
+        r.id.should.not.be.empty();
+        simA = r.id
+        r.status.should.equal('LAUNCHING');
+        r.region.should.equal('us-west-1');
+        done();
+      });
+    });
+    it('competitorA should be able to terminate simulator', function(done) {
+      agent
+      .delete('/simulators/' + simA)
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorAToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        done();
+      });
+    });
+    it('competitorA should NOT be able to launch another simulator due to exhausted balance', function(done) {
+      agent
+      .post('/simulators')
+      .set('authorization', competitorAToken)
       .set('Acccept', 'application/json')
       .send(launchData)
       .end(function(err,res){
         res.status.should.be.equal(403);
         res.redirect.should.equal(false);
-        done();
-      });
-    });
-    it('should be possible to revoke user2 write permission over simulators', function(done) {
-      agent
-      .delete('/permissions')
-      .set('Acccept', 'application/json')
-      .set('authorization', userToken)
-      .send({resource: 'simulators', grantee: user2TokenData.identities[0], readOnly: false})
-      .end(function(err,res){
-        res.status.should.be.equal(200);
-        res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
-        text.success.should.equal(true);
-        text.resource.should.equal('simulators');
-        text.grantee.should.equal(user2TokenData.identities[0])
-        text.readOnly.should.equal(false);
+        text.success.should.equal(false)
+        text.error.should.containEql('Unable to launch more instances')
         done();
       });
     });
-    it('should NOT be possible to launch a simulator due missing permissions', function(done) {
+    let simB
+    it('competitorB should still be able to launch simulators', function(done) {
       agent
       .post('/simulators')
-      .set('authorization', user2Token)
+      .set('authorization', competitorBToken)
       .set('Acccept', 'application/json')
       .send(launchData)
       .end(function(err,res){
-        res.status.should.be.equal(401);
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        const r = parseResponse(res.text)
+        r.id.should.not.be.empty();
+        simB = r.id
+        r.status.should.equal('LAUNCHING');
+        r.region.should.equal('us-west-1');
+        done();
+      });
+    });
+    it('competitorB should be able to terminate simulator', function(done) {
+      agent
+      .delete('/simulators/' + simB)
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         done();
       });
@@ -702,18 +784,7 @@ describe('<Simulator controller test>', function() {
     });
     it('should not be possible to DEL to metrics/config', function(done) {
       agent
-      .del('/metrics/config')
-      .set('Acccept', 'application/json')
-      .set('authorization', userToken)
-      .send({})
-      .end(function(err,res){
-        res.status.should.be.equal(404);
-        done();
-      });
-    });
-    it('should not be possible to POST to metrics/config', function(done) {
-      agent
-      .post('/metrics/config')
+      .del('/metrics/configs')
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
       .send({})

@@ -84,7 +84,8 @@ const initialResources =  {
   'simulators': {},
   'machinetypes': {},
   'sgroups': {},
-  'metrics-config': { max_instance_hours: 500, check_enabled: true }
+  'metrics-configs': {},
+  'metrics-configs-000': { "identity": adminUser, "whitelisted": true }
 }
 
 // use body parser so we can get info from POST and/or URL parameters
@@ -158,4 +159,5 @@ csgrant.init(adminUser,
       console.log('ssl: ' + useHttps)
       console.log('listening on port ' + port);
     })
-  })
+  }
+)

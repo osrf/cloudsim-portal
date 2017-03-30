@@ -405,30 +405,6 @@ function getSimulatorMetrics(req, res) {
   res.jsonp(r)
 }
 
-function isAdmin(req) {
-  return req.user === (process.env.CLOUDSIM_ADMIN || 'admin')
-}
-
-/**
- * Reads the current Metrics Configuration, and invokes the given cb 
- * with the resulting config as argument.
- * @param {*} cb Callback with one arg: the config.
- */
-function getMetricsConfig(cb) {
-  // HACK: we impersonate the admin ir order to internally read the metrics config.
-  // This is done this way until we have a way to set multiple grants in parallel to 
-  // intance-launching users
-  csgrant.readResource((process.env.CLOUDSIM_ADMIN || 'admin'), 
-    'metrics-config', function(err, config) {
-      if(err) {
-        cb(err)
-      } else
-        cb(null, config.data)
-      return
-    }
-  )
-}
-
 /**
  * Middleware to check instance-hours availability for the current user's identities.
  * @param {*} req
@@ -436,47 +412,77 @@ function getMetricsConfig(cb) {
  * @param {*} next
  */
 function checkAvailableInstanceHours(req, res, next) {
-  if (isAdmin(req)) {
-    next()
-    return
-  }
-  getMetricsConfig((err, config) => {
-    if (err) {
+  csgrant.readAllResourcesForUser(req.identities, (err, items) => {
+    if(err) {
       return res.status(500).jsonp({
-        success: false, error: 'Error trying to read existing data: ' + err
+        success: false,
+        "error": err
       })
     }
-    if (!config.check_enabled) {
+    // this filtered list will only contain enabled configurations (or whitelisted ones)
+    const metricsConfigs = filterMetricsConfigs(req, items)
+    if (metricsConfigs.length == 0) {
       next()
       return
     }
 
-    csgrant.readAllResourcesForUser(req.identities, (err2, items) => {
-      if(err2) {
-        return res.status(500).jsonp({
-          success: false,
-          "error": err2
-        })
-      }
-      const simulators = filterSimulators(items)
-      const metrics = _computeSimulatorMetrics(req.user, simulators)
-      const exhausted = metrics.find( (metrics) => {
-        return metrics.running_time >= config.max_instance_hours
-      })
-      if (!exhausted) {
-        next()
-        return
-      }
-      // Don't launch machines if limit is reached.
-      if (exhausted) {
-        const error = {
-          success: false,
-          error: 'Unable to launch more instances. Instance-hours limit reached'
-        }
-        return res.status(403).jsonp(error);
+    // is this a whitelisted user? (ie. any of his identities is whitelisted)
+    if (metricsConfigs.find((config) => { return config.whitelisted})) {
+      next()
+      return
+    }
+
+    // Get the config with the minimum number of allowed instance-hours
+    let min = Number.MAX_SAFE_INTEGER
+    let config
+    metricsConfigs.forEach((aConfig) => {
+      if (aConfig.max_instance_hours < min) {
+        min = aConfig.max_instance_hours
+        config = aConfig
       }
     })
+    const simulators = filterSimulators(items)
+    const metrics = _computeSimulatorMetrics(req.user, simulators)
+
+    const exhausted = metrics.find( (metric) => {
+      return metric.running_time >= config.max_instance_hours
+    })
+
+    if (!exhausted) {
+      next()
+      return
+    }
+    // Don't launch machines if limit is reached.
+    const error = {
+      success: false,
+      error: 'Unable to launch more instances. Instance-hours limit '
+        + ' reached for identity: ' + config.identity
+    }
+    return res.status(403).jsonp(error);
   })
+}
+
+/**
+ * Returns the list of enabled metric configs that apply for the
+ * current user.
+ * @param {*} req
+ * @param {*} resources
+ */
+function filterMetricsConfigs(req, resources) {
+  const configs = resources.filter( (obj)=>{
+    if(obj.name.indexOf('metrics-configs-') == 0)
+      return true
+    return false
+  }).map((config) => { return config.data })
+
+  let filteredConfigs = configs.filter((config) =>{
+    // keep configs targetted to current user
+    return req.identities.indexOf(config.identity) != -1
+  }).filter((config) => {
+    // only keep enabled configs. And those whitelisting the user
+    return config.whitelisted || config.check_enabled
+  })
+  return filteredConfigs
 }
 
 function filterSimulators(resources) {
@@ -508,7 +514,8 @@ function updateMetricsConfig(req, res) {
 
     const futureData = oldData.data
     // merge with existing fields of the newData... thus keeping old fields intact
-    _.extend(futureData, _.pick(newData, 'max_instance_hours', 'check_enabled'))
+    _.extend(futureData,
+            _.pick(newData, 'whitelisted', 'max_instance_hours', 'check_enabled'))
     csgrant.updateResource(user, resourceName, futureData, (err, data) => {
       if(err) {
         return res.jsonp({success: false, error: err})
@@ -519,6 +526,40 @@ function updateMetricsConfig(req, res) {
       res.jsonp(r)
     })
   })
+}
+
+function createMetricsConfig(req, res) {
+  const newData = _.pick(req.body, 'identity', 'whitelisted',
+    'max_instance_hours', 'check_enabled')
+  const identity = req.body.identity
+  console.log(' Create Metrics config, with data: ', JSON.stringify(newData))
+  const user = req.user
+  const op = 'create metrics-configs'
+  const r = {operation: op, success: false}
+
+  csgrant.createResourceWithType(user, 'metrics-configs', newData,
+    (err, data, resourceName) => {
+      if(err) {
+        r.error = err
+        res.status(500).jsonp(r)
+        return
+      }
+
+      // Give identity read access
+      // This allows the identity to read this metrics-config when trying to launch a simulator
+      csgrant.grantPermission(user, identity, resourceName, true, function(err) {
+        if (err) {
+          r.error = err
+          res.status(500).jsonp(r)
+          return;
+        }
+
+        r.success = true
+        r.result = data
+        r.id = resourceName
+        res.jsonp(r)
+      })
+    })
 }
 
 // used to start the periodicall resource database update (against the aws info)
@@ -559,6 +600,10 @@ exports.setRoutes = function (app) {
    csgrant.ownsResource(':resourceId', true),
    csgrant.resource)
 
+  // TODO consider moving metrics to its own file.
+  // But keep in mind that simulators and metrics are coupled, specially
+  // when computing the current simulator metrics
+
   /// GET /metrics/simulators
   /// Return metrics associated to simulators grouped by user
   app.get('/metrics/simulators',
@@ -569,15 +614,31 @@ exports.setRoutes = function (app) {
 
   /// GET /metrics/config
   /// Return config associated to allowed instance-hours by team
-  app.get('/metrics/config',
+  app.get('/metrics/configs',
     csgrant.authenticate,
-    csgrant.ownsResource('metrics-config', true),
-    csgrant.resource)
+    //csgrant.ownsResource('metrics-configs', true),
+    csgrant.userResources,
+    function(req, res, next) {
+      req.userResources = req.userResources.filter( (obj)=>{
+        if(obj.name.indexOf('metrics-configs-') == 0)
+          return true
+        return false
+      })
+      next()
+    },
+    csgrant.allResources)
+
+  /// POST /metrics/config
+  /// Create a new configuration to access instance-hours and metrics info
+  app.post('/metrics/configs',
+    csgrant.authenticate,
+    csgrant.ownsResource('metrics-configs', false),
+    createMetricsConfig)
 
   /// PUT /metrics/config
-  /// Updates the config associated to available instance-hours
-  app.put('/metrics/config',
+  /// Update a metrics configuration
+  app.put('/metrics/configs/:resourceId',
     csgrant.authenticate,
-    csgrant.ownsResource('metrics-config', false),
+    csgrant.ownsResource(':resourceId', true),
     updateMetricsConfig)
 }
