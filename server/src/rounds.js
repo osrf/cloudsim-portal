@@ -10,43 +10,8 @@ function setRoutes(app) {
     csgrant.authenticate,
     csgrant.userResources,
     common.filterResources('srcround-'),
-    function(req, res, next) {
-
-      // Filter secure data
-      req.userResources = req.allResources.filter( (obj)=>{
-
-        // If at least one of the user's indentities has write permission,
-        // they are an admin, so they can see the whole data
-        for (let i in req.identities) {
-
-          const identity = req.identities[i]
-
-          for (let o in obj.permissions) {
-
-            const permUser = obj.permissions[o].username
-
-            if (identity == permUser) {
-
-              if (!obj.permissions[o].permissions.readOnly)
-                return true
-            }
-          }
-        }
-
-        // For competitors, filter out secure information
-
-        // They can't see users emails
-        obj.permissions = undefined
-
-        // They can't see secure information about the machines
-        if (obj.data.secure)
-          obj.data.secure = undefined
-
-        return true
-      })
-
-      next()
-    },
+    common.redactFromResources('permissions'),
+    common.redactFromResources('data.secure'),
     csgrant.allResources)
 
   // Start a new round
