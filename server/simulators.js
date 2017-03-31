@@ -33,29 +33,42 @@ const awsDefaults = cloudServices.awsDefaults
 const portalurl = process.env.CLOUDSIM_PORTAL_URL || 'http://localhost:'
     + process.env.PORT;
 
-/// Create a simulator
+/// Create a new simulator instance based on the content of the request
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
 /// @return Simulator create function.
 const create = function(req, res) {
-  // console.log('simulator controller create')
-  // Create a new simulator instance based on the content of the request
+
+  // Call implementation function
+  let opts = req.body
+  let user = req.user
+  createImpl(user, opts, function(resp) {
+
+    // Send response
+    res.jsonp(resp);
+  })
+}
+
+/// Implementation for the create function. This doesn't finish the response.
+const createImpl = function(user, opts, cb) {
+
   let error
+
+  // Cloud services
   if (!cloudServices) {
-    // Create an error
     error = {error: {
       msg: 'Cloud services are not available'
     }};
-    console.log(error.msg)
-    res.jsonp(error);
+    console.log(error.error.msg)
+    cb(error);
     return;
   }
 
   // create the simulator data
   var simulator = {status: 'LAUNCHING'}
-  simulator.region = req.body.region
-  simulator.hardware = req.body.hardware
-  simulator.image = req.body.image
+  simulator.region = opts.region
+  simulator.hardware = opts.hardware
+  simulator.image = opts.image
 
   if (!simulator.region || !simulator.image || !simulator.hardware)
   {
@@ -65,23 +78,23 @@ const create = function(req, res) {
       }
     }
     console.log(error.error.msg)
-    res.jsonp(error);
+    cb(error);
     return;
   }
 
   // TODO: Check if user owns this SSH key resource, otherwise someone can
   // launch a machine with an ssh key they don't own, and download the key
   // from the machine later using the /download route
-  simulator.sshkey = req.body.sshkey
+  simulator.sshkey = opts.sshkey
   if (!simulator.sshkey) {
     simulator.sshkey = awsDefaults.keyName
   }
-  simulator.options = req.body.options
+  simulator.options = opts.options
 
-  if (req.body.sgroup)
-    simulator.sgroup = req.body.sgroup
+  if (opts.sgroup)
+    simulator.sgroup = opts.sgroup
   // Set the simulator user
-  simulator.creator = req.user;
+  simulator.creator = user;
   simulator.launch_date = new Date();
   simulator.termination_date = null;
   simulator.machine_ip = '';
@@ -89,7 +102,7 @@ const create = function(req, res) {
 
   csgrant.getNextResourceId('simulator', (err, resourceName) => {
     if(err) {
-      res.jsonp(error(err))
+      cb(error(err))
       return
     }
     simulator.id = resourceName
@@ -101,24 +114,24 @@ const create = function(req, res) {
     }
 
     // add resource to csgrant
-    csgrant.createResource(req.user, simulator.id, simulator,
+    csgrant.createResource(user, simulator.id, simulator,
       (err) => {
         if (err) {
           console.log('create resource error:' + err)
-          res.jsonp(error(err));
+          cb(error(err));
           return;
         }
 
         // launch the simulator!
-        const tagValue = resourceName + '_' + req.user
+        const tagValue = resourceName + '_' + user
         const tag = {Name: tagValue}
         // use a script that will pass on the username,
         const scriptTxt = cloudServices.generateScript(
           simulator.creator,
           simulator.options )
         let sgroups = [awsDefaults.security];
-        if (req.body.sgroup)
-          sgroups.push(req.body.sgroup)
+        if (opts.sgroup)
+          sgroups.push(opts.sgroup)
         cloudServices.launchSimulator(
           simulator.region,
           simulator.sshkey,
@@ -138,17 +151,17 @@ const create = function(req, res) {
                 }
               }
               console.log(error.msg)
-              res.jsonp(error);
+              cb(error);
               return;
             }
             const info = machine;
             simulator.machine_id = info.id;
             // send json response object to update the
             // caller with new simulator data.
-            res.jsonp(simulator)
+            cb(simulator)
 
             // update resource (this triggers socket notification)
-            csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
+            csgrant.updateResource(user, simulator.id, simulator, ()=>{
               console.log(simulator.id, 'launch!')
             })
 
@@ -158,7 +171,7 @@ const create = function(req, res) {
                 simulator.machine_ip = state.ip
                 simulator.aws_launch_time = state.launchTime
                 simulator.aws_creation_time = state.creationTime
-                csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
+                csgrant.updateResource(user, simulator.id, simulator, ()=>{
                   console.log(simulator.id, 'ip:', simulator.machine_ip)
                 })
 
@@ -376,3 +389,4 @@ exports.setRoutes = function (app) {
    csgrant.resource)
 }
 
+exports.create = createImpl

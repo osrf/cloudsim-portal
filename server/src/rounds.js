@@ -2,6 +2,7 @@
 
 const csgrant = require('cloudsim-grant')
 const common = require('../common')
+const simulators = require('../simulators')
 
 function setRoutes(app) {
 
@@ -59,7 +60,9 @@ function setRoutes(app) {
 
       // Check data is complete
       if (resourceData.dockerurl == undefined || resourceData.dockerurl == "" ||
-          resourceData.team == undefined || resourceData.team == "") {
+          resourceData.team == undefined || resourceData.team == "" ||
+          resourceData.fieldcomputer == undefined || resourceData.fieldcomputer == "" ||
+          resourceData.simulator == undefined || resourceData.simulator == "") {
 
         res.status(400).jsonp('{"error":"Missing required field."}')
         return
@@ -116,14 +119,18 @@ function setRoutes(app) {
 
               // TODO: Ask keys server to generate VPN bundle
               // TODO: Share VPN bundle with team and admins
-              // TODO: Launch simulator
-              // TODO: Share simulator with admins, write access so they have SSH keys and IP
-              // TODO: How to get simulator status to competitors? Do we need to?
-              // TODO: Launch FC
-              // TODO: Share FC with admins, write access
-              // TODO: Users can connect to FC through VPN
+              // TODO: Insert VPN resource info into resourceData
 
-              res.jsonp(r);
+              // Launch simulator
+              simulators.create(team, resourceData.simulator, function(resp){
+
+                // TODO: Share simulator with admins, write access so they have SSH keys and IP
+                // TODO: Launch FC
+                // TODO: Share FC with admins, write access
+                // TODO: Users can connect to FC through VPN
+
+                res.jsonp(r);
+              })
             })
           })
         })

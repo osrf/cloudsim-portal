@@ -40,6 +40,20 @@ const notCompetitor = "not-competitor"
 const notCompetitorTokenData = {identities: [notCompetitor]}
 let notCompetitorToken
 
+// Fake simulator data
+let simData = {
+  region: 'region',
+  hardware: 'hardware',
+  image: 'image'
+}
+
+// Fake field computer data
+let fcData = {
+  region: 'region',
+  hardware: 'hardware',
+  image: 'image'
+}
+
 function getResponse(res, print) {
   const response = JSON.parse(res.text)
   if(print) {
@@ -175,7 +189,11 @@ describe('<Unit test SRC rounds>', function() {
       .post('/srcrounds')
       .set('Accept', 'application/json')
       .set('authorization', srcAdminToken)
-      .send({'dockerurl': dockerUrl, 'team': debugTeam})
+      .send({'dockerurl': dockerUrl,
+             'team': debugTeam,
+              'simulator': simData,
+              'fieldcomputer': fcData
+            })
       .end(function(err,res) {
         res.status.should.be.equal(200)
         let response = getResponse(res)
@@ -200,7 +218,10 @@ describe('<Unit test SRC rounds>', function() {
       .post('/srcrounds')
       .set('Accept', 'application/json')
       .set('authorization', competitorAToken)
-      .send({'dockerurl': dockerUrl})
+      .send({'dockerurl': dockerUrl,
+              'simulator': simData,
+              'fieldcomputer': fcData
+            })
       .end(function(err,res) {
         res.status.should.be.equal(200)
         let response = getResponse(res)
@@ -322,7 +343,11 @@ describe('<Unit test SRC rounds>', function() {
       .post('/srcrounds')
       .set('Accept', 'application/json')
       .set('authorization', srcAdminToken)
-      .send({'dockerurl': dockerUrl, 'team': teamB})
+      .send({'dockerurl': dockerUrl,
+             'team': teamB,
+              'simulator': simData,
+              'fieldcomputer': fcData
+            })
       .end(function(err,res) {
         res.status.should.be.equal(200)
         let response = getResponse(res)
@@ -386,7 +411,11 @@ describe('<Unit test SRC rounds>', function() {
       .post('/srcrounds')
       .set('Accept', 'application/json')
       .set('authorization', competitorAToken)
-      .send({'dockerurl': dockerUrl, 'team': teamB})
+      .send({'dockerurl': dockerUrl,
+             'team': teamB,
+              'simulator': simData,
+              'fieldcomputer': fcData
+            })
       .end(function(err,res) {
         res.status.should.be.equal(403)
         done()
