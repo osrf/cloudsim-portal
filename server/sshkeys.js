@@ -2,6 +2,7 @@
 
 const csgrant = require('cloudsim-grant')
 const zip = require('./zip')
+const common = require('./common')
 
 const log = function(){} // console.log
 
@@ -24,17 +25,7 @@ function setRoutes(app) {
   app.get('/sshkeys',
     csgrant.authenticate,
     csgrant.userResources,
-    function(req, res, next) {
-      // we're going to filter out the non
-      // machine types before the next middleware.
-      req.allResources = req.userResources
-      req.userResources = req.allResources.filter( (obj)=>{
-        if(obj.name.indexOf('sshkey-') == 0)
-          return true
-        return false
-      })
-      next()
-    },
+    common.filterResources('sshkey-'),
     csgrant.allResources)
 
   app.get('/sshkeys/:sshkey',

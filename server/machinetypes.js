@@ -1,6 +1,7 @@
 'use strict'
 
 const csgrant = require('cloudsim-grant')
+const common = require('./common')
 
 function setRoutes(app) {
 
@@ -10,17 +11,7 @@ function setRoutes(app) {
   app.get('/machinetypes',
     csgrant.authenticate,
     csgrant.userResources,
-    function(req, res, next) {
-      // we're going to filter out the non
-      // machine types before the next middleware.
-      req.allResources = req.userResources
-      req.userResources = req.allResources.filter( (obj)=>{
-        if(obj.name.indexOf('machinetype-') == 0)
-          return true
-        return false
-      })
-      next()
-    },
+    common.filterResources('machinetype-'),
     csgrant.allResources)
 
   app.get('/machinetypes/:machinetype',
