@@ -1,6 +1,7 @@
 'use strict'
 
 const csgrant = require('cloudsim-grant')
+const common = require('../common')
 
 function setRoutes(app) {
 
@@ -8,15 +9,11 @@ function setRoutes(app) {
   app.get('/srcrounds',
     csgrant.authenticate,
     csgrant.userResources,
+    common.filterResources('srcround-'),
     function(req, res, next) {
 
-      // Filter
-      req.allResources = req.userResources
+      // Filter secure data
       req.userResources = req.allResources.filter( (obj)=>{
-
-        // Must be srcround
-        if(obj.name.indexOf('srcround-') != 0)
-          return false
 
         // If at least one of the user's indentities has write permission,
         // they are an admin, so they can see the whole data
