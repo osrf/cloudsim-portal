@@ -5,6 +5,7 @@
 /// Module dependencies.
 const util = require('util')
 const csgrant = require('cloudsim-grant')
+const common = require('./common')
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
@@ -63,7 +64,7 @@ const create = function(req, res) {
         msg: 'Missing required fields (image, region, hardware)'
       }
     }
-    console.log(error.msg)
+    console.log(error.error.msg)
     res.jsonp(error);
     return;
   }
@@ -350,15 +351,7 @@ exports.setRoutes = function (app) {
   app.get('/simulators',
     csgrant.authenticate,
     csgrant.userResources,
-    function (req, res, next) {
-      const resources = req.userResources
-      req.userResources = resources.filter( (obj)=>{
-        if(obj.name.indexOf('simulator-') == 0)
-          return true
-        return false
-      })
-      next()
-    },
+    common.filterResources('simulator-'),
     csgrant.allResources)
 
   /// DEL /simulators
