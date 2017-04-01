@@ -564,13 +564,13 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        console.log('res', res.text)
         var text = JSON.parse(res.text);
         text.result[0].data.should.not.be.empty();
         text.result[0].data.identity.should.equal(adminUser);
         done();
       });
     });
+    let configId
     it('the admin should be possible to post a new metrics config targetting TeamA', function(done) {
       agent
       .post('/metrics/configs/')
@@ -581,6 +581,9 @@ describe('<Simulator controller test>', function() {
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
+        text.success.should.equal(true)
+        should.exist(text.id)
+        configId = text.id
         text.result.data.should.not.be.empty();
         text.result.data.identity.should.equal(teamA);
         should.not.exist(text.result.data.whitelisted);
@@ -604,6 +607,21 @@ describe('<Simulator controller test>', function() {
         text.result[0].data.should.not.be.empty();
         text.result[0].data.identity.should.equal(teamA);
         text.result[0].data.check_enabled.should.equal(true);
+        text.result[0].data.max_instance_hours.should.equal(1);
+        done();
+      });
+    });
+    it('should NOT be possible to update specific config by users from the targetted team (readonly)', function(done) {
+      agent
+      .put('/metrics/configs/' + configId)
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorAToken)
+      .send({ max_instance_hours: 5 })
+      .end(function(err,res){
+        res.status.should.be.equal(401);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text);
+        text.success.should.equal(false);
         done();
       });
     });
@@ -618,6 +636,37 @@ describe('<Simulator controller test>', function() {
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
         text.result.should.be.empty();
+        done();
+      });
+    });
+    it('should not be possible to update specific config by non authorized users', function(done) {
+      agent
+      .put('/metrics/configs/' + configId)
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorBToken)
+      .send({ max_instance_hours: 1 })
+      .end(function(err,res){
+        res.status.should.be.equal(401);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text);
+        text.success.should.equal(false);
+        done();
+      });
+    });
+    it('should be possible to update any config by admin user', function(done) {
+      agent
+      .put('/metrics/configs/' + configId)
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({ max_instance_hours: 1 })
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text);
+        text.result.data.should.not.be.empty();
+        text.result.data.identity.should.equal(teamA);
+        text.result.data.check_enabled.should.equal(true);
+        text.result.data.max_instance_hours.should.equal(1);
         done();
       });
     });

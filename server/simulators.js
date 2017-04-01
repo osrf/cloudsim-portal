@@ -498,9 +498,8 @@ function updateMetricsConfig(req, res) {
   const resourceName = req.resourceName
   const newData = req.body
   console.log(' Update Metrics config, with new data: ', JSON.stringify(newData))
-  const user = req.user
   const r = {success: false}
-  csgrant.readResource(user, resourceName, function(err, oldData) {
+  csgrant.readResource(req.authorizedIdentity, resourceName, function(err, oldData) {
     if(err) {
       return res.jsonp({success: false,
         error: 'Error trying to read existing data: ' + err})
@@ -510,7 +509,7 @@ function updateMetricsConfig(req, res) {
     // merge with existing fields of the newData... thus keeping old fields intact
     _.extend(futureData,
             _.pick(newData, 'whitelisted', 'max_instance_hours', 'check_enabled'))
-    csgrant.updateResource(user, resourceName, futureData, (err, data) => {
+    csgrant.updateResource(req.authorizedIdentity, resourceName, futureData, (err, data) => {
       if(err) {
         return res.jsonp({success: false, error: err})
       }
@@ -612,14 +611,7 @@ exports.setRoutes = function (app) {
     csgrant.authenticate,
     //csgrant.ownsResource('metrics-configs', true),
     csgrant.userResources,
-    function(req, res, next) {
-      req.userResources = req.userResources.filter( (obj)=>{
-        if(obj.name.indexOf('metrics-configs-') == 0)
-          return true
-        return false
-      })
-      next()
-    },
+    common.filterResources('metrics-configs-'),
     csgrant.allResources)
 
   /// POST /metrics/config
@@ -633,6 +625,6 @@ exports.setRoutes = function (app) {
   /// Update a metrics configuration
   app.put('/metrics/configs/:resourceId',
     csgrant.authenticate,
-    csgrant.ownsResource(':resourceId', true),
+    csgrant.ownsResource(':resourceId', false),
     updateMetricsConfig)
 }
