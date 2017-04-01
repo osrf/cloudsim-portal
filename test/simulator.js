@@ -530,8 +530,8 @@ describe('<Simulator controller test>', function() {
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
-        text.result[0].username.should.not.be.empty();
-        text.result[0].username.should.equal(adminUser);
+        text.result[0].identity.should.not.be.empty();
+        text.result[0].identity.should.equal(adminUser);
         text.result[0].running_time.should.equal(3);
         done();
       });
@@ -546,8 +546,8 @@ describe('<Simulator controller test>', function() {
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
         var text = JSON.parse(res.text);
-        text.result[0].username.should.not.be.empty();
-        text.result[0].username.should.equal(user2TokenData.identities[0]);
+        text.result[0].identity.should.not.be.empty();
+        text.result[0].identity.should.equal(user2TokenData.identities[0]);
         text.result[0].running_time.should.equal(0);
         done();
       });

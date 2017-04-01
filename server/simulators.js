@@ -349,7 +349,7 @@ function _computeSimulatorMetrics(user, simulators) {
   const metrics = {}
   // at a minimum, the current user must be returned
   metrics[user] = {
-    'username': user,
+    'identity': user,
     'running_time': 0
   }
   for(let sId in simulators) {
@@ -365,7 +365,7 @@ function _computeSimulatorMetrics(user, simulators) {
       const username = s.permissions[pId].username
       if (!metrics[username]) {
         metrics[username] = {
-          'username': username,
+          'identity': username,
           'running_time': 0
         }
       }
@@ -609,7 +609,6 @@ exports.setRoutes = function (app) {
   /// Return config associated to allowed instance-hours by team
   app.get('/metrics/configs',
     csgrant.authenticate,
-    //csgrant.ownsResource('metrics-configs', true),
     csgrant.userResources,
     common.filterResources('metrics-configs-'),
     csgrant.allResources)
