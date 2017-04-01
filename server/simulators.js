@@ -7,6 +7,7 @@ const util = require('util')
 const csgrant = require('cloudsim-grant')
 const moment = require('moment')
 const _ = require('underscore')
+const common = require('./common')
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
@@ -65,7 +66,7 @@ const create = function(req, res) {
         msg: 'Missing required fields (image, region, hardware)'
       }
     }
-    console.log(error.msg)
+    console.log(error.error.msg)
     res.jsonp(error);
     return;
   }
@@ -493,13 +494,6 @@ function filterSimulators(resources) {
   })
 }
 
-// middleware to filter simulators
-function filterSimulatorsMiddleware(req, res, next) {
-  const resources = req.userResources
-  req.userResources = filterSimulators(resources)
-  next()
-}
-
 function updateMetricsConfig(req, res) {
   const resourceName = req.resourceName
   const newData = req.body
@@ -575,7 +569,7 @@ exports.setRoutes = function (app) {
   app.get('/simulators',
     csgrant.authenticate,
     csgrant.userResources,
-    filterSimulatorsMiddleware,
+    common.filterResources('simulator-'),
     csgrant.allResources)
 
   /// DEL /simulators
@@ -609,7 +603,7 @@ exports.setRoutes = function (app) {
   app.get('/metrics/simulators',
     csgrant.authenticate,
     csgrant.userResources,
-    filterSimulatorsMiddleware,
+    common.filterResources('simulator-'),
     getSimulatorMetrics)
 
   /// GET /metrics/config

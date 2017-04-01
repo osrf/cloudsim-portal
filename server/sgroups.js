@@ -2,6 +2,7 @@
 
 /// Module dependencies.
 var csgrant = require('cloudsim-grant');
+const common = require('./common')
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
@@ -304,17 +305,7 @@ exports.setRoutes = function(app) {
   app.get('/sgroups',
              csgrant.authenticate,
              csgrant.userResources,
-             function (req, res, next) {
-               // we're going to filter out the non
-               // groups types before the next middleware.
-               req.allResources = req.userResources
-               req.userResources = req.allResources.filter( (obj)=>{
-                 if(obj.name.indexOf('sgroup-') == 0)
-                   return true
-                 return false
-               })
-               next()
-             },
+             common.filterResources('sgroup-'),
              csgrant.allResources)
 
   /// Delete a security group
