@@ -39,7 +39,6 @@ function redactFromResources(_prop) {
       }
 
       // If we got here, we don't have write permission to the resource
-
       let a = _prop.split('.');
       let o = obj
       for (let i = 0; i < a.length; ++i) {

@@ -56,7 +56,7 @@ let fcData = {
 
 function getResponse(res, print) {
   const response = JSON.parse(res.text)
-  if(print) {
+  if (print) {
     csgrant.dump()
     console.trace(JSON.stringify(response, null, 2 ))
   }
@@ -189,11 +189,12 @@ describe('<Unit test SRC rounds>', function() {
       .post('/srcrounds')
       .set('Accept', 'application/json')
       .set('authorization', srcAdminToken)
-      .send({'dockerurl': dockerUrl,
-             'team': debugTeam,
-              'simulator': simData,
-              'fieldcomputer': fcData
-            })
+      .send({
+        'dockerurl': dockerUrl,
+        'team': debugTeam,
+        'simulator': simData,
+        'fieldcomputer': fcData
+      })
       .end(function(err,res) {
         res.status.should.be.equal(200)
         let response = getResponse(res)
@@ -218,10 +219,11 @@ describe('<Unit test SRC rounds>', function() {
       .post('/srcrounds')
       .set('Accept', 'application/json')
       .set('authorization', competitorAToken)
-      .send({'dockerurl': dockerUrl,
-              'simulator': simData,
-              'fieldcomputer': fcData
-            })
+      .send({
+        'dockerurl': dockerUrl,
+        'simulator': simData,
+        'fieldcomputer': fcData
+      })
       .end(function(err,res) {
         res.status.should.be.equal(200)
         let response = getResponse(res)
@@ -265,10 +267,13 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.public)
 
         response.result[0].permissions.length.should.equal(2)
-        response.result[0].permissions[0].username.should.equal('src-admins')
-        response.result[0].permissions[0].permissions.readOnly.should.equal(false)
+        response.result[0].permissions[0].username.should.equal(
+          'src-admins')
+        response.result[0].permissions[0].permissions.readOnly.should.equal(
+          false)
         response.result[0].permissions[1].username.should.equal(debugTeam)
-        response.result[0].permissions[1].permissions.readOnly.should.equal(true)
+        response.result[0].permissions[1].permissions.readOnly.should.equal(
+          true)
 
         // Team A's round
         roundA = response.result[1].name
@@ -281,9 +286,64 @@ describe('<Unit test SRC rounds>', function() {
 
         response.result[1].permissions.length.should.equal(2)
         response.result[1].permissions[0].username.should.equal('src-admins')
-        response.result[1].permissions[0].permissions.readOnly.should.equal(false)
+        response.result[1].permissions[0].permissions.readOnly.should.equal(
+          false)
         response.result[1].permissions[1].username.should.equal(teamA)
-        response.result[1].permissions[1].permissions.readOnly.should.equal(true)
+        response.result[1].permissions[1].permissions.readOnly.should.equal(
+          true)
+
+        done()
+      })
+    })
+  })
+
+  describe('Get rounds with a different admin', function() {
+    it('should have two rounds and full access to secure data', function(done) {
+      agent
+      .get('/srcrounds')
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdmin2Token)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.success.should.equal(true)
+        response.requester.should.equal(srcAdmin2)
+        response.result.length.should.equal(2)
+
+        // Debug round
+        roundDebug = response.result[0].name
+        roundDebug.indexOf('srcround').should.be.above(-1)
+
+        response.result[0].data.dockerurl.should.equal(dockerUrl)
+        response.result[0].data.team.should.equal(debugTeam)
+        should.exist(response.result[0].data.secure)
+        should.exist(response.result[0].data.public)
+
+        response.result[0].permissions.length.should.equal(2)
+        response.result[0].permissions[0].username.should.equal(
+          'src-admins')
+        response.result[0].permissions[0].permissions.readOnly.should.equal(
+          false)
+        response.result[0].permissions[1].username.should.equal(debugTeam)
+        response.result[0].permissions[1].permissions.readOnly.should.equal(
+          true)
+
+        // Team A's round
+        roundA = response.result[1].name
+        roundA.indexOf('srcround').should.be.above(-1)
+
+        response.result[1].data.dockerurl.should.equal(dockerUrl)
+        response.result[1].data.team.should.equal(teamA)
+        should.exist(response.result[1].data.secure)
+        should.exist(response.result[1].data.public)
+
+        response.result[1].permissions.length.should.equal(2)
+        response.result[1].permissions[0].username.should.equal('src-admins')
+        response.result[1].permissions[0].permissions.readOnly.should.equal(
+          false)
+        response.result[1].permissions[1].username.should.equal(teamA)
+        response.result[1].permissions[1].permissions.readOnly.should.equal(
+          true)
 
         done()
       })
@@ -343,11 +403,12 @@ describe('<Unit test SRC rounds>', function() {
       .post('/srcrounds')
       .set('Accept', 'application/json')
       .set('authorization', srcAdminToken)
-      .send({'dockerurl': dockerUrl,
-             'team': teamB,
-              'simulator': simData,
-              'fieldcomputer': fcData
-            })
+      .send({
+        'dockerurl': dockerUrl,
+        'team': teamB,
+        'simulator': simData,
+        'fieldcomputer': fcData
+      })
       .end(function(err,res) {
         res.status.should.be.equal(200)
         let response = getResponse(res)
@@ -411,11 +472,12 @@ describe('<Unit test SRC rounds>', function() {
       .post('/srcrounds')
       .set('Accept', 'application/json')
       .set('authorization', competitorAToken)
-      .send({'dockerurl': dockerUrl,
-             'team': teamB,
-              'simulator': simData,
-              'fieldcomputer': fcData
-            })
+      .send({
+        'dockerurl': dockerUrl,
+        'team': teamB,
+        'simulator': simData,
+        'fieldcomputer': fcData
+      })
       .end(function(err,res) {
         res.status.should.be.equal(403)
         done()

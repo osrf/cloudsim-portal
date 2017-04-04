@@ -27,6 +27,7 @@ function setRoutes(app) {
       if (req.identities.indexOf('src-admins') >= 0)
         isAdmin = true
 
+      // competitor starts with capital SRC prefix
       let isCompetitor = false
       req.identities.forEach(function(id){
         if (id.indexOf("SRC-") > -1) {
@@ -40,7 +41,10 @@ function setRoutes(app) {
         isCompetitor = false
 
       if (!isAdmin && !isCompetitor) {
-        res.status(403).jsonp('{"error":"Only SRC admins or competitors can start rounds."}')
+        let error = {error: {
+          msg: 'Only SRC admins or competitors can start rounds.'
+        }};
+        res.status(403).jsonp(error)
         return
       }
 
@@ -48,9 +52,12 @@ function setRoutes(app) {
       const resourceData = req.body
 
       // A competitor can't start a round for another team
-      if (isCompetitor && resourceData.team != undefined && resourceData.team != team) {
-
-        res.status(403).jsonp('{"error":"Attempting to create a round for another team."}')
+      if (isCompetitor && resourceData.team != undefined &&
+          resourceData.team != team) {
+        let error = {error: {
+          msg: 'Attempting to create a round for another team.'
+        }};
+        res.status(403).jsonp(error)
         return
       }
 
@@ -59,12 +66,12 @@ function setRoutes(app) {
         resourceData.team = team
 
       // Check data is complete
-      if (resourceData.dockerurl == undefined || resourceData.dockerurl == "" ||
-          resourceData.team == undefined || resourceData.team == "" ||
-          resourceData.fieldcomputer == undefined || resourceData.fieldcomputer == "" ||
-          resourceData.simulator == undefined || resourceData.simulator == "") {
-
-        res.status(400).jsonp('{"error":"Missing required field."}')
+      if (!resourceData.dockerurl || !resourceData.team ||
+          !resourceData.fieldcomputer || ! resourceData.simulator) {
+        let error = {error: {
+          msg: 'Missing required fields.'
+        }};
+        res.status(400).jsonp(error)
         return
       }
 
@@ -77,7 +84,8 @@ function setRoutes(app) {
       const operation = 'Start SRC round'
 
       const user = req.user
-      csgrant.createResourceWithType(user, 'srcround', resourceData, (err, data, resourceName) => {
+      csgrant.createResourceWithType(user, 'srcround', resourceData,
+      (err, data, resourceName) => {
         if(err) {
           let error = {
             operation: operation,
@@ -96,7 +104,8 @@ function setRoutes(app) {
 
         // Give all admins write access
         // This allows them to see secure information
-        csgrant.grantPermission(req.user, "src-admins", r.id, false, function(err) {
+        csgrant.grantPermission(req.user, "src-admins", r.id, false,
+        function(err) {
           if (err) {
             res.status(500).jsonp(error(err))
             return;
@@ -104,14 +113,17 @@ function setRoutes(app) {
 
           // Give team read access
           // This allows them to see "public" information
-          csgrant.grantPermission(req.user, resourceData.team, r.id, true, function(err) {
+          csgrant.grantPermission(req.user, resourceData.team, r.id, true,
+          function(err) {
             if (err) {
               res.status(500).jsonp(error(err))
               return;
             }
 
-            // Revoke user permission, users should inherit permissions from teams
-            csgrant.revokePermission(req.user, req.user, r.id, false, function(err) {
+            // Revoke user permission, users should inherit permissions from
+            // teams
+            csgrant.revokePermission(req.user, req.user, r.id, false,
+            function(err) {
               if (err) {
                 res.status(500).jsonp(error(err))
                 return;
@@ -124,11 +136,16 @@ function setRoutes(app) {
               // Launch simulator
               simulators.create(team, resourceData.simulator, function(resp){
 
-                // TODO: Share simulator with admins, write access so they have SSH keys and IP
+                // TODO: Share simulator with admins,
+                //   write access so they have SSH keys and IP
                 // TODO: Launch FC
                 // TODO: Share FC with admins, write access
                 // TODO: Users can connect to FC through VPN
-
+                if (resp.error) {
+                  res.jsonp(resp)
+                  return
+                }
+                // TODO Launch field computer
                 res.jsonp(r);
               })
             })
