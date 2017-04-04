@@ -89,7 +89,7 @@ const createImpl = function(user, opts, cb) {
   if (!simulator.sshkey) {
     simulator.sshkey = awsDefaults.keyName
   }
-  simulator.options = opts.options
+  simulator.options = opts.options || {}
 
   if (opts.sgroup)
     simulator.sgroup = opts.sgroup
