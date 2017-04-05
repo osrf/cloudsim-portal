@@ -78,7 +78,7 @@ const create = function(req, res) {
   if (!simulator.sshkey) {
     simulator.sshkey = awsDefaults.keyName
   }
-  simulator.options = req.body.options
+  simulator.options = req.body.options || {}
 
   if (req.body.sgroup)
     simulator.sgroup = req.body.sgroup
