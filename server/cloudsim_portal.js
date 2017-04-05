@@ -17,6 +17,7 @@ const machinetypes = require('./machinetypes')
 const sgroups = require('./sgroups')
 const simulators = require('./simulators')
 const sshkeys = require('./sshkeys')
+const metrics = require('./metric_configs')
 
 dotenv.load();
 
@@ -118,6 +119,7 @@ simulators.setRoutes(app)
 sgroups.setRoutes(app)
 machinetypes.setRoutes(app)
 sshkeys.setRoutes(app)
+metrics.setRoutes(app)
 
 // a little home page for general info
 app.get('/', function (req, res) {

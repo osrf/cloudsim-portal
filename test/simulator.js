@@ -67,6 +67,9 @@ describe('<Simulator controller test>', function() {
     // the server is launched (otherwise, root resources will be missing)
     csgrant = require('cloudsim-grant')
     csgrant.model.clearDb()
+    csgrant.model.readDb((err, items) => {
+      console.log('initial items', err, JSON.stringify(items))
+    })
     done()
   })
 
@@ -75,7 +78,6 @@ describe('<Simulator controller test>', function() {
     agent = supertest.agent(app)
     done()
   })
-
 
   before(function(done) {
     // we need fresh keys for this test
@@ -554,139 +556,6 @@ describe('<Simulator controller test>', function() {
     });
   });
 
-  describe('Check Metrics Configs', function() {
-    it('should be possible to get all configs accessible by admin user', function(done) {
-      agent
-      .get('/metrics/configs')
-      .set('Acccept', 'application/json')
-      .set('authorization', userToken)
-      .send({})
-      .end(function(err,res){
-        res.status.should.be.equal(200);
-        res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
-        text.result[0].data.should.not.be.empty();
-        text.result[0].data.identity.should.equal(adminUser);
-        done();
-      });
-    });
-    let configId
-    it('the admin should be possible to post a new metrics config targetting TeamA', function(done) {
-      agent
-      .post('/metrics/configs/')
-      .set('Acccept', 'application/json')
-      .set('authorization', userToken)
-      .send({ identity: teamA, check_enabled: true, max_instance_hours: 1 })
-      .end(function(err,res){
-        res.status.should.be.equal(200);
-        res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
-        text.success.should.equal(true)
-        should.exist(text.id)
-        configId = text.id
-        text.result.data.should.not.be.empty();
-        text.result.data.identity.should.equal(teamA);
-        should.not.exist(text.result.data.whitelisted);
-        text.result.data.check_enabled.should.equal(true);
-        text.result.data.max_instance_hours.should.equal(1);
-        should.exist(text.result.permissions[teamA])
-        text.result.permissions[teamA].readOnly.should.equal(true);
-        done();
-      });
-    });
-    it('should be possible to get configs by users from the targetted team', function(done) {
-      agent
-      .get('/metrics/configs')
-      .set('Acccept', 'application/json')
-      .set('authorization', competitorAToken)
-      .send({})
-      .end(function(err,res){
-        res.status.should.be.equal(200);
-        res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
-        text.result[0].data.should.not.be.empty();
-        text.result[0].data.identity.should.equal(teamA);
-        text.result[0].data.check_enabled.should.equal(true);
-        text.result[0].data.max_instance_hours.should.equal(1);
-        done();
-      });
-    });
-    it('should NOT be possible to update specific config by users from the targetted team (readonly)', function(done) {
-      agent
-      .put('/metrics/configs/' + configId)
-      .set('Acccept', 'application/json')
-      .set('authorization', competitorAToken)
-      .send({ max_instance_hours: 5 })
-      .end(function(err,res){
-        res.status.should.be.equal(401);
-        res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
-        text.success.should.equal(false);
-        done();
-      });
-    });
-    it('should not be possible to get configs by non authorized users', function(done) {
-      agent
-      .get('/metrics/configs')
-      .set('Acccept', 'application/json')
-      .set('authorization', competitorBToken)
-      .send({})
-      .end(function(err,res){
-        res.status.should.be.equal(200);
-        res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
-        text.result.should.be.empty();
-        done();
-      });
-    });
-    it('should not be possible to update specific config by non authorized users', function(done) {
-      agent
-      .put('/metrics/configs/' + configId)
-      .set('Acccept', 'application/json')
-      .set('authorization', competitorBToken)
-      .send({ max_instance_hours: 1 })
-      .end(function(err,res){
-        res.status.should.be.equal(401);
-        res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
-        text.success.should.equal(false);
-        done();
-      });
-    });
-    it('should be possible to update any config by admin user', function(done) {
-      agent
-      .put('/metrics/configs/' + configId)
-      .set('Acccept', 'application/json')
-      .set('authorization', userToken)
-      .send({ max_instance_hours: 1 })
-      .end(function(err,res){
-        res.status.should.be.equal(200);
-        res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
-        text.result.data.should.not.be.empty();
-        text.result.data.identity.should.equal(teamA);
-        text.result.data.check_enabled.should.equal(true);
-        text.result.data.max_instance_hours.should.equal(1);
-        done();
-      });
-    });
-
-    it('should NOT be possible to update main config 000 by a non admin user', function(done) {
-      agent
-      .put('/metrics/configs/metrics-configs-000')
-      .set('Acccept', 'application/json')
-      .set('authorization', competitorAToken)
-      .send({ check_enabled: false})
-      .end(function(err,res){
-        res.status.should.be.equal(401);
-        res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
-        text.success.should.equal(false);
-        done();
-      });
-    });
-  });
-
   describe('Metrics: Grant competitors write permissions on simulators and try launching', function() {
     it('should be possible to grant competitorA write permission on simulators', function(done) {
       agent
@@ -751,6 +620,28 @@ describe('<Simulator controller test>', function() {
         done();
       });
     });
+    it('the admin should be able to post a new metrics config targetting TeamA with max_instance_hours in 1', function(done) {
+      agent
+      .post('/metrics/configs/')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({ identity: teamA, check_enabled: true, max_instance_hours: 1 })
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        var text = JSON.parse(res.text);
+        text.success.should.equal(true)
+        should.exist(text.id)
+        text.result.data.should.not.be.empty();
+        text.result.data.identity.should.equal(teamA);
+        should.not.exist(text.result.data.whitelisted);
+        text.result.data.check_enabled.should.equal(true);
+        text.result.data.max_instance_hours.should.equal(1);
+        should.exist(text.result.permissions[teamA])
+        text.result.permissions[teamA].readOnly.should.equal(true);
+        done();
+      });
+    });    
     it('competitorA should NOT be able to launch another simulator due to exhausted balance', function(done) {
       agent
       .post('/simulators')
@@ -823,17 +714,6 @@ describe('<Simulator controller test>', function() {
     it('should not be possible to PUT to metrics url', function(done) {
       agent
       .put('/metrics/simulators')
-      .set('Acccept', 'application/json')
-      .set('authorization', userToken)
-      .send({})
-      .end(function(err,res){
-        res.status.should.be.equal(404);
-        done();
-      });
-    });
-    it('should not be possible to DEL to metrics/config', function(done) {
-      agent
-      .del('/metrics/configs')
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
       .send({})
@@ -1408,4 +1288,3 @@ describe('<Simulator controller test>', function() {
     done();
   });
 })
-
