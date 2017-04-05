@@ -8,8 +8,9 @@ let agent
 
 const should = require('should')
 const supertest = require('supertest')
+const clearRequire = require('clear-require');
 
-var adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
+const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
 
 // Users
 let userToken
@@ -29,15 +30,14 @@ let competitorBToken
 
 describe('<Unit test Metrics>', function() {
 
+  // before hook used to require modules used by this test.
+  // IMPORTANT: remember to clear-require these modules in the after hook.
   before(function(done) {
     // Important: the database has to be cleared early, before
     // the server is launched (otherwise, root resources will be missing)
     csgrant = require('cloudsim-grant')
     csgrant.model.clearDb()
-    done()
-  })
 
-  before(function(done) {
     app = require('../server/cloudsim_portal')
     agent = supertest.agent(app)
     done()
@@ -47,7 +47,6 @@ describe('<Unit test Metrics>', function() {
     // we need fresh keys for this test
     const keys = csgrant.token.generateKeys()
     csgrant.token.initKeys(keys.public, keys.private)
-    // csgrant.model.clearDb()
     csgrant.token.signToken(userTokenData, (e, tok)=>{
       console.log('token signed for user "' + userTokenData.identities[0]  + '"')
       if(e) {
@@ -97,7 +96,7 @@ describe('<Unit test Metrics>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.result[0].data.should.not.be.empty();
         text.result[0].data.identity.should.equal(adminUser);
         done();
@@ -113,7 +112,7 @@ describe('<Unit test Metrics>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.success.should.equal(true)
         should.exist(text.id)
         configId = text.id
@@ -136,7 +135,7 @@ describe('<Unit test Metrics>', function() {
       .end(function(err,res){
         res.status.should.be.equal(409);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.success.should.equal(false)
         done();
       });
@@ -150,7 +149,7 @@ describe('<Unit test Metrics>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.result[0].data.should.not.be.empty();
         text.result[0].data.identity.should.equal(teamA);
         text.result[0].data.check_enabled.should.equal(true);
@@ -167,7 +166,7 @@ describe('<Unit test Metrics>', function() {
       .end(function(err,res){
         res.status.should.be.equal(401);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.success.should.equal(false);
         done();
       });
@@ -181,7 +180,7 @@ describe('<Unit test Metrics>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.result.should.be.empty();
         done();
       });
@@ -195,7 +194,7 @@ describe('<Unit test Metrics>', function() {
       .end(function(err,res){
         res.status.should.be.equal(401);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.success.should.equal(false);
         done();
       });
@@ -209,7 +208,7 @@ describe('<Unit test Metrics>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.result.data.should.not.be.empty();
         text.result.data.identity.should.equal(teamA);
         text.result.data.check_enabled.should.equal(true);
@@ -226,7 +225,7 @@ describe('<Unit test Metrics>', function() {
       .end(function(err,res){
         res.status.should.be.equal(401);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.success.should.equal(false);
         done();
       });
@@ -269,12 +268,12 @@ describe('<Unit test Metrics>', function() {
     });    
   });
 
+  // after all tests have run, we need to clean up our mess
   after(function(done) {
     console.log('after everything')
     csgrant.model.clearDb()
-    // the following readDb is just to make sure we've cleared the db
-    csgrant.model.readDb((err2, items) => {
-      console.log('items after clearing DB', JSON.stringify(items))
+    app.close(function() {
+      clearRequire.all()
       done()
     })
   })

@@ -149,6 +149,13 @@ simulators.initInstanceStatus()
 
 // Expose app
 exports = module.exports = app
+// Close function to let tests shutdown the server.
+app.close = function(cb) {
+  console.log('MANUAL SERVER SHUTDOWN')
+  const socketsDict = csgrant.sockets.getUserSockets()
+  socketsDict.io.close()
+  httpServer.close(cb)
+}
 
 csgrant.init(adminUser,
   initialResources,

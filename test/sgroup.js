@@ -2,30 +2,44 @@
 
 console.log('test/mocha/sgroup/controller.js');
 
+let app
+let csgrant
 /// Module dependencies.
-var app = require('../server/cloudsim_portal')
-
 const should = require('should');
 const supertest = require('supertest');
+const clearRequire = require('clear-require');
 
-// we need fresh keys for this test
-const csgrant = require('cloudsim-grant')
-const keys = csgrant.token.generateKeys()
-csgrant.token.initKeys(keys.public, keys.private)
-
-var adminUser = 'admin';
-if (process.env.CLOUDSIM_ADMIN)
-  adminUser = process.env.CLOUDSIM_ADMIN;
+const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
 
 let userToken
 const userTokenData = {identities:[adminUser]}
 
-var agent;
+let agent;
 
 describe('<SGroup Unit Test>', function() {
 
   before(function(done) {
+    // Important: the database has to be cleared early, before
+    // the server is launched (otherwise, root resources will be missing)
+    csgrant = require('cloudsim-grant')
     csgrant.model.clearDb()
+    done()
+  })
+
+  before(function(done) {
+    app = require('../server/cloudsim_portal')
+    agent = supertest.agent(app)
+    done()
+  })
+
+  before(function(done) {
+    // we need fresh keys for this test
+    const keys = csgrant.token.generateKeys()
+    csgrant.token.initKeys(keys.public, keys.private)
+    done()
+  })
+
+  before(function(done) {
     csgrant.token.signToken(userTokenData, (e, tok)=>{
       console.log('token signed for user "' + userTokenData.identities[0]  + '"')
       if(e) {
@@ -37,11 +51,6 @@ describe('<SGroup Unit Test>', function() {
   })
 
   describe('Security Group Controller:', function() {
-    before(function(done) {
-      agent = supertest.agent(app);
-      done();
-    });
-
     // no security groups at beginning
     describe('Check Empty Security Groups', function() {
       it('should be no security groups at the beginning',
@@ -373,9 +382,14 @@ describe('<SGroup Unit Test>', function() {
       });
     });
 
+    // after all tests have run, we need to clean up our mess
     after(function(done) {
-      csgrant.model.clearDb();
-      done();
-    });
+      console.log('after everything')
+      csgrant.model.clearDb()
+      app.close(function() {
+        clearRequire.all()
+        done()
+      })
+    })
   });
 });

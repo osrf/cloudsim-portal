@@ -32,6 +32,7 @@
     "underscore": "^1.8.3"
   },
   "devDependencies": {
+    "clear-require": "^2.0.0",
     "coveralls": "^2.11.15",
     "eslint": "^3.14.1",
     "istanbul": "^0.4.5",

@@ -8,8 +8,9 @@ let app
 /// Module dependencies.
 const should = require('should')
 const supertest = require('supertest')
+const clearRequire = require('clear-require');
 
-var adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
+const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
 
 // Users
 let userToken
@@ -67,9 +68,6 @@ describe('<Simulator controller test>', function() {
     // the server is launched (otherwise, root resources will be missing)
     csgrant = require('cloudsim-grant')
     csgrant.model.clearDb()
-    csgrant.model.readDb((err, items) => {
-      console.log('initial items', err, JSON.stringify(items))
-    })
     done()
   })
 
@@ -83,7 +81,6 @@ describe('<Simulator controller test>', function() {
     // we need fresh keys for this test
     const keys = csgrant.token.generateKeys()
     csgrant.token.initKeys(keys.public, keys.private)
-    // csgrant.model.clearDb()
     csgrant.token.signToken(userTokenData, (e, tok)=>{
       console.log('token signed for user "' + userTokenData.identities[0]  + '"')
       if(e) {
@@ -173,7 +170,7 @@ describe('<Simulator controller test>', function() {
     });
   });
 
-  var simId1 ='';
+  let simId1 ='';
   describe('Check Launch Simulator', function() {
     it('should be possible to launch a simulator', function(done) {
       agent
@@ -336,7 +333,7 @@ describe('<Simulator controller test>', function() {
       });
   });
 
-  var simId2 ='';
+  let simId2 ='';
   describe('Check Launch Second Simulator', function() {
     it('should be possible to create another simulator', function(done) {
       // let's change the region
@@ -373,12 +370,12 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var r = parseResponse(res.text)
+        let r = parseResponse(res.text)
         r.result.length.should.be.exactly(2);
 
-        var simId1Idx = r.result.map(
+        let simId1Idx = r.result.map(
            function(e){return e.name}).indexOf(simId1)
-        var simId2Idx = r.result.map(
+        let simId2Idx = r.result.map(
            function(e){return e.name}).indexOf(simId2)
 
         simId1Idx.should.be.greaterThanOrEqual(0);
@@ -472,9 +469,9 @@ describe('<Simulator controller test>', function() {
           const r = parseResponse(res.text)
           r.result.length.should.be.exactly(2);
 
-          var simId1Idx = r.result.map(
+          let simId1Idx = r.result.map(
              function(e){return e.name}).indexOf(simId1)
-          var simId2Idx = r.result.map(
+          let simId2Idx = r.result.map(
              function(e){return e.name}).indexOf(simId2)
           simId1Idx.should.be.greaterThanOrEqual(0);
           simId2Idx.should.be.greaterThanOrEqual(0);
@@ -495,7 +492,7 @@ describe('<Simulator controller test>', function() {
   });
 
   // create simId3 for permission test
-  var simId3 ='';
+  let simId3 ='';
   describe('Check Launch Third Simulator', function() {
     it('should be possible to create the third simulator', function(done) {
       // let's change the region
@@ -509,7 +506,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.id.should.not.be.empty();
         text.id.should.not.equal(simId1);
         text.id.should.not.equal(simId2);
@@ -531,7 +528,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.result[0].identity.should.not.be.empty();
         text.result[0].identity.should.equal(adminUser);
         text.result[0].running_time.should.equal(3);
@@ -547,7 +544,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.result[0].identity.should.not.be.empty();
         text.result[0].identity.should.equal(user2TokenData.identities[0]);
         text.result[0].running_time.should.equal(0);
@@ -556,7 +553,7 @@ describe('<Simulator controller test>', function() {
     });
   });
 
-  describe('Metrics: Grant competitors write permissions on simulators and try launching', function() {
+  describe('Metrics: Grant competitors write permissions on simulators and try launching:', function() {
     it('should be possible to grant competitorA write permission on simulators', function(done) {
       agent
       .post('/permissions')
@@ -566,7 +563,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text)
+        let text = JSON.parse(res.text)
         text.success.should.equal(true);
         text.resource.should.equal('simulators');
         text.grantee.should.equal(competitorATokenData.identities[0]);
@@ -583,7 +580,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text)
+        let text = JSON.parse(res.text)
         text.success.should.equal(true);
         text.resource.should.equal('simulators');
         text.grantee.should.equal(competitorBTokenData.identities[0]);
@@ -629,7 +626,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.success.should.equal(true)
         should.exist(text.id)
         text.result.data.should.not.be.empty();
@@ -651,7 +648,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(403);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.success.should.equal(false)
         text.error.should.containEql('Unable to launch more instances')
         done();
@@ -735,7 +732,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200)
         res.redirect.should.equal(false)
-        var data  = JSON.parse(res.text)
+        let data  = JSON.parse(res.text)
         data.success.should.equal(true)
         data.result.permissions.should.not.be.empty()
         const p = data.result.permissions[0]
@@ -757,7 +754,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200)
           res.redirect.should.equal(false)
-          var r = JSON.parse(res.text)
+          let r = JSON.parse(res.text)
           r.success.should.equal(true)
           r.result.name.should.equal(simId2)
           r.result.permissions.should.not.be.empty()
@@ -780,7 +777,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var data  = JSON.parse(res.text);
+        let data  = JSON.parse(res.text);
         data.success.should.equal(true);
         data.requester.should.equal(user2TokenData.identities[0])
         data.result.length.should.be.equal(0);
@@ -800,7 +797,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(401);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          let text = JSON.parse(res.text);
           text.success.should.equal(false);
           done();
         });
@@ -818,7 +815,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(401);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          let text = JSON.parse(res.text);
           text.success.should.equal(false);
           done();
         });
@@ -854,7 +851,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text)
+        let text = JSON.parse(res.text)
         text.success.should.equal(true);
         text.resource.should.equal(simId2);
         text.grantee.should.equal(user2TokenData.identities[0]);
@@ -924,7 +921,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(401)
           res.redirect.should.equal(false)
-          var text = JSON.parse(res.text)
+          let text = JSON.parse(res.text)
           text.success.should.equal(false)
           done();
         });
@@ -943,7 +940,7 @@ describe('<Simulator controller test>', function() {
       }).end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.success.should.equal(true);
         text.resource.should.equal(simId3);
         text.grantee.should.equal(user2TokenData.identities[0]);
@@ -1019,7 +1016,7 @@ describe('<Simulator controller test>', function() {
   })
 
   // create simId4 for revoke permission test
-  var simId4 ='';
+  let simId4 ='';
   describe('Check Launch Fourth Simulator', function() {
     it('should be possible to create the fourth simulator', function(done) {
       agent
@@ -1055,7 +1052,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          let text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId4);
           text.grantee.should.equal(user2TokenData.identities[0]);
@@ -1104,7 +1101,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          let text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId4);
           text.grantee.should.equal(user2TokenData.identities[0])
@@ -1160,7 +1157,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          let text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId2);
           text.grantee.should.equal(user2TokenData.identities[0]);
@@ -1205,7 +1202,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          let text = JSON.parse(res.text);
           text.success.should.equal(false);
           done();
         });
@@ -1223,7 +1220,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.success.should.equal(true);
         text.resource.should.equal(simId2);
         text.grantee.should.equal(user2TokenData.identities[0])
@@ -1283,8 +1280,13 @@ describe('<Simulator controller test>', function() {
       });
   });
 
+  // after all tests have run, we need to clean up our mess
   after(function(done) {
-    csgrant.model.clearDb();
-    done();
-  });
+    console.log('after everything')
+    csgrant.model.clearDb()
+    app.close(function() {
+      clearRequire.all()
+      done()
+    })
+  })
 })
