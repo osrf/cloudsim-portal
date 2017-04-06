@@ -4,6 +4,7 @@ console.log('test/machinetypes.js')
 
 const should = require('should')
 const supertest = require('supertest')
+const clearRequire = require('clear-require');
 
 // current dir: test
 const app = require('../server/cloudsim_portal')
@@ -202,12 +203,13 @@ describe('<Unit test Machine types>', function() {
     })
   })
 
-
-
+  // after all tests have run, we need to clean up our mess
   after(function(done) {
     console.log('after everything')
     csgrant.model.clearDb()
-    done()
+    app.close(function() {
+      clearRequire.all()
+      done()
+    })
   })
-
 })
