@@ -265,6 +265,7 @@ describe('<Unit test SRC rounds>', function() {
           roundId.should.not.be.empty()
           res.resource.should.equal(roundId)
           socAdmin.disconnect()
+          socAdmin.close()
           done()
         }
       })

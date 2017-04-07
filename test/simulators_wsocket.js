@@ -199,6 +199,7 @@ describe('<Unit Test sockets>', function() {
       const soc = createSocket(adminToken)
       soc.once('connect', function() {
         soc.disconnect()
+        soc.close()
         done()
       })
     })
@@ -240,6 +241,7 @@ describe('<Unit Test sockets>', function() {
         res.operation.should.equal('create')
         simId1 = res.resource
         soc.disconnect()
+        soc.close()
         done()
       })
     })
@@ -270,6 +272,7 @@ describe('<Unit Test sockets>', function() {
           soc.once('resource', res => {
             res.operation.should.equal('grant')
             soc.disconnect()
+            soc.close()
             done()
           })
         })
@@ -300,6 +303,7 @@ describe('<Unit Test sockets>', function() {
           soc.once('resource', res => {
             res.operation.should.equal('grant')
             soc.disconnect()
+            soc.close()
             done()
           })
         })
@@ -331,6 +335,7 @@ describe('<Unit Test sockets>', function() {
             res.resource.should.equal(simId1)
             res.operation.should.equal('revoke')
             soc.disconnect()
+            soc.close()
             done()
           })
         })
@@ -373,6 +378,7 @@ describe('<Unit Test sockets>', function() {
           if (res.operation == 'update') {
             res.resource.should.equal(simId2)
             soc.disconnect()
+            soc.close()
             done()
           }
         })
@@ -412,6 +418,7 @@ describe('<Unit Test sockets>', function() {
           count += 1
           if (count == 2) {
             socAdmin.disconnect()
+            socAdmin.close()
             done()
           }
         })
@@ -419,6 +426,7 @@ describe('<Unit Test sockets>', function() {
           count += 1
           if (count == 2) {
             socU2.disconnect()
+            socU2.close()
             done()
           }
         })
@@ -429,6 +437,7 @@ describe('<Unit Test sockets>', function() {
     it ('Should not be possible for user4 to get notifications', done => {
       user4events.length.should.equal(0)
       user4socket.disconnect()
+      user4socket.close()
       done()
     })
   })
