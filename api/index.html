@@ -71,6 +71,10 @@
             "name": "machinetypes",
             "description": "Manage machine types",
           },
+          {
+            "name": "srcrounds",
+            "description": "Manage rounds for SRC",
+          },
         ],
         paths: {
           // /permissions
@@ -322,7 +326,7 @@
           },
 
 
-          // /tap/sasc/server/:resourceId
+          // /sshkeys/:resourceId
           "\/sshkeys\/{resourceId}": {
             // GET
             "get": {
@@ -1459,6 +1463,143 @@
                       },
                     }
                   }
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
+          // /srcrounds
+          "\/srcrounds": {
+            // GET
+            "get": {
+              "tags": [
+                "srcrounds"
+              ],
+              "summary": "Get all SRC rounds for a user",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // POST
+            "post": {
+              "tags": [
+                "srcrounds"
+              ],
+              "summary": "Start a new round",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Round information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "dockerurl": {
+                        "type": "string",
+                      },
+                      "team": {
+                        "type": "string",
+                      },
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
+          // /srcrounds
+          "\/srcrounds\/{resourceId}": {
+            // DELETE
+            "delete": {
+              "tags": [
+                "srcrounds"
+              ],
+              "summary": "Delete a round",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of srcround resource",
+                  "required": true,
+                  "type": "string",
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                    },
+                  },
                 },
                 "401": {
                   "description": "Not authorized"

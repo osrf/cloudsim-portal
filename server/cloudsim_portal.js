@@ -17,6 +17,7 @@ const machinetypes = require('./machinetypes')
 const sgroups = require('./sgroups')
 const simulators = require('./simulators')
 const sshkeys = require('./sshkeys')
+const srcrounds = require('./src/rounds')
 const metrics = require('./metric_configs')
 
 dotenv.load();
@@ -85,6 +86,7 @@ const initialResources =  {
   'simulators': {},
   'machinetypes': {},
   'sgroups': {},
+  'srcrounds': {},
   'metrics-configs': {},
   'metrics-configs-000': { "identity": adminUser, "whitelisted": true }
 }
@@ -119,6 +121,7 @@ simulators.setRoutes(app)
 sgroups.setRoutes(app)
 machinetypes.setRoutes(app)
 sshkeys.setRoutes(app)
+srcrounds.setRoutes(app)
 metrics.setRoutes(app)
 
 // a little home page for general info
