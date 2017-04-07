@@ -156,7 +156,6 @@ describe('<Unit Test sockets>', function() {
         should.fail('sign error: ' + e)
       }
       user3Token = tok
-      console.log('token signed for user "' + user3TokenData.identities[0]  + '"')
       done()
     })
   })
@@ -167,7 +166,6 @@ describe('<Unit Test sockets>', function() {
         should.fail('sign error: ' + e)
       }
       user4Token = tok
-      console.log('token signed for user "' + user4TokenData.identities[0]  + '"')
       done()
     })
   })
@@ -423,7 +421,6 @@ describe('<Unit Test sockets>', function() {
 
   describe('Check user4 was left alone', function() {
     it ('Should not be possible for user4 to get notifications', done => {
-      console.log(user4events)
       user4events.length.should.equal(0)
 
       done()

@@ -6,6 +6,7 @@ const supertest = require('supertest')
 // current dir: test
 const app = require('../server/cloudsim_portal')
 const agent = supertest.agent(app)
+const io = require('socket.io-client')
 
 const csgrant = require('cloudsim-grant')
 const token = csgrant.token
@@ -61,6 +62,36 @@ function getResponse(res, print) {
     console.trace(JSON.stringify(response, null, 2 ))
   }
   return response
+}
+
+// this function creates a socket.io socket connection for the token's user.
+// events will be added to the events array
+const socketAddress = 'http://localhost:' + process.env.PORT
+function createSocket(token) {
+  const query = 'token=' + token
+  const client = io.connect(socketAddress, {
+    query: query,
+    transports: ['websocket'],
+    rejectUnauthorized: false
+  })
+  client.on('error', (e)=>{
+    should.fail('should have no error: ' + JSONS.stringify(e))
+  })
+  client.on('disconnect', ()=>{
+  })
+  client.on('reconnect', (n)=>{
+    should.fail('should have no reconnect: ' + JSONS.stringify(n))
+  })
+  client.on('reconnect_attempt', ()=>{
+    should.fail('should have no reconnect attempt')
+  })
+  client.on('reconnecting', (n)=>{
+    should.fail('should have no reconnecting: ' + + JSONS.stringify(n))
+  })
+  client.on('reconnect_error',  function(err){
+    should.fail('should have no reconnect error: ' + + JSONS.stringify(err))
+  })
+  return client
 }
 
 describe('<Unit test SRC rounds>', function() {
@@ -185,30 +216,44 @@ describe('<Unit test SRC rounds>', function() {
   let debugTeam = "SRC-debug"
   describe('Start a new round with admin, for debugging', function() {
     it('should create a resource with the correct permissions', function(done) {
-      agent
-      .post('/srcrounds')
-      .set('Accept', 'application/json')
-      .set('authorization', srcAdminToken)
-      .send({
-        'dockerurl': dockerUrl,
-        'team': debugTeam,
-        'simulator': simData,
-        'fieldcomputer': fcData
+      let roundId
+      let socAdmin = createSocket(srcAdminToken)
+      socAdmin.on('connect', function() {
+        agent
+        .post('/srcrounds')
+        .set('Accept', 'application/json')
+        .set('authorization', srcAdminToken)
+        .send({
+          'dockerurl': dockerUrl,
+          'team': debugTeam,
+          'simulator': simData,
+          'fieldcomputer': fcData
+        })
+        .end(function(err,res) {
+          res.status.should.be.equal(200)
+          let response = getResponse(res)
+          response.success.should.equal(true)
+
+          // Input data
+          response.result.data.dockerurl.should.equal(dockerUrl)
+          response.result.data.team.should.equal(debugTeam)
+
+          // Permissions
+          should.not.exist(response.result.permissions[srcAdmin])
+          response.result.permissions['src-admins'].readOnly.should.equal(false)
+          response.result.permissions[debugTeam].readOnly.should.equal(true)
+        })
       })
-      .end(function(err,res) {
-        res.status.should.be.equal(200)
-        let response = getResponse(res)
-        response.success.should.equal(true)
-
-        // Input data
-        response.result.data.dockerurl.should.equal(dockerUrl)
-        response.result.data.team.should.equal(debugTeam)
-
-        // Permissions
-        should.not.exist(response.result.permissions[srcAdmin])
-        response.result.permissions['src-admins'].readOnly.should.equal(false)
-        response.result.permissions[debugTeam].readOnly.should.equal(true)
-        done()
+      socAdmin.on('resource', res => {
+        if (res.operation === 'create') {
+          roundId = res.resource
+        }
+        else if (res.operation === 'update' && res.resource === roundId) {
+          roundId.should.not.be.empty()
+          res.resource.should.equal(roundId)
+          socAdmin.disconnect()
+          done()
+        }
       })
     })
   })
@@ -265,6 +310,10 @@ describe('<Unit test SRC rounds>', function() {
         response.result[0].data.team.should.equal(debugTeam)
         should.exist(response.result[0].data.secure)
         should.exist(response.result[0].data.public)
+        should.exist(response.result[0].data.simulator_ssh)
+        should.exist(response.result[0].data.fieldcomputer_ssh)
+        should.exist(response.result[0].data.simulator_id)
+        should.exist(response.result[0].data.fieldcomputer_id)
 
         response.result[0].permissions.length.should.equal(2)
         response.result[0].permissions[0].username.should.equal(
@@ -283,6 +332,10 @@ describe('<Unit test SRC rounds>', function() {
         response.result[1].data.team.should.equal(teamA)
         should.exist(response.result[1].data.secure)
         should.exist(response.result[1].data.public)
+        should.exist(response.result[0].data.simulator_ssh)
+        should.exist(response.result[0].data.fieldcomputer_ssh)
+        should.exist(response.result[0].data.simulator_id)
+        should.exist(response.result[0].data.fieldcomputer_id)
 
         response.result[1].permissions.length.should.equal(2)
         response.result[1].permissions[0].username.should.equal('src-admins')
@@ -562,7 +615,6 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   after(function(done) {
-    console.log('after everything')
     csgrant.model.clearDb()
     done()
   })

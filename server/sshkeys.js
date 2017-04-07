@@ -57,59 +57,19 @@ function setRoutes(app) {
     csgrant.downloadFilePath
   )
 
-  // create vpn key resource
+  // create ssh key resource
   app.post('/sshkeys',
     csgrant.authenticate,
     // you can create a key if you can create a simulation
     csgrant.ownsResource('simulators', false), function (req, res) {
-      const op = 'create ssh Key'
-      const user = req.user
-      const keyName = req.body.name
-
-      // function to report errors
-      const error = function(msg) {
-        res.status(400).jsonp({operation: op,
-          success: false,
-          error: msg})
-      }
-
-      log('ssh key name: ' + keyName)
-      log('user: ' + user)
-      if (!keyName || keyName.length === 0) {
-        return error('Invalid key name: ' + keyName)
-      }
-      // reserve a resource name, we'll use it with aws
-      csgrant.getNextResourceId('sshkey', (err, resourceName)=>{
-        if (err) {
-          return error(err)
-        }
-        // generate the key using the resource name
-        const region = cloudServices.awsDefaults.region
-        cloudServices.generateKey(resourceName, region, (err, sshkeyData )=>{
-          if(err) {
-            return error(err)
-          }
-          // save key to db
-          const data = {
-            keyname: keyName,
-            ssh: sshkeyData
-          }
-          csgrant.createResource(req.user, resourceName, data, (err)=>{
-            if(err) {
-              return error(err)
-            }
-              // key is saved
-            let r = { success: true,
-              operation: op,
-              // not returning the key data because of security concerns
-              result: {name: keyName},
-              id: resourceName,
-              requester: req.user
-            }
-            // success
-            res.jsonp(r)
-          })
-        })
+      // Call implementation function
+      let opts = req.body
+      let user = req.user
+      createImpl(user, opts, function(resp) {
+        if (resp.error)
+          return res.status(400).jsonp(resp)
+        // Send response
+        res.jsonp(resp);
       })
     })
 
@@ -149,4 +109,59 @@ function setRoutes(app) {
   })
 }
 
+/// Implementation for the create function. This doesn't finish the response.
+const createImpl = function(user, opts, cb) {
+  const op = 'create ssh Key'
+  const keyName = opts.name
+
+  // function to report errors
+  const error = function(msg) {
+    cb({operation: op,
+      success: false,
+      error: msg})
+  }
+
+  log('ssh key name: ' + keyName)
+  log('user: ' + user)
+  if (!keyName || keyName.length === 0) {
+    return error('Invalid key name: ' + keyName)
+  }
+  // reserve a resource name, we'll use it with aws
+  csgrant.getNextResourceId('sshkey', (err, resourceName)=>{
+    if (err) {
+      return error(err)
+    }
+    // generate the key using the resource name
+    const region = cloudServices.awsDefaults.region
+    cloudServices.generateKey(resourceName, region, (err, sshkeyData )=>{
+      if (err) {
+        return error(err)
+      }
+      // save key to db
+      const data = {
+        keyname: keyName,
+        ssh: sshkeyData
+      }
+      csgrant.createResource(user, resourceName, data, (err)=>{
+        if(err) {
+          return error(err)
+        }
+          // key is saved
+        let r = { success: true,
+          operation: op,
+          // not returning the key data because of security concerns
+          result: {name: keyName},
+          id: resourceName,
+          requester: user
+        }
+        // success
+        cb(r)
+      })
+    })
+  })
+}
+
+
 exports.setRoutes = setRoutes
+
+exports.create = createImpl

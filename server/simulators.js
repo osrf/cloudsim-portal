@@ -30,9 +30,6 @@ if (process.env.NODE_ENV === 'test') {
 
 const awsDefaults = cloudServices.awsDefaults
 
-const portalurl = process.env.CLOUDSIM_PORTAL_URL || 'http://localhost:'
-    + process.env.PORT;
-
 /// Create a new simulator instance based on the content of the request
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
@@ -110,7 +107,7 @@ const createImpl = function(user, opts, cb) {
     // add id to the options file
     if (simulator.options) {
       simulator.options.sim_id = simulator.id
-      simulator.options.portal_url = portalurl
+      simulator.options.portal_url = common.portalUrl()
     }
 
     // add resource to csgrant
@@ -128,7 +125,7 @@ const createImpl = function(user, opts, cb) {
         // use a script that will pass on the username,
         const scriptTxt = cloudServices.generateScript(
           simulator.creator,
-          simulator.options )
+          simulator.options)
         let sgroups = [awsDefaults.security];
         if (opts.sgroup)
           sgroups.push(opts.sgroup)
@@ -154,6 +151,7 @@ const createImpl = function(user, opts, cb) {
               cb(error);
               return;
             }
+
             const info = machine;
             simulator.machine_id = info.id;
             // send json response object to update the
@@ -162,7 +160,7 @@ const createImpl = function(user, opts, cb) {
 
             // update resource (this triggers socket notification)
             csgrant.updateResource(user, simulator.id, simulator, ()=>{
-              console.log(simulator.id, 'launch!')
+              // console.log(simulator.id, 'launch!')
             })
 
             setTimeout(function() {
@@ -172,7 +170,7 @@ const createImpl = function(user, opts, cb) {
                 simulator.aws_launch_time = state.launchTime
                 simulator.aws_creation_time = state.creationTime
                 csgrant.updateResource(user, simulator.id, simulator, ()=>{
-                  console.log(simulator.id, 'ip:', simulator.machine_ip)
+                  // console.log(simulator.id, 'ip:', simulator.machine_ip)
                 })
 
               })
@@ -181,35 +179,6 @@ const createImpl = function(user, opts, cb) {
       })
   })
 }
-
-// Terminates a simulator.
-function terminateSimulator(user, simulator, cb) {
-
-  var machineInfo = {region: simulator.region,
-    id: simulator.machine_id};
-  cloudServices.terminateSimulator(machineInfo, function(err) {
-    if(err) {
-      cb(err)
-    }
-    else {
-      simulator.status = 'TERMINATING';
-      simulator.termination_date = new Date();
-      // send response . Aws timestamps will be updated afterwards
-      cb(null, simulator)
-
-      setTimeout(function() {
-        cloudServices.simulatorStatus(machineInfo, function(err, state) {
-          simulator.aws_termination_request_time = state.terminationTime
-          // update resource (this triggers socket notification)
-          csgrant.updateResource(user, simulator.id, simulator, ()=>{
-            console.log(simulator.id, 'terminate')
-          })
-        })
-      }, instanceIpUpdateInterval);
-    }
-  }) // terminate
-}
-
 
 function getUserFromResource(resource) {
   const permissions = resource.permissions
@@ -227,15 +196,28 @@ function getUserFromResource(resource) {
 /// Delete a simulator.
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
-/// @return Destroy function
-const destroy = function(req, res) {
-  const simulator = req.resourceData
+/// @return terminate function
+const terminate = function(req, res) {
+
+  // Call implementation function
+  let opts = req.resourceData
+  let user = req.user
+
+  terminateImpl(user, opts, (resp) => {
+    // Send response
+    res.jsonp(resp);
+  })
+}
+
+/// Implementation for the terminate function. This doesn't finish the response.
+const terminateImpl = function(user, opts, cb) {
+
   if (!cloudServices) {
     // Create an error
     error = {error: {
       msg: 'Cloud services are not available'
-    }};
-    res.jsonp(error);
+    }}
+    cb(error)
     return;
   }
 
@@ -248,22 +230,44 @@ const destroy = function(req, res) {
   // }
 
   // finally terminate the simulator
-  terminateSimulator(req.user,
-                     simulator.data,
-                     function(err) {
-                       if (err) {
-                         var error = {error: {
-                           msg: 'Error terminating simulator'
-                         }};
-                         res.jsonp(error);
-                         return;
-                       }
-                       else {
-                         res.jsonp(simulator)
-                       }
-                     })
+  terminateSimulator(user, opts.data, function(err) {
+    if (err) {
+      cb({error: {msg: 'Error terminating simulator'}})
+      return
+    }
+    else {
+      cb(opts)
+    }
+  })
 }
 
+// Terminates a simulator.
+const terminateSimulator = function(user, simulator, cb) {
+
+  const machineInfo = {region: simulator.region,
+    id: simulator.machine_id};
+  cloudServices.terminateSimulator(machineInfo, function(err) {
+    if(err) {
+      cb(err)
+    }
+    else {
+      simulator.status = 'TERMINATING';
+      simulator.termination_date = new Date();
+      // send response . Aws timestamps will be updated afterwards
+      cb(null, simulator)
+
+      setTimeout(function() {
+        cloudServices.simulatorStatus(machineInfo, function(err, state) {
+          simulator.aws_termination_request_time = state.terminationTime
+          // update resource (this triggers socket notification)
+          csgrant.updateResource(user, simulator.id, simulator, ()=>{
+            // console.log(simulator.id, 'terminate')
+          })
+        })
+      }, instanceIpUpdateInterval);
+    }
+  }) // terminate
+}
 
 function getAllNonTerminatedSimulators() {
   const resources = csgrant.copyInternalDatabase()
@@ -340,11 +344,11 @@ function updateInstanceStatus() {
           csgrant.updateResource(user, resourceName, simulator.data, ()=>{
             if (simulator.data.status === 'TERMINATED') {
               // extra console.log for issue 13
-              console.log('\n\n', awsInstanceStates,'\n*\n', simulator.data)
+              // console.log('\n\n', awsInstanceStates,'\n*\n', simulator.data)
             }
-            console.log(simId,simulator.data.id,
+            /* console.log(simId,simulator.data.id,
               'status update', oldState, '=>',
-              simulator.data.status)
+              simulator.data.status)*/
           })
         }
       }
@@ -372,7 +376,7 @@ exports.setRoutes = function (app) {
   app.delete('/simulators/:resourceId',
     csgrant.authenticate,
     csgrant.ownsResource(':resourceId', false),
-    destroy)
+    terminate)
 
   /// POST /simulators
   /// Create a new simulation
@@ -390,3 +394,4 @@ exports.setRoutes = function (app) {
 }
 
 exports.create = createImpl
+exports.terminate = terminateImpl

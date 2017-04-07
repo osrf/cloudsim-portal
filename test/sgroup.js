@@ -27,7 +27,6 @@ describe('<SGroup Unit Test>', function() {
   before(function(done) {
     csgrant.model.clearDb()
     csgrant.token.signToken(userTokenData, (e, tok)=>{
-      console.log('token signed for user "' + userTokenData.identities[0]  + '"')
       if(e) {
         console.log('sign error: ' + e)
       }
