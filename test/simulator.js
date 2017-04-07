@@ -636,7 +636,7 @@ describe('<Simulator controller test>', function() {
         text.result.permissions[teamA].readOnly.should.equal(true);
         done();
       });
-    });    
+    });
     it('competitorA should NOT be able to launch another simulator due to exhausted balance', function(done) {
       agent
       .post('/simulators')
@@ -1280,7 +1280,6 @@ describe('<Simulator controller test>', function() {
 
   // after all tests have run, we need to clean up our mess
   after(function(done) {
-    console.log('after everything')
     csgrant.model.clearDb()
     app.close(function() {
       clearRequire.all()

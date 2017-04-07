@@ -434,7 +434,6 @@ describe('<Unit Test sockets>', function() {
 
   // after all tests have run, we need to clean up our mess
   after(function(done) {
-    console.log('after everything')
     csgrant.model.clearDb()
     app.close(function() {
       clearRequire.all()

@@ -15,6 +15,8 @@ let instanceIpUpdateInterval = 10000
 if (process.env.NODE_ENV === 'test') {
   // reduce delays during testing
   instanceIpUpdateInterval = 1
+
+  console.log(' VPN keys will not be generated in test')
   keysurl = ''
 }
 
@@ -369,7 +371,6 @@ const createInstance = function(user, keyName, resource, cb) {
 // generate vpn key by posting to the keys server
 const generateVpnKey = function(userToken, keyName, grantee, cb) {
   if (!keysurl) {
-    console.log('Keys server not specified. VPN keys will not be generated')
     cb({id: 'vpn_key'})
     return
   }
@@ -419,7 +420,6 @@ const getInstanceIp = function(user, simId, delay, maxRetry, cb) {
         getInstanceIp(user, simId, 10, retry, cb)
       }
       else {
-        console.log('Got instance ip! : ' + data.data.machine_ip)
         cb(null, data.data.machine_ip)
       }
     })
