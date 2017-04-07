@@ -1,19 +1,13 @@
 'use strict';
 
+let agent
+let app
+let csgrant
+
+const io = require('socket.io-client')
+const clearRequire = require('clear-require');
 const should = require('should')
 const supertest = require('supertest')
-
-// current dir: test
-const app = require('../server/cloudsim_portal')
-const agent = supertest.agent(app)
-const io = require('socket.io-client')
-
-const csgrant = require('cloudsim-grant')
-const token = csgrant.token
-
-// we need fresh keys for this test
-const keys = csgrant.token.generateKeys()
-token.initKeys(keys.public, keys.private)
 
 // Three users for testing:
 // * admin
@@ -96,8 +90,27 @@ function createSocket(token) {
 
 describe('<Unit test SRC rounds>', function() {
 
+  // before hook used to require modules used by this test.
+  // IMPORTANT: remember to clear-require these modules in the after hook.
   before(function(done) {
+    // Important: the database has to be cleared early, before
+    // the server is launched (otherwise, root resources will be missing)
+    csgrant = require('cloudsim-grant')
     csgrant.model.clearDb()
+
+    app = require('../server/cloudsim_portal')
+    agent = supertest.agent(app)
+    done()
+  })
+
+  before(function(done) {
+    // we need fresh keys for this test
+    const keys = csgrant.token.generateKeys()
+    csgrant.token.initKeys(keys.public, keys.private)
+    done()
+  })
+
+  before(function(done) {
 
     csgrant.token.signToken(srcAdminTokenData, (e, tok)=>{
       if(e) {
@@ -614,9 +627,13 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
+  // after all tests have run, we need to clean up our mess
   after(function(done) {
     csgrant.model.clearDb()
-    done()
+    app.close(function() {
+      clearRequire.all()
+      done()
+    })
   })
 
 })

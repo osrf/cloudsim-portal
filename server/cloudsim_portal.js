@@ -18,6 +18,7 @@ const sgroups = require('./sgroups')
 const simulators = require('./simulators')
 const sshkeys = require('./sshkeys')
 const srcrounds = require('./src/rounds')
+const metrics = require('./metric_configs')
 
 dotenv.load();
 
@@ -28,7 +29,6 @@ const port = process.env.PORT
 // Load configurations
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 process.env.CLOUDSIM_PORTAL_DB = process.env.CLOUDSIM_PORTAL_DB || 'localhost'
-
 
 // Redis
 let permissionDbName = 'cloudsim-portal'
@@ -87,7 +87,9 @@ const initialResources =  {
   'simulators': {},
   'machinetypes': {},
   'sgroups': {},
-  'srcrounds': {}
+  'srcrounds': {},
+  'metrics-configs': {},
+  'metrics-configs-000': { "identity": adminUser, "whitelisted": true }
 }
 
 // use body parser so we can get info from POST and/or URL parameters
@@ -121,6 +123,7 @@ sgroups.setRoutes(app)
 machinetypes.setRoutes(app)
 sshkeys.setRoutes(app)
 srcrounds.setRoutes(app)
+metrics.setRoutes(app)
 
 // a little home page for general info
 app.get('/', function (req, res) {
@@ -150,6 +153,13 @@ simulators.initInstanceStatus()
 
 // Expose app
 exports = module.exports = app
+// Close function to let tests shutdown the server.
+app.close = function(cb) {
+  console.log('MANUAL SERVER SHUTDOWN')
+  const socketsDict = csgrant.sockets.getUserSockets()
+  socketsDict.io.close()
+  httpServer.close(cb)
+}
 
 csgrant.init(adminUser,
   initialResources,
@@ -162,4 +172,5 @@ csgrant.init(adminUser,
       console.log('ssl: ' + useHttps)
       console.log('listening on port ' + port);
     })
-  })
+  }
+)

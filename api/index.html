@@ -427,6 +427,256 @@
 
           },
 
+          // /metrics/simulators
+          "\/metrics/simulators": {
+            // GET
+            "get": {
+              "tags": [
+                "metrics"
+              ],
+              "summary": "Get all metrics associated to simulators grouped by user",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "team",
+                  "in": "query",
+                  "description": "Team name for which to return grouped simulator metrics",
+                  "required": false,
+                  "type": "string",
+                }                
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "result": {
+                        "type" : "array",
+                        "items": {
+                          "$ref": "#\/definitions\/ResourceWithoutPerm"
+                        },
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            }
+          },
+          // /metrics/config
+          "\/metrics/configs": {
+            // GET
+            "get": {
+              "tags": [
+                "metrics"
+              ],
+              "summary": "Get all metrics configurations",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "result": {
+                        "type" : "array",
+                        "items": {
+                          "$ref": "#\/definitions\/ResourceWithoutPerm"
+                        },
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // POST
+            "post": {
+              "tags": [
+                "metrics"
+              ],
+              "summary": "Create a metrics config.",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Object with metric config information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "identity": {
+                        "type": "string",
+                        "default": "",
+                      },
+                      "check_enabled": {
+                        "type": "boolean",
+                        "default": "true",
+                      },
+                      "max_instance_hours": {
+                        "type": "string",
+                        "default": "500",
+                      },
+                      "whitelisted": {
+                        "type": "boolean",
+                        "default": "false",
+                      },
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/ResourceWithId"
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
+
+          // /metrics/config/{resourceId}
+          "\/metrics\/configs\/{resourceId}": {
+            // PUT
+            "put": {
+              "tags": [
+                "metrics"
+              ],
+              "summary": "Update the metrics config",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of metrics-config",
+                  "required": true,
+                  "type": "string",
+                },
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Object with metrics config information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "check_enabled": {
+                        "type": "boolean",
+                        "default": "true",
+                      },
+                      "max_instance_hours": {
+                        "type": "string",
+                        "default": "500",
+                      },
+                      "whitelisted": {
+                        "type": "boolean",
+                        "default": "false",
+                      },
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/Resource"
+                      },
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },            
+          },
 
 
           // /simulators

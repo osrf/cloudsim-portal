@@ -154,7 +154,6 @@ exports.simulatorStatus = function (machineInfo, cb) {
   // machine (machineInfo.id
   var params = {
     DryRun: dryRun,
-//        Filters: [],
     InstanceIds: [machineInfo.id]
   };
 
@@ -183,11 +182,18 @@ exports.simulatorStatus = function (machineInfo, cb) {
         // "StateTransitionReason":"User initiated (2017-03-24 18:42:25 GMT)"
         // The following is an ugly block of code, but it is the only format that
         // aws returns for the termination time
-        let timeStr = instance.StateTransitionReason
-                          .slice(16, -1)
-                          .replace(' GMT', '.000Z')
-                          .replace(' ', 'T')
-        info.terminationTime = new Date(timeStr)
+        try {
+          let timeStr = instance.StateTransitionReason
+                            .slice(16, -1)
+                            .replace(' GMT', '.000Z')
+                            .replace(' ', 'T')
+          let dateRegEx = /(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})\.000Z/
+          if (dateRegEx.test(timeStr)) {
+            info.terminationTime = new Date(timeStr)
+          }
+        } catch (e) {
+          // nothing to do: terminationTime will be kept undefined
+        }
       }
       cb(null, info);
     }
