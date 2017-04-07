@@ -5,7 +5,10 @@
 /// Module dependencies.
 const util = require('util')
 const csgrant = require('cloudsim-grant')
+const moment = require('moment')
+const _ = require('underscore')
 const common = require('./common')
+const metricConfigsModule = require('./metric_configs')
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
@@ -210,7 +213,6 @@ function terminateSimulator(user, simulator, cb) {
   }) // terminate
 }
 
-
 function getUserFromResource(resource) {
   const permissions = resource.permissions
   // look for a user with read/write
@@ -263,7 +265,6 @@ const destroy = function(req, res) {
                        }
                      })
 }
-
 
 function getAllNonTerminatedSimulators() {
   const resources = csgrant.copyInternalDatabase()
@@ -351,6 +352,133 @@ function updateInstanceStatus() {
     })
 }
 
+/**
+ * Internal function that calculates and returns metrics corresponding 
+ * to all the simulators accessible by the invoking user, grouped by groups/roles.
+ * Retuns an array in which the values are the grouped simulator metrics.
+ */
+function _computeSimulatorMetrics(user, simulators) {
+  //const simulators = req.userResources
+  // result
+  const metrics = {}
+  // at a minimum, the current user must be returned
+  metrics[user] = {
+    'identity': user,
+    'running_time': 0
+  }
+  for(let sId in simulators) {
+    const s = simulators[sId]
+    // compute time in running status
+    const launchTime = moment.utc(s.data.aws_launch_time || s.data.launch_date)
+    let terminationTime = moment.utc(s.data.aws_termination_request_time
+      || s.data.termination_date
+      || new Date())
+    const runningTime = moment.duration(terminationTime.diff(launchTime))
+    const roundUpHours = Math.floor(runningTime.asHours() + 1)
+    for(let pId in s.permissions) {
+      const username = s.permissions[pId].username
+      if (!metrics[username]) {
+        metrics[username] = {
+          'identity': username,
+          'running_time': 0
+        }
+      }
+      metrics[username].running_time += roundUpHours
+    }
+  }
+  let result = []
+  for(let uId in metrics) {
+    result.push(metrics[uId])
+  }
+  return result
+}
+
+/**
+ * Returns simulator metrics grouped by user.
+ * If the request has a team parameter then the returned result will only contain
+ * the metrics for the given team name, if applicable.
+ * The queried simulators are gathered just from the list of simulators for which the
+ * current user has read permissions.
+ */
+function getSimulatorMetrics(req, res) {
+  let metrics = _computeSimulatorMetrics(req.user, req.userResources)
+
+  if (req.query.team) {
+    metrics = metrics.filter((metric) => {
+      return metric.username === req.query.team
+    })
+  }
+  
+  // prepare response
+  const r = {
+    success: false,
+    operation: 'get simulator metrics for user',
+    requester: req.user,
+  }
+  r.success = true
+  r.result = metrics
+  res.jsonp(r)
+}
+
+/**
+ * Middleware to check instance-hours availability for the current user's identities.
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ */
+function checkAvailableInstanceHours(req, res, next) {
+  csgrant.readAllResourcesForUser(req.identities, (err, items) => {
+    if(err) {
+      return res.status(500).jsonp({
+        success: false,
+        "error": err
+      })
+    }
+    // this filtered list will only contain enabled configurations (or whitelisted ones)
+    const metricsConfigs = metricConfigsModule.getEnabledConfigs(req, items)
+    if (_.isEmpty(metricsConfigs)) {
+      next()
+      return
+    }
+
+    // is this a whitelisted user? (ie. any of his identities is whitelisted)
+    if (metricsConfigs.find((config) => { return config.whitelisted})) {
+      next()
+      return
+    }
+
+    // Get the config with the minimum number of allowed instance-hours
+    const config = _.min(metricsConfigs, config => { return config.max_instance_hours })
+
+    const simulators = filterSimulators(items)
+    const metrics = _computeSimulatorMetrics(req.user, simulators)
+
+    const exhausted = metrics.find( (metric) => {
+      return metric.running_time >= config.max_instance_hours
+    })
+
+    if (!exhausted) {
+      next()
+      return
+    }
+    // Don't launch machines if limit is reached.
+    const error = {
+      success: false,
+      error: 'Unable to launch more instances. Instance-hours limit '
+        + ' reached for identity: ' + config.identity
+    }
+    return res.status(403).jsonp(error);
+  })
+}
+
+function filterSimulators(resources) {
+  return resources.filter( (obj)=>{
+    if(obj.name.indexOf('simulator-') == 0)
+      return true
+    return false
+  })
+}
+
 // used to start the periodicall resource database update (against the aws info)
 exports.initInstanceStatus = function() {
   console.log('starting instance status update with interval (ms): ',
@@ -379,6 +507,7 @@ exports.setRoutes = function (app) {
   app.post('/simulators',
     csgrant.authenticate,
     csgrant.ownsResource('simulators', false),
+    checkAvailableInstanceHours,
     create)
 
   /// GET /simulators/:simulationId
@@ -387,6 +516,14 @@ exports.setRoutes = function (app) {
    csgrant.authenticate,
    csgrant.ownsResource(':resourceId', true),
    csgrant.resource)
+
+  /// GET /metrics/simulators
+  /// Return metrics associated to simulators grouped by user
+  app.get('/metrics/simulators',
+    csgrant.authenticate,
+    csgrant.userResources,
+    common.filterResources('simulator-'),
+    getSimulatorMetrics)
 }
 
 exports.create = createImpl

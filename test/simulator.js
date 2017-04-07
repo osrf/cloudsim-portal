@@ -8,13 +8,25 @@ let app
 /// Module dependencies.
 const should = require('should')
 const supertest = require('supertest')
+const clearRequire = require('clear-require');
 
-var adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
+const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
 
+// Users
 let userToken
 const userTokenData = {identities:[adminUser]}
 let user2Token
 const user2TokenData = {identities:['user2']}
+
+const competitorA = "competitor-A"
+const teamA = "SRC-TeamA"
+const competitorATokenData = {identities: [competitorA, teamA]}
+let competitorAToken
+
+const competitorB = "competitor-B"
+const teamB = "SRC-teamB"
+const competitorBTokenData = {identities: [competitorB, teamB]}
+let competitorBToken
 
 // the server
 let agent
@@ -65,12 +77,10 @@ describe('<Simulator controller test>', function() {
     done()
   })
 
-
   before(function(done) {
     // we need fresh keys for this test
     const keys = csgrant.token.generateKeys()
     csgrant.token.initKeys(keys.public, keys.private)
-    // csgrant.model.clearDb()
     csgrant.token.signToken(userTokenData, (e, tok)=>{
       console.log('token signed for user "' + userTokenData.identities[0]  + '"')
       if(e) {
@@ -91,6 +101,22 @@ describe('<Simulator controller test>', function() {
       user2Token = tok
       should.exist(user2Token)
       done()
+    })
+  })
+
+  before(function(done) {
+    csgrant.token.signToken(competitorATokenData, (e, tok)=>{
+      if(e) {
+        console.log('sign error: ' + e)
+      }
+      competitorAToken = tok
+      csgrant.token.signToken(competitorBTokenData, (e, tok)=>{
+        if(e) {
+          console.log('sign error: ' + e)
+        }
+        competitorBToken = tok
+        done()
+      })
     })
   })
 
@@ -144,7 +170,7 @@ describe('<Simulator controller test>', function() {
     });
   });
 
-  var simId1 ='';
+  let simId1 ='';
   describe('Check Launch Simulator', function() {
     it('should be possible to launch a simulator', function(done) {
       agent
@@ -307,7 +333,7 @@ describe('<Simulator controller test>', function() {
       });
   });
 
-  var simId2 ='';
+  let simId2 ='';
   describe('Check Launch Second Simulator', function() {
     it('should be possible to create another simulator', function(done) {
       // let's change the region
@@ -344,12 +370,12 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var r = parseResponse(res.text)
+        let r = parseResponse(res.text)
         r.result.length.should.be.exactly(2);
 
-        var simId1Idx = r.result.map(
+        let simId1Idx = r.result.map(
            function(e){return e.name}).indexOf(simId1)
-        var simId2Idx = r.result.map(
+        let simId2Idx = r.result.map(
            function(e){return e.name}).indexOf(simId2)
 
         simId1Idx.should.be.greaterThanOrEqual(0);
@@ -443,9 +469,9 @@ describe('<Simulator controller test>', function() {
           const r = parseResponse(res.text)
           r.result.length.should.be.exactly(2);
 
-          var simId1Idx = r.result.map(
+          let simId1Idx = r.result.map(
              function(e){return e.name}).indexOf(simId1)
-          var simId2Idx = r.result.map(
+          let simId2Idx = r.result.map(
              function(e){return e.name}).indexOf(simId2)
           simId1Idx.should.be.greaterThanOrEqual(0);
           simId2Idx.should.be.greaterThanOrEqual(0);
@@ -466,7 +492,7 @@ describe('<Simulator controller test>', function() {
   });
 
   // create simId3 for permission test
-  var simId3 ='';
+  let simId3 ='';
   describe('Check Launch Third Simulator', function() {
     it('should be possible to create the third simulator', function(done) {
       // let's change the region
@@ -480,13 +506,216 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.id.should.not.be.empty();
         text.id.should.not.equal(simId1);
         text.id.should.not.equal(simId2);
         simId3 = text.id;
         text.status.should.equal('LAUNCHING');
         text.region.should.equal('us-east-1');
+        done();
+      });
+    });
+  });
+
+  describe('Check Get Simulator Metrics', function() {
+    it('should be possible to get metrics for the current 3 running simulators', function(done) {
+      agent
+      .get('/metrics/simulators')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.result[0].identity.should.not.be.empty();
+        text.result[0].identity.should.equal(adminUser);
+        text.result[0].running_time.should.equal(3);
+        done();
+      });
+    });
+    it('should be possible to get metrics for the user2, but returning 0', function(done) {
+      agent
+      .get('/metrics/simulators')
+      .set('Acccept', 'application/json')
+      .set('authorization', user2Token)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.result[0].identity.should.not.be.empty();
+        text.result[0].identity.should.equal(user2TokenData.identities[0]);
+        text.result[0].running_time.should.equal(0);
+        done();
+      });
+    });
+  });
+
+  describe('Metrics: Grant competitors write permissions on simulators and try launching:', function() {
+    it('should be possible to grant competitorA write permission on simulators', function(done) {
+      agent
+      .post('/permissions')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({resource: 'simulators', grantee: competitorA, readOnly: false})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.resource.should.equal('simulators');
+        text.grantee.should.equal(competitorATokenData.identities[0]);
+        text.readOnly.should.equal(false);
+        done();
+      });
+    });
+    it('should be possible to grant competitorB write permission on simulators', function(done) {
+      agent
+      .post('/permissions')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({resource: 'simulators', grantee: competitorB, readOnly: false})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.resource.should.equal('simulators');
+        text.grantee.should.equal(competitorBTokenData.identities[0]);
+        text.readOnly.should.equal(false);
+        done();
+      });
+    });
+    let simA
+    it('competitorA should be able to launch simulator', function(done) {
+      agent
+      .post('/simulators')
+      .set('authorization', competitorAToken)
+      .set('Acccept', 'application/json')
+      .send(launchData)
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        const r = parseResponse(res.text)
+        r.id.should.not.be.empty();
+        simA = r.id
+        r.status.should.equal('LAUNCHING');
+        r.region.should.equal('us-west-1');
+        done();
+      });
+    });
+    it('competitorA should be able to terminate simulator', function(done) {
+      agent
+      .delete('/simulators/' + simA)
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorAToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        done();
+      });
+    });
+    it('the admin should be able to post a new metrics config targetting TeamA with max_instance_hours in 1', function(done) {
+      agent
+      .post('/metrics/configs/')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({ identity: teamA, check_enabled: true, max_instance_hours: 1 })
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.success.should.equal(true)
+        should.exist(text.id)
+        text.result.data.should.not.be.empty();
+        text.result.data.identity.should.equal(teamA);
+        should.not.exist(text.result.data.whitelisted);
+        text.result.data.check_enabled.should.equal(true);
+        text.result.data.max_instance_hours.should.equal(1);
+        should.exist(text.result.permissions[teamA])
+        text.result.permissions[teamA].readOnly.should.equal(true);
+        done();
+      });
+    });    
+    it('competitorA should NOT be able to launch another simulator due to exhausted balance', function(done) {
+      agent
+      .post('/simulators')
+      .set('authorization', competitorAToken)
+      .set('Acccept', 'application/json')
+      .send(launchData)
+      .end(function(err,res){
+        res.status.should.be.equal(403);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.success.should.equal(false)
+        text.error.should.containEql('Unable to launch more instances')
+        done();
+      });
+    });
+    let simB
+    it('competitorB should still be able to launch simulators', function(done) {
+      agent
+      .post('/simulators')
+      .set('authorization', competitorBToken)
+      .set('Acccept', 'application/json')
+      .send(launchData)
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        const r = parseResponse(res.text)
+        r.id.should.not.be.empty();
+        simB = r.id
+        r.status.should.equal('LAUNCHING');
+        r.region.should.equal('us-west-1');
+        done();
+      });
+    });
+    it('competitorB should be able to terminate simulator', function(done) {
+      agent
+      .delete('/simulators/' + simB)
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        done();
+      });
+    });
+  });
+
+  describe('Check Simulator Metrics Invalid HTTP Methods', function() {
+    it('should not be possible to POST to metrics url', function(done) {
+      agent
+      .post('/metrics/simulators')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(404);
+        done();
+      });
+    });
+    it('should not be possible to DEL to metrics url', function(done) {
+      agent
+      .delete('/metrics/simulators')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(404);
+        done();
+      });
+    });
+    it('should not be possible to PUT to metrics url', function(done) {
+      agent
+      .put('/metrics/simulators')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(404);
         done();
       });
     });
@@ -503,7 +732,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200)
         res.redirect.should.equal(false)
-        var data  = JSON.parse(res.text)
+        let data  = JSON.parse(res.text)
         data.success.should.equal(true)
         data.result.permissions.should.not.be.empty()
         const p = data.result.permissions[0]
@@ -525,7 +754,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200)
           res.redirect.should.equal(false)
-          var r = JSON.parse(res.text)
+          let r = JSON.parse(res.text)
           r.success.should.equal(true)
           r.result.name.should.equal(simId2)
           r.result.permissions.should.not.be.empty()
@@ -548,7 +777,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var data  = JSON.parse(res.text);
+        let data  = JSON.parse(res.text);
         data.success.should.equal(true);
         data.requester.should.equal(user2TokenData.identities[0])
         data.result.length.should.be.equal(0);
@@ -568,7 +797,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(401);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          let text = JSON.parse(res.text);
           text.success.should.equal(false);
           done();
         });
@@ -586,7 +815,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(401);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          let text = JSON.parse(res.text);
           text.success.should.equal(false);
           done();
         });
@@ -622,7 +851,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text)
+        let text = JSON.parse(res.text)
         text.success.should.equal(true);
         text.resource.should.equal(simId2);
         text.grantee.should.equal(user2TokenData.identities[0]);
@@ -692,7 +921,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(401)
           res.redirect.should.equal(false)
-          var text = JSON.parse(res.text)
+          let text = JSON.parse(res.text)
           text.success.should.equal(false)
           done();
         });
@@ -711,7 +940,7 @@ describe('<Simulator controller test>', function() {
       }).end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.success.should.equal(true);
         text.resource.should.equal(simId3);
         text.grantee.should.equal(user2TokenData.identities[0]);
@@ -787,7 +1016,7 @@ describe('<Simulator controller test>', function() {
   })
 
   // create simId4 for revoke permission test
-  var simId4 ='';
+  let simId4 ='';
   describe('Check Launch Fourth Simulator', function() {
     it('should be possible to create the fourth simulator', function(done) {
       agent
@@ -823,7 +1052,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          let text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId4);
           text.grantee.should.equal(user2TokenData.identities[0]);
@@ -872,7 +1101,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          let text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId4);
           text.grantee.should.equal(user2TokenData.identities[0])
@@ -928,7 +1157,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          let text = JSON.parse(res.text);
           text.success.should.equal(true);
           text.resource.should.equal(simId2);
           text.grantee.should.equal(user2TokenData.identities[0]);
@@ -973,7 +1202,7 @@ describe('<Simulator controller test>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200);
           res.redirect.should.equal(false);
-          var text = JSON.parse(res.text);
+          let text = JSON.parse(res.text);
           text.success.should.equal(false);
           done();
         });
@@ -991,7 +1220,7 @@ describe('<Simulator controller test>', function() {
       .end(function(err,res){
         res.status.should.be.equal(200);
         res.redirect.should.equal(false);
-        var text = JSON.parse(res.text);
+        let text = JSON.parse(res.text);
         text.success.should.equal(true);
         text.resource.should.equal(simId2);
         text.grantee.should.equal(user2TokenData.identities[0])
@@ -1051,9 +1280,13 @@ describe('<Simulator controller test>', function() {
       });
   });
 
+  // after all tests have run, we need to clean up our mess
   after(function(done) {
-    csgrant.model.clearDb();
-    done();
-  });
+    console.log('after everything')
+    csgrant.model.clearDb()
+    app.close(function() {
+      clearRequire.all()
+      done()
+    })
+  })
 })
-
