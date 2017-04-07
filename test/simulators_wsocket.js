@@ -428,6 +428,7 @@ describe('<Unit Test sockets>', function() {
   describe('Check user4 was left alone', function() {
     it ('Should not be possible for user4 to get notifications', done => {
       user4events.length.should.equal(0)
+      user4socket.disconnect()
       done()
     })
   })
