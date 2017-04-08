@@ -31,7 +31,7 @@ function setRoutes(app) {
   app.get('/sshkeys/:sshkey',
     // user must have valid token (in req.query)
     csgrant.authenticate,
-    // user must have access to 'downloads' resource
+    // user must have write access to download the resource
     // this middleware will set req.resourceData
     csgrant.ownsResource(':sshkey', false),
     // this middleware sets the file download information from

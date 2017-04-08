@@ -20,6 +20,9 @@ if (process.env.NODE_ENV === 'test') {
   keysurl = ''
 }
 
+// teams have permission to launch and terminate rounds / machines in practice
+const practice = true
+
 function setRoutes(app) {
 
   // Get all rounds for a user
@@ -127,7 +130,7 @@ function setRoutes(app) {
             return
           }
 
-          // Give team read access
+          // Give team read access to srcound
           // This allows them to see "public" information
           csgrant.grantPermission(req.user, resourceData.team, r.id, true,
           function(err) {
@@ -171,8 +174,12 @@ function setRoutes(app) {
                 options.route = serverVpnKeyUrl
                 options.subnet = '192.168.2'
                 simulator.options = options
-                createInstance(resourceData.team, serverSshkeyName, simulator,
-                (resp) => {
+
+                // create instance using user identity and share with team
+                // During practice, the user and team will have write access
+                // that lets them download ssh key and terminate the instances
+                createInstance(req.user, resourceData.team, !practice,
+                serverSshkeyName, simulator, (resp) => {
                   if (resp.error) {
                     res.status(500).jsonp(resp)
                     return
@@ -190,7 +197,7 @@ function setRoutes(app) {
                   // wait till simulator has its ip before creating the field
                   // computer instance as we need to pass the ip onto the
                   // fieldcomputer via options
-                  getInstanceIp(resourceData.team, simId,
+                  getInstanceIp(req.user, simId,
                   instanceIpUpdateInterval+10, 10, (err, server_ip) => {
                     if (err) {
                       console.log (JSON.stringify(err))
@@ -213,8 +220,9 @@ function setRoutes(app) {
                     options.client_route = clientVpnKeyUrl
                     options.dockerurl = resourceData.dockerurl
                     fieldcomputer.options = options
-                    createInstance(resourceData.team, clientSshkeyName,
-                    fieldcomputer, (resp) => {
+                    // create instance using user identity and share with team
+                    createInstance(req.user, resourceData.team, !practice,
+                    clientSshkeyName, fieldcomputer, (resp) => {
                       if (resp.error) {
                         console.log(JSON.stringify(resp.error))
                         return
@@ -223,6 +231,7 @@ function setRoutes(app) {
                       const fcSsh = resp.ssh
                       const fcMachineId = resp.machine_id
 
+                      // populate resource data with more info
                       resourceData.simulator_id = simId
                       resourceData.fieldcomputer_id = fcId
                       resourceData.simulator_ssh = simSsh
@@ -262,6 +271,7 @@ function setRoutes(app) {
     csgrant.ownsResource(':srcround', true),
     function(req, res) {
       const resource = req.srcround
+      const user = req.authorizedIdentity
 
       // read simulator and field computer info from srcround resource data
       // so we can terminate them
@@ -286,17 +296,21 @@ function setRoutes(app) {
         }
 
         // instances are created by team so terminate them using team identity
-        const team = data.data.team
+        // const team = data.data.team
 
         // Terminate simulator
-        simulators.terminate(team, simulatorData, (resp) => {
+        // During practice, the user and team have write access so will be
+        // able to terminate the instance.
+        // During competition, the instances will be terminated by
+        // cloudsim-sim using the src-admins token after uploading the logs
+        terminateInstance(user, simulatorData, practice, (resp) => {
           if (resp.error) {
             json.status(500).resp(resp)
             return
           }
 
           // Terminate field computer
-          simulators.terminate(team, fieldcomputerData, (resp) => {
+          terminateInstance(user, fieldcomputerData, practice, (resp) => {
             if (resp.error) {
               json.status(500).resp(resp)
               return
@@ -326,9 +340,9 @@ function setRoutes(app) {
   })
 }
 
-// create an instance and generate ssh keys. This also grants write permission
-// to src-admins
-const createInstance = function(user, keyName, resource, cb) {
+// Create an instance and generate ssh keys. The src-admins will be granted
+//  write access. The team will have write access only during practice
+const createInstance = function(user, team, teamPerm, keyName, resource, cb) {
   // Create new sshkey for simulator
   const sshOps = {name: keyName}
   sshkeys.create(user, sshOps, function(sshResp){
@@ -344,28 +358,49 @@ const createInstance = function(user, keyName, resource, cb) {
         return
       }
 
-      resource.sshkey = sshResp.id
-      // Launch instance
-      simulators.create(user, resource, function(simResp){
-        if (simResp.error) {
-          cb(simResp)
+      // Give team write access to ssh key only in practice.
+      // ssh key download needs write access
+      csgrant.grantPermission(user, team, sshResp.id, teamPerm,
+      function(err) {
+        if (err) {
+          cb(err)
           return
         }
-
-        // Give all admins write access to instance
-        csgrant.grantPermission(user, srcAdmin, simResp.id,
-        false, function(err) {
-          if (err) {
-            cb(err)
+        resource.sshkey = sshResp.id
+        // Launch instance
+        simulators.create(user, resource, function(simResp){
+          if (simResp.error) {
+            cb(simResp)
             return
           }
+          // Give all admins write access to instance
+          csgrant.grantPermission(user, srcAdmin, simResp.id, false,
+          function(err) {
 
-          simResp.ssh = common.portalUrl() + '/sshkeys/' + sshResp.id
-          cb(simResp)
+            // Give team write access to instance only during practice
+            csgrant.grantPermission(user, srcAdmin, simResp.id,
+            teamPerm, function(err) {
+              if (err) {
+                cb(err)
+                return
+              }
+              simResp.ssh = common.portalUrl() + '/sshkeys/' + sshResp.id
+              cb(simResp)
+            })
+          })
         })
       })
     })
   })
+}
+
+// terminate instance only in practice mode but keep the machines running
+// in the competition so that the logs can be uploaded
+const terminateInstance = function(user, machineInfo, term, cb) {
+  if (term)
+    simulators.terminate(user, machineInfo, cb)
+  else
+    cb({success: true})
 }
 
 // generate vpn key by posting to the keys server
