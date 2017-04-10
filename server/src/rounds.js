@@ -134,20 +134,21 @@ function setRoutes(app) {
               // TODO: Insert VPN resource info into resourceData
 
               // Launch simulator
-              simulators.create(team, resourceData.simulator, function(resp){
+              simulators.create(resourceData.team, resourceData.simulator,
+                function(resp){
 
-                // TODO: Share simulator with admins,
-                //   write access so they have SSH keys and IP
-                // TODO: Launch FC
-                // TODO: Share FC with admins, write access
-                // TODO: Users can connect to FC through VPN
-                if (resp.error) {
-                  res.jsonp(resp)
-                  return
-                }
-                // TODO Launch field computer
-                res.jsonp(r);
-              })
+                  // TODO: Share simulator with admins,
+                  //   write access so they have SSH keys and IP
+                  // TODO: Launch FC
+                  // TODO: Share FC with admins, write access
+                  // TODO: Users can connect to FC through VPN
+                  if (resp.error) {
+                    res.jsonp(resp)
+                    return
+                  }
+                  // TODO Launch field computer
+                  res.jsonp(r);
+                })
             })
           })
         })
