@@ -235,8 +235,8 @@ function setRoutes(app) {
                       const fcMachineId = resp.machine_id
 
                       // populate resource data with more info
-                      resourceData.secure.simulator_id = simId
-                      resourceData.secure.fieldcomputer_id = fcId
+                      resourceData.public.simulator_id = simId
+                      resourceData.public.fieldcomputer_id = fcId
                       resourceData.secure.simulator_ssh = simSsh
                       resourceData.secure.fieldcomputer_ssh = fcSsh
                       resourceData.secure.simulator_machine_id = simMachineId
