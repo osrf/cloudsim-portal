@@ -348,12 +348,12 @@ describe('<Unit test SRC rounds>', function() {
         response.result[0].data.team.should.equal(debugTeam)
         should.exist(response.result[0].data.secure)
         should.exist(response.result[0].data.public)
-        should.exist(response.result[0].data.simulator_ssh)
-        should.exist(response.result[0].data.fieldcomputer_ssh)
-        should.exist(response.result[0].data.simulator_id)
-        should.exist(response.result[0].data.fieldcomputer_id)
-        should.exist(response.result[0].data.simulator_machine_id)
-        should.exist(response.result[0].data.fieldcomputer_machine_id)
+        should.exist(response.result[0].data.secure.simulator_ssh)
+        should.exist(response.result[0].data.secure.fieldcomputer_ssh)
+        should.exist(response.result[0].data.secure.simulator_id)
+        should.exist(response.result[0].data.secure.fieldcomputer_id)
+        should.exist(response.result[0].data.secure.simulator_machine_id)
+        should.exist(response.result[0].data.secure.fieldcomputer_machine_id)
 
         response.result[0].permissions.length.should.equal(2)
         response.result[0].permissions[0].username.should.equal(
@@ -372,12 +372,12 @@ describe('<Unit test SRC rounds>', function() {
         response.result[1].data.team.should.equal(teamA)
         should.exist(response.result[1].data.secure)
         should.exist(response.result[1].data.public)
-        should.exist(response.result[1].data.simulator_ssh)
-        should.exist(response.result[1].data.fieldcomputer_ssh)
-        should.exist(response.result[1].data.simulator_id)
-        should.exist(response.result[1].data.fieldcomputer_id)
-        should.exist(response.result[1].data.simulator_machine_id)
-        should.exist(response.result[1].data.fieldcomputer_machine_id)
+        should.exist(response.result[1].data.secure.simulator_ssh)
+        should.exist(response.result[1].data.secure.fieldcomputer_ssh)
+        should.exist(response.result[1].data.secure.simulator_id)
+        should.exist(response.result[1].data.secure.fieldcomputer_id)
+        should.exist(response.result[1].data.secure.simulator_machine_id)
+        should.exist(response.result[1].data.secure.fieldcomputer_machine_id)
 
         response.result[1].permissions.length.should.equal(2)
         response.result[1].permissions[0].username.should.equal('src-admins')
@@ -448,7 +448,7 @@ describe('<Unit test SRC rounds>', function() {
   let roundASimSsh
   let roundAFCSsh
   describe('Get rounds with competitor A', function() {
-    it('should have one round and no access to secure data', function(done) {
+    it('should have one round and access to secure data', function(done) {
       agent
       .get('/srcrounds')
       .set('Accept', 'application/json')
@@ -466,10 +466,10 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.public)
 
         // ssh data
-        should.exist(response.result[0].data.simulator_ssh)
-        should.exist(response.result[0].data.fieldcomputer_ssh)
-        roundASimSsh = response.result[0].data.simulator_ssh
-        roundAFCSsh = response.result[0].data.fieldcomputer_ssh
+        should.exist(response.result[0].data.secure.simulator_ssh)
+        should.exist(response.result[0].data.secure.fieldcomputer_ssh)
+        roundASimSsh = response.result[0].data.secure.simulator_ssh
+        roundAFCSsh = response.result[0].data.secure.fieldcomputer_ssh
 
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamA)
@@ -557,10 +557,10 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.public)
 
         // ssh data
-        should.exist(response.result[0].data.simulator_ssh)
-        should.exist(response.result[0].data.fieldcomputer_ssh)
-        roundBSimSsh = response.result[0].data.simulator_ssh
-        roundBFCSsh = response.result[0].data.fieldcomputer_ssh
+        should.exist(response.result[0].data.secure.simulator_ssh)
+        should.exist(response.result[0].data.secure.fieldcomputer_ssh)
+        roundBSimSsh = response.result[0].data.secure.simulator_ssh
+        roundBFCSsh = response.result[0].data.secure.fieldcomputer_ssh
 
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamB)
@@ -851,8 +851,7 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   let compRoundB
-  let compRoundBSimSsh
-  let compRoundBFCSsh
+
   // Competitor B should be able to see round data in competition mode
   describe('Get rounds with competitor B in competition mode', function() {
     it('should be able to see round resource', function(done) {
@@ -879,11 +878,43 @@ describe('<Unit test SRC rounds>', function() {
         // only public data are avaialble
         should.exist(response.result[0].data.public)
 
-        // ssh data
-        should.exist(response.result[0].data.simulator_ssh)
-        should.exist(response.result[0].data.fieldcomputer_ssh)
-        compRoundBSimSsh = response.result[0].data.simulator_ssh
-        compRoundBFCSsh = response.result[0].data.fieldcomputer_ssh
+        response.result[0].data.dockerurl.should.equal(dockerUrl)
+        response.result[0].data.team.should.equal(teamB)
+
+        done()
+      })
+    })
+  })
+
+  let compRoundBSimSsh
+  let compRoundBFCSsh
+  // Competitor B should be able to see round data in competition mode
+  describe('Get rounds with admin in competition mode', function() {
+    it('should be able to see round resource', function(done) {
+      agent
+      .get('/srcrounds')
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.success.should.equal(true)
+        response.requester.should.equal(srcAdmin)
+        response.result.length.should.equal(1)
+
+        // Round data
+        compRoundB = response.result[0].name
+        compRoundB.indexOf('srcround').should.be.above(-1)
+
+        // competition data permission
+        // secure, public, and permissions data should all be available
+        should.exist(response.result[0].data.secure)
+        should.exist(response.result[0].permissions)
+        should.exist(response.result[0].data.public)
+
+        // admins should be able to get ssh key data
+        compRoundBSimSsh = response.result[0].data.secure.simulator_ssh
+        compRoundBFCSsh = response.result[0].data.secure.fieldcomputer_ssh
 
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamB)
@@ -892,6 +923,7 @@ describe('<Unit test SRC rounds>', function() {
       })
     })
   })
+
 
   // Simulator started by admin so competitor B should not be able to download
   // the ssh key in competition mode

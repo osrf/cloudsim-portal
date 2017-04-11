@@ -235,12 +235,12 @@ function setRoutes(app) {
                       const fcMachineId = resp.machine_id
 
                       // populate resource data with more info
-                      resourceData.simulator_id = simId
-                      resourceData.fieldcomputer_id = fcId
-                      resourceData.simulator_ssh = simSsh
-                      resourceData.fieldcomputer_ssh = fcSsh
-                      resourceData.simulator_machine_id = simMachineId
-                      resourceData.fieldcomputer_machine_id = fcMachineId
+                      resourceData.secure.simulator_id = simId
+                      resourceData.secure.fieldcomputer_id = fcId
+                      resourceData.secure.simulator_ssh = simSsh
+                      resourceData.secure.fieldcomputer_ssh = fcSsh
+                      resourceData.secure.simulator_machine_id = simMachineId
+                      resourceData.secure.fieldcomputer_machine_id = fcMachineId
 
                       // remove fieldcompuer options data
                       // delete fieldcomputer.options
@@ -258,7 +258,6 @@ function setRoutes(app) {
                     })
                   })
                 })
-
               })
             })
           })
@@ -287,13 +286,13 @@ function setRoutes(app) {
         const simulatorData = {
           data: {
             region: data.data.simulator.region,
-            machine_id: data.data.simulator_machine_id
+            machine_id: data.data.secure.simulator_machine_id
           }
         }
         const fieldcomputerData = {
           data: {
             region: data.data.fieldcomputer.region,
-            machine_id: data.data.fieldcomputer_machine_id
+            machine_id: data.data.secure.fieldcomputer_machine_id
           }
         }
 
