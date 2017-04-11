@@ -638,7 +638,7 @@ describe('<Simulator controller test>', function() {
         text.result.permissions[teamA].readOnly.should.equal(true);
         done();
       });
-    });    
+    });
     it('competitorA should NOT be able to launch another simulator due to exhausted balance', function(done) {
       agent
       .post('/simulators')
@@ -1278,6 +1278,20 @@ describe('<Simulator controller test>', function() {
           done();
         });
       });
+  });
+
+  describe('Launch simulator missing parameters', function() {
+    it('should not be possible to launch a simulator', function(done) {
+      agent
+      .post('/simulators')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({region: 'us-west-1', hardware:'t2.small'})
+      .end(function(err,res){
+        res.status.should.be.equal(400);
+        done();
+      });
+    });
   });
 
   // after all tests have run, we need to clean up our mess

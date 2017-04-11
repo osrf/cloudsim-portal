@@ -3,6 +3,7 @@
 /// Server side simulator controller.
 
 /// Module dependencies.
+const parameters = require('parameters-middleware');
 const util = require('util')
 const csgrant = require('cloudsim-grant')
 const moment = require('moment')
@@ -72,18 +73,6 @@ const createImpl = function(user, opts, cb) {
   simulator.region = opts.region
   simulator.hardware = opts.hardware
   simulator.image = opts.image
-
-  if (!simulator.region || !simulator.image || !simulator.hardware)
-  {
-    error = {
-      error: {
-        msg: 'Missing required fields (image, region, hardware)'
-      }
-    }
-    console.log(error.error.msg)
-    cb(error);
-    return;
-  }
 
   // TODO: Check if user owns this SSH key resource, otherwise someone can
   // launch a machine with an ssh key they don't own, and download the key
@@ -353,7 +342,7 @@ function updateInstanceStatus() {
 }
 
 /**
- * Internal function that calculates and returns metrics corresponding 
+ * Internal function that calculates and returns metrics corresponding
  * to all the simulators accessible by the invoking user, grouped by groups/roles.
  * Retuns an array in which the values are the grouped simulator metrics.
  */
@@ -408,7 +397,7 @@ function getSimulatorMetrics(req, res) {
       return metric.username === req.query.team
     })
   }
-  
+
   // prepare response
   const r = {
     success: false,
@@ -507,6 +496,10 @@ exports.setRoutes = function (app) {
   app.post('/simulators',
     csgrant.authenticate,
     csgrant.ownsResource('simulators', false),
+    parameters(
+      {body : ['region', 'hardware', 'image']},
+      {message : 'Missing required fields (image, region, hardware).'}
+    ),
     checkAvailableInstanceHours,
     create)
 

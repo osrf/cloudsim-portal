@@ -161,6 +161,11 @@ describe('<Unit test SRC rounds>', function() {
       .post('/srcrounds')
       .set('Accept', 'application/json')
       .set('authorization', notCompetitorToken)
+      .send({
+        'dockerurl': dockerUrl,
+        'simulator': simData,
+        'fieldcomputer': fcData
+      })
       .end(function(err,res) {
         res.status.should.be.equal(403)
         done()
@@ -466,25 +471,6 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
-  describe('Start a round for B with competitor A', function() {
-    it('should not be authorized', function(done) {
-      agent
-      .post('/srcrounds')
-      .set('Accept', 'application/json')
-      .set('authorization', competitorAToken)
-      .send({
-        'dockerurl': dockerUrl,
-        'team': teamB,
-        'simulator': simData,
-        'fieldcomputer': fcData
-      })
-      .end(function(err,res) {
-        res.status.should.be.equal(403)
-        done()
-      })
-    })
-  })
-
   describe('Delete round A with competitor B', function() {
     it('should not be authorized', function(done) {
       agent
@@ -556,6 +542,28 @@ describe('<Unit test SRC rounds>', function() {
         response.success.should.equal(true)
         response.requester.should.equal(srcAdmin)
         response.result.length.should.equal(0)
+        done()
+      })
+    })
+  })
+
+  describe('Start a round for B with competitor A', function() {
+    it('should start a round for A, not B', function(done) {
+      agent
+      .post('/srcrounds')
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .send({
+        'dockerurl': dockerUrl,
+        'team': teamB,
+        'simulator': simData,
+        'fieldcomputer': fcData
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.success.should.equal(true)
+        response.result.data.team.should.equal(teamA)
         done()
       })
     })

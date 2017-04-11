@@ -382,6 +382,22 @@ describe('<SGroup Unit Test>', function() {
       });
     });
 
+    // invalid params
+    describe('Create security group missing params', function() {
+      it('should not be possible to create a security group', function(done) {
+        const data = {banana: sgroup1Name};
+        agent
+        .post('/sgroups')
+        .set('Acccept', 'application/json')
+        .set('authorization', userToken)
+        .send(data)
+        .end(function(err,res){
+          res.status.should.be.equal(400);
+          done();
+        });
+      });
+    });
+
     // after all tests have run, we need to clean up our mess
     after(function(done) {
       console.log('after everything')

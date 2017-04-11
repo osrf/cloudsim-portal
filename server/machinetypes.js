@@ -1,5 +1,6 @@
 'use strict'
 
+const parameters = require('parameters-middleware');
 const csgrant = require('cloudsim-grant')
 const common = require('./common')
 
@@ -7,22 +8,27 @@ function setRoutes(app) {
 
   console.log('MACHINE TYPES setRoutes')
 
-  // list all resources
+  // Get all machine types which this user has permission to
   app.get('/machinetypes',
     csgrant.authenticate,
     csgrant.userResources,
     common.filterResources('machinetype-'),
     csgrant.allResources)
 
+  // Get a specific machine type
   app.get('/machinetypes/:machinetype',
     csgrant.authenticate,
     csgrant.ownsResource(':machinetype', true),
     csgrant.resource)
 
-  // create a new simulation
+  // Create a new machine type
   app.post('/machinetypes',
     csgrant.authenticate,
     csgrant.ownsResource('machinetypes', false),
+    parameters(
+      {body : ['name', 'region', 'hardware', 'image']},
+      {message : 'Missing required fields (name, region, hardware, image).'}
+    ),
     function(req, res) {
 
       console.log('create machine type:')
@@ -39,18 +45,19 @@ function setRoutes(app) {
 
       const user = req.user
       csgrant.getNextResourceId('machinetype', (err, resourceName) => {
+
         if(err) {
           res.jsonp(error(err))
           return
         }
-        // final step: add machine type
+
         csgrant.createResource(user, resourceName, resourceData,
           (err, data) => {
             if(err) {
               res.jsonp(error(err))
               return
             }
-            // step 5. success!
+
             const r = { success: true,
               operation: op,
               result: data,
@@ -60,7 +67,7 @@ function setRoutes(app) {
       })
     })
 
-  // Update a simulation
+  // Update a machine type
   app.put('/machinetypes/:machinetype',
     csgrant.authenticate,
     csgrant.ownsResource(':machinetype', true),
@@ -97,7 +104,7 @@ function setRoutes(app) {
       })
     })
 
-  // Delete a simulation
+  // Delete a machine type
   app.delete('/machinetypes/:machinetype',
     csgrant.authenticate,
     csgrant.ownsResource(':machinetype', false),
