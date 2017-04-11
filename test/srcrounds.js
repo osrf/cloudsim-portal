@@ -14,12 +14,17 @@ const token = csgrant.token
 const keys = csgrant.token.generateKeys()
 token.initKeys(keys.public, keys.private)
 
-// Three users for testing:
-// * admin
+// Cloudsim admin
+const admin = process.env.CLOUDSIM_ADMIN ?
+    process.env.CLOUDSIM_ADMIN : 'admin'
+
+// Users for testing:
+// * Cloudsim + SRC admin
+// * SRC admin
 // * competitor
 // * non-participant
 const srcAdmin = "src-admin"
-const srcAdminTokenData = {identities: [srcAdmin, "src-admins"]}
+const srcAdminTokenData = {identities: [srcAdmin, "src-admins", admin]}
 let srcAdminToken
 
 const srcAdmin2 = "src-admin2"
@@ -40,14 +45,19 @@ const notCompetitor = "not-competitor"
 const notCompetitorTokenData = {identities: [notCompetitor]}
 let notCompetitorToken
 
-// Fake simulator data
+// Fake official machine type params
+let officialRegion = "officialRegion"
+let officialHardware = "officialHardware"
+let officialImage = "officialImage"
+
+// Fake custom simulator data
 let simData = {
   region: 'region',
   hardware: 'hardware',
   image: 'image'
 }
 
-// Fake field computer data
+// Fake custom field computer data
 let fcData = {
   region: 'region',
   hardware: 'hardware',
@@ -100,6 +110,130 @@ describe('<Unit test SRC rounds>', function() {
       })
     })
   })
+
+  let simMachineId
+  describe('Create simulator machine type', function() {
+    it('should be possible to create machine type', function(done) {
+      agent
+      .post('/machinetypes')
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .send({
+        name: 'src-simulator',
+        region: officialRegion,
+        hardware: officialHardware,
+        image: officialImage
+      })
+      .end(function(err,res) {
+        const response = getResponse(res, res.status != 200)
+        res.status.should.be.equal(200)
+        res.redirect.should.equal(false)
+        response.success.should.equal(true)
+        simMachineId = response.id
+        done()
+      })
+    })
+  })
+
+  let fcMachineId
+  describe('Create field computer machine type', function() {
+    it('should be possible to create machine type', function(done) {
+      agent
+      .post('/machinetypes')
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .send({
+        name: 'src-fieldcomputer',
+        region: officialRegion,
+        hardware: officialHardware,
+        image: officialImage
+      })
+      .end(function(err,res) {
+        const response = getResponse(res, res.status != 200)
+        res.status.should.be.equal(200)
+        res.redirect.should.equal(false)
+        response.success.should.equal(true)
+        fcMachineId = response.id
+        done()
+      })
+    })
+  })
+
+  describe('Share sim machine type with team A', function() {
+    it('should be possible to grant team A read permission', function(done) {
+      agent
+      .post('/permissions')
+      .set('Acccept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .send({resource: simMachineId, grantee: teamA, readOnly: true})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.resource.should.equal(simMachineId);
+        text.grantee.should.equal(teamA);
+        text.readOnly.should.equal(true);
+        done();
+      });
+    });
+  });
+
+  describe('Share sim machine type with team B', function() {
+    it('should be possible to grant team B read permission', function(done) {
+      agent
+      .post('/permissions')
+      .set('Acccept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .send({resource: simMachineId, grantee: teamB, readOnly: true})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.resource.should.equal(simMachineId);
+        text.grantee.should.equal(teamB);
+        text.readOnly.should.equal(true);
+        done();
+      });
+    });
+  });
+
+  describe('Share fc machine type with team A', function() {
+    it('should be possible to grant team A read permission', function(done) {
+      agent
+      .post('/permissions')
+      .set('Acccept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .send({resource: fcMachineId, grantee: teamA, readOnly: true})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.resource.should.equal(fcMachineId);
+        text.grantee.should.equal(teamA);
+        text.readOnly.should.equal(true);
+        done();
+      });
+    });
+  });
+
+  describe('Share fc machine type with team B', function() {
+    it('should be possible to grant team B read permission', function(done) {
+      agent
+      .post('/permissions')
+      .set('Acccept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .send({resource: fcMachineId, grantee: teamB, readOnly: true})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.resource.should.equal(fcMachineId);
+        text.grantee.should.equal(teamB);
+        text.readOnly.should.equal(true);
+        done();
+      });
+    });
+  });
 
   describe('Check initial rounds with admin', function() {
     it('should be empty', function(done) {
@@ -163,8 +297,6 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', notCompetitorToken)
       .send({
         'dockerurl': dockerUrl,
-        'simulator': simData,
-        'fieldcomputer': fcData
       })
       .end(function(err,res) {
         res.status.should.be.equal(403)
@@ -189,7 +321,7 @@ describe('<Unit test SRC rounds>', function() {
   let dockerUrl = 'docker smth here'
   let debugTeam = "SRC-debug"
   describe('Start a new round with admin, for debugging', function() {
-    it('should create a resource with the correct permissions', function(done) {
+    it('should create a resource with the correct permissions and custom machines', function(done) {
       agent
       .post('/srcrounds')
       .set('Accept', 'application/json')
@@ -208,6 +340,8 @@ describe('<Unit test SRC rounds>', function() {
         // Input data
         response.result.data.dockerurl.should.equal(dockerUrl)
         response.result.data.team.should.equal(debugTeam)
+        response.result.data.simulator.image.should.equal(simData.image)
+        response.result.data.fieldcomputer.image.should.equal(fcData.image)
 
         // Permissions
         should.not.exist(response.result.permissions[srcAdmin])
@@ -219,15 +353,13 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   describe('Start a new round with competitor', function() {
-    it('should create a resource with the correct permissions', function(done) {
+    it('should create a resource with the correct permissions and official machine types', function(done) {
       agent
       .post('/srcrounds')
       .set('Accept', 'application/json')
       .set('authorization', competitorAToken)
       .send({
         'dockerurl': dockerUrl,
-        'simulator': simData,
-        'fieldcomputer': fcData
       })
       .end(function(err,res) {
         res.status.should.be.equal(200)
@@ -237,6 +369,10 @@ describe('<Unit test SRC rounds>', function() {
         // Input data
         response.result.data.dockerurl.should.equal(dockerUrl)
         response.result.data.team.should.equal(teamA)
+
+        // Official machines
+        response.result.data.simulator.image.should.equal(officialImage)
+        response.result.data.fieldcomputer.image.should.equal(officialImage)
 
         // Permissions
         should.not.exist(response.result.permissions[competitorA])
@@ -403,7 +539,7 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   describe('Start a new round with admin, for team B', function() {
-    it('should create a resource with the correct permissions', function(done) {
+    it('should create a resource with the correct permissions and official machines', function(done) {
       agent
       .post('/srcrounds')
       .set('Accept', 'application/json')
@@ -411,13 +547,16 @@ describe('<Unit test SRC rounds>', function() {
       .send({
         'dockerurl': dockerUrl,
         'team': teamB,
-        'simulator': simData,
-        'fieldcomputer': fcData
       })
       .end(function(err,res) {
         res.status.should.be.equal(200)
         let response = getResponse(res)
         response.success.should.equal(true)
+
+        // Official machines
+        response.result.data.simulator.image.should.equal(officialImage)
+        response.result.data.fieldcomputer.image.should.equal(officialImage)
+
         done()
       })
     })
@@ -548,7 +687,7 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   describe('Start a round for B with competitor A', function() {
-    it('should start a round for A, not B', function(done) {
+    it('should start a round for A, not B, and use official machines, not the input', function(done) {
       agent
       .post('/srcrounds')
       .set('Accept', 'application/json')
@@ -564,6 +703,11 @@ describe('<Unit test SRC rounds>', function() {
         let response = getResponse(res)
         response.success.should.equal(true)
         response.result.data.team.should.equal(teamA)
+
+        // Official machines
+        response.result.data.simulator.image.should.equal(officialImage)
+        response.result.data.fieldcomputer.image.should.equal(officialImage)
+
         done()
       })
     })
