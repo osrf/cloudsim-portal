@@ -69,6 +69,7 @@ const socketAddress = 'http://localhost:' + process.env.PORT
 function createSocket(token) {
   const query = 'token=' + token
   const client = io.connect(socketAddress, {
+    reconnection: false,
     query: query,
     transports: ['websocket'],
     rejectUnauthorized: false

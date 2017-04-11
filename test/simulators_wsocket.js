@@ -51,6 +51,7 @@ const launchData = {
 function createSocket(token, events) {
   const query = 'token=' + token
   const client = io.connect(socketAddress, {
+    reconnection: false,
     query: query,
     transports: ['websocket'],
     rejectUnauthorized: false
