@@ -20,8 +20,11 @@ if (process.env.NODE_ENV === 'test') {
   keysurl = ''
 }
 
-// teams have permission to launch and terminate rounds / machines in practice
-const practice = true
+// teams have permission to launch and terminate rounds, and download ssh keys
+// during practice
+let practice = process.env.SRC_PRACTICE || true
+
+const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
 
 function setRoutes(app) {
 
@@ -102,8 +105,7 @@ function setRoutes(app) {
       // Create srcround resource
       const operation = 'Start SRC round'
 
-      const user = req.user
-      csgrant.createResourceWithType(user, 'srcround', resourceData,
+      csgrant.createResourceWithType(req.user, 'srcround', resourceData,
       (err, data, resourceName) => {
         if(err) {
           let error = {
@@ -130,9 +132,9 @@ function setRoutes(app) {
             return
           }
 
-          // Give team read access to srcound
+          // Give team access to srcound
           // This allows them to see "public" information
-          csgrant.grantPermission(req.user, resourceData.team, r.id, true,
+          csgrant.grantPermission(req.user, resourceData.team, r.id, !practice,
           function(err) {
             if (err) {
               res.status(500).jsonp(err)
@@ -175,7 +177,7 @@ function setRoutes(app) {
                 options.subnet = '192.168.2'
                 simulator.options = options
 
-                // create instance using user identity and share with team
+                // create sim instance using user identity and share with team
                 // During practice, the user and team will have write access
                 // that lets them download ssh key and terminate the instances
                 createInstance(req.user, resourceData.team, !practice,
@@ -220,7 +222,8 @@ function setRoutes(app) {
                     options.client_route = clientVpnKeyUrl
                     options.dockerurl = resourceData.dockerurl
                     fieldcomputer.options = options
-                    // create instance using user identity and share with team
+                    // create fc instance using user identity and share with
+                    // team
                     createInstance(req.user, resourceData.team, !practice,
                     clientSshkeyName, fieldcomputer, (resp) => {
                       if (resp.error) {
@@ -251,7 +254,6 @@ function setRoutes(app) {
                             JSON.stringify(err))
                           return
                         }
-                        // console.log ('resourceData: ' + JSON.stringify(resourceData))
                       })
                     })
                   })
@@ -265,10 +267,10 @@ function setRoutes(app) {
     })
 
   // Finish a round
-  // Anyone with read (team) or write (admins) access can do it
+  // Requires write access
   app.delete('/srcrounds/:srcround',
     csgrant.authenticate,
-    csgrant.ownsResource(':srcround', true),
+    csgrant.ownsResource(':srcround', false),
     function(req, res) {
       const resource = req.srcround
       const user = req.authorizedIdentity
@@ -294,9 +296,6 @@ function setRoutes(app) {
             machine_id: data.data.fieldcomputer_machine_id
           }
         }
-
-        // instances are created by team so terminate them using team identity
-        // const team = data.data.team
 
         // Terminate simulator
         // During practice, the user and team have write access so will be
@@ -338,6 +337,23 @@ function setRoutes(app) {
     req.srcround = id
     next()
   })
+
+  // Set practice mode - to be used by admin only
+  app.post('/srcrounds_practice',
+    csgrant.authenticate,
+    function(req, res) {
+      if (req.user !== adminUser) {
+        res.status(403).jsonp({error: 'Access Forbidden'})
+        return
+      }
+      if (req.body.practice == "undefined") {
+        res.status(400).jsonp({error: 'Missing required field'})
+        return
+      }
+      practice = req.body.practice
+      res.status(200).jsonp({success: true})
+      return
+    })
 }
 
 // Create an instance and generate ssh keys. The src-admins will be granted
@@ -376,7 +392,10 @@ const createInstance = function(user, team, teamPerm, keyName, resource, cb) {
           // Give all admins write access to instance
           csgrant.grantPermission(user, srcAdmin, simResp.id, false,
           function(err) {
-
+            if (err) {
+              cb(err)
+              return
+            }
             // Give team write access to instance only during practice
             csgrant.grantPermission(user, srcAdmin, simResp.id,
             teamPerm, function(err) {

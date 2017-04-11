@@ -35,6 +35,11 @@ const notCompetitor = "not-competitor"
 const notCompetitorTokenData = {identities: [notCompetitor]}
 let notCompetitorToken
 
+const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
+const adminTokenData = {identities:[adminUser]}
+let adminToken
+
+
 // Fake simulator data
 let simData = {
   region: 'region',
@@ -137,7 +142,13 @@ describe('<Unit test SRC rounds>', function() {
                 console.log('sign error: ' + e)
               }
               notCompetitorToken = tok
-              done()
+              csgrant.token.signToken(adminTokenData, (e, tok)=>{
+                if(e) {
+                  console.log('sign error: ' + e)
+                }
+                adminToken = tok
+                done()
+              })
             })
           })
         })
@@ -246,6 +257,8 @@ describe('<Unit test SRC rounds>', function() {
           res.status.should.be.equal(200)
           let response = getResponse(res)
           response.success.should.equal(true)
+          response.id.should.not.be.empty()
+          roundId = response.id
 
           // Input data
           response.result.data.dockerurl.should.equal(dockerUrl)
@@ -254,14 +267,11 @@ describe('<Unit test SRC rounds>', function() {
           // Permissions
           should.not.exist(response.result.permissions[srcAdmin])
           response.result.permissions['src-admins'].readOnly.should.equal(false)
-          response.result.permissions[debugTeam].readOnly.should.equal(true)
+          response.result.permissions[debugTeam].readOnly.should.equal(false)
         })
       })
       socAdmin.on('resource', res => {
-        if (res.operation === 'create') {
-          roundId = res.resource
-        }
-        else if (res.operation === 'update' && res.resource === roundId) {
+        if (res.operation === 'update' && res.resource.indexOf('src') >= 0) {
           roundId.should.not.be.empty()
           res.resource.should.equal(roundId)
           socAdmin.disconnect()
@@ -274,29 +284,43 @@ describe('<Unit test SRC rounds>', function() {
 
   describe('Start a new round with competitor', function() {
     it('should create a resource with the correct permissions', function(done) {
-      agent
-      .post('/srcrounds')
-      .set('Accept', 'application/json')
-      .set('authorization', competitorAToken)
-      .send({
-        'dockerurl': dockerUrl,
-        'simulator': simData,
-        'fieldcomputer': fcData
+      let roundId
+      let socCompetitorA = createSocket(competitorAToken)
+      socCompetitorA.on('connect', function() {
+        agent
+        .post('/srcrounds')
+        .set('Accept', 'application/json')
+        .set('authorization', competitorAToken)
+        .send({
+          'dockerurl': dockerUrl,
+          'simulator': simData,
+          'fieldcomputer': fcData
+        })
+        .end(function(err,res) {
+          res.status.should.be.equal(200)
+          let response = getResponse(res)
+          response.success.should.equal(true)
+          response.id.should.not.be.empty()
+          roundId = response.id
+
+          // Input data
+          response.result.data.dockerurl.should.equal(dockerUrl)
+          response.result.data.team.should.equal(teamA)
+
+          // Permissions
+          should.not.exist(response.result.permissions[competitorA])
+          response.result.permissions['src-admins'].readOnly.should.equal(false)
+          response.result.permissions[teamA].readOnly.should.equal(false)
+        })
       })
-      .end(function(err,res) {
-        res.status.should.be.equal(200)
-        let response = getResponse(res)
-        response.success.should.equal(true)
-
-        // Input data
-        response.result.data.dockerurl.should.equal(dockerUrl)
-        response.result.data.team.should.equal(teamA)
-
-        // Permissions
-        should.not.exist(response.result.permissions[competitorA])
-        response.result.permissions['src-admins'].readOnly.should.equal(false)
-        response.result.permissions[teamA].readOnly.should.equal(true)
-        done()
+      socCompetitorA.on('resource', res => {
+        if (res.operation === 'update' && res.resource.indexOf('src') >= 0) {
+          roundId.should.not.be.empty()
+          res.resource.should.equal(roundId)
+          socCompetitorA.disconnect()
+          socCompetitorA.close()
+          done()
+        }
       })
     })
   })
@@ -328,6 +352,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.fieldcomputer_ssh)
         should.exist(response.result[0].data.simulator_id)
         should.exist(response.result[0].data.fieldcomputer_id)
+        should.exist(response.result[0].data.simulator_machine_id)
+        should.exist(response.result[0].data.fieldcomputer_machine_id)
 
         response.result[0].permissions.length.should.equal(2)
         response.result[0].permissions[0].username.should.equal(
@@ -336,7 +362,7 @@ describe('<Unit test SRC rounds>', function() {
           false)
         response.result[0].permissions[1].username.should.equal(debugTeam)
         response.result[0].permissions[1].permissions.readOnly.should.equal(
-          true)
+          false)
 
         // Team A's round
         roundA = response.result[1].name
@@ -346,10 +372,12 @@ describe('<Unit test SRC rounds>', function() {
         response.result[1].data.team.should.equal(teamA)
         should.exist(response.result[1].data.secure)
         should.exist(response.result[1].data.public)
-        should.exist(response.result[0].data.simulator_ssh)
-        should.exist(response.result[0].data.fieldcomputer_ssh)
-        should.exist(response.result[0].data.simulator_id)
-        should.exist(response.result[0].data.fieldcomputer_id)
+        should.exist(response.result[1].data.simulator_ssh)
+        should.exist(response.result[1].data.fieldcomputer_ssh)
+        should.exist(response.result[1].data.simulator_id)
+        should.exist(response.result[1].data.fieldcomputer_id)
+        should.exist(response.result[1].data.simulator_machine_id)
+        should.exist(response.result[1].data.fieldcomputer_machine_id)
 
         response.result[1].permissions.length.should.equal(2)
         response.result[1].permissions[0].username.should.equal('src-admins')
@@ -357,7 +385,7 @@ describe('<Unit test SRC rounds>', function() {
           false)
         response.result[1].permissions[1].username.should.equal(teamA)
         response.result[1].permissions[1].permissions.readOnly.should.equal(
-          true)
+          false)
 
         done()
       })
@@ -393,7 +421,7 @@ describe('<Unit test SRC rounds>', function() {
           false)
         response.result[0].permissions[1].username.should.equal(debugTeam)
         response.result[0].permissions[1].permissions.readOnly.should.equal(
-          true)
+          false)
 
         // Team A's round
         roundA = response.result[1].name
@@ -410,13 +438,15 @@ describe('<Unit test SRC rounds>', function() {
           false)
         response.result[1].permissions[1].username.should.equal(teamA)
         response.result[1].permissions[1].permissions.readOnly.should.equal(
-          true)
+          false)
 
         done()
       })
     })
   })
 
+  let roundASimSsh
+  let roundAFCSsh
   describe('Get rounds with competitor A', function() {
     it('should have one round and no access to secure data', function(done) {
       agent
@@ -432,14 +462,20 @@ describe('<Unit test SRC rounds>', function() {
 
         // Round data
         response.result[0].name.should.equal(roundA)
-        should.not.exist(response.result[0].data.secure)
+        should.exist(response.result[0].data.secure)
         should.exist(response.result[0].data.public)
+
+        // ssh data
+        should.exist(response.result[0].data.simulator_ssh)
+        should.exist(response.result[0].data.fieldcomputer_ssh)
+        roundASimSsh = response.result[0].data.simulator_ssh
+        roundAFCSsh = response.result[0].data.fieldcomputer_ssh
 
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamA)
 
         // Permissions
-        should.not.exist(response.result[0].permissions)
+        should.exist(response.result[0].permissions)
 
         done()
       })
@@ -466,26 +502,41 @@ describe('<Unit test SRC rounds>', function() {
 
   describe('Start a new round with admin, for team B', function() {
     it('should create a resource with the correct permissions', function(done) {
-      agent
-      .post('/srcrounds')
-      .set('Accept', 'application/json')
-      .set('authorization', srcAdminToken)
-      .send({
-        'dockerurl': dockerUrl,
-        'team': teamB,
-        'simulator': simData,
-        'fieldcomputer': fcData
+      let roundId
+      let socAdmin = createSocket(srcAdminToken)
+      socAdmin.on('connect', function() {
+        agent
+        .post('/srcrounds')
+        .set('Accept', 'application/json')
+        .set('authorization', srcAdminToken)
+        .send({
+          'dockerurl': dockerUrl,
+          'team': teamB,
+          'simulator': simData,
+          'fieldcomputer': fcData
+        })
+        .end(function(err,res) {
+          res.status.should.be.equal(200)
+          let response = getResponse(res)
+          response.success.should.equal(true)
+          roundId = response.id
+        })
       })
-      .end(function(err,res) {
-        res.status.should.be.equal(200)
-        let response = getResponse(res)
-        response.success.should.equal(true)
-        done()
+      socAdmin.on('resource', res => {
+        if (res.operation === 'update' && res.resource.indexOf('src') >= 0) {
+          roundId.should.not.be.empty()
+          res.resource.should.equal(roundId)
+          socAdmin.disconnect()
+          socAdmin.close()
+          done()
+        }
       })
     })
   })
 
   let roundB
+  let roundBSimSsh
+  let roundBFCSsh
   describe('Get rounds with competitor B', function() {
     it('should have one round', function(done) {
       agent
@@ -502,14 +553,20 @@ describe('<Unit test SRC rounds>', function() {
         // Round data
         roundB = response.result[0].name
         roundB.indexOf('srcround').should.be.above(-1)
-        should.not.exist(response.result[0].data.secure)
+        should.exist(response.result[0].data.secure)
         should.exist(response.result[0].data.public)
+
+        // ssh data
+        should.exist(response.result[0].data.simulator_ssh)
+        should.exist(response.result[0].data.fieldcomputer_ssh)
+        roundBSimSsh = response.result[0].data.simulator_ssh
+        roundBFCSsh = response.result[0].data.fieldcomputer_ssh
 
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamB)
 
         // Permissions
-        should.not.exist(response.result[0].permissions)
+        should.exist(response.result[0].permissions)
 
         done()
       })
@@ -547,6 +604,113 @@ describe('<Unit test SRC rounds>', function() {
       })
       .end(function(err,res) {
         res.status.should.be.equal(403)
+        done()
+      })
+    })
+  })
+
+  // Competitor A should be able to download simulator ssh keys
+  describe('Check download simulator SSH keys with competitor A',
+  function() {
+    it('should be able to download ssh keys', function(done) {
+      let sshId = roundASimSsh.substring(roundASimSsh.lastIndexOf('/')+1)
+      sshId.should.not.be.empty()
+      agent
+      .get('/sshkeys/' + sshId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Competitor A should be able to download its field computer ssh keys
+  describe('Check download field computer SSH keys with competitor A',
+  function() {
+    it('should be able to download ssh keys', function(done) {
+      let sshId = roundAFCSsh.substring(roundAFCSsh.lastIndexOf('/')+1)
+      sshId.should.not.be.empty()
+      agent
+      .get('/sshkeys/' + sshId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Admin should be able to download simulator ssh key
+  describe('Check download simulator SSH keys with admin',
+  function() {
+    it('should be able to download ssh keys', function(done) {
+      let sshId = roundASimSsh.substring(roundASimSsh.lastIndexOf('/')+1)
+      sshId.should.not.be.empty()
+      agent
+      .get('/sshkeys/' + sshId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Admin should be able to download field computer ssh key
+  describe('Check download field computer SSH keys with admin',
+  function() {
+    it('should be able to download ssh keys',
+    function(done) {
+      let sshId = roundAFCSsh.substring(roundAFCSsh.lastIndexOf('/')+1)
+      sshId.should.not.be.empty()
+      agent
+      .get('/sshkeys/' + sshId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Simulator started by admin but competitor B should still be able to
+  // download the ssh key during practice
+  describe('Check download simulator SSH keys with competitor B',
+  function() {
+    it('should be able to download ssh keys during practice',
+    function(done) {
+      let sshId = roundBSimSsh.substring(roundBSimSsh.lastIndexOf('/')+1)
+      sshId.should.not.be.empty()
+      agent
+      .get('/sshkeys/' + sshId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Field computer started by admin but competitor B should still be able to
+  // download the ssh key during practice
+  describe('Check download field computer SSH keys with competitor B',
+  function() {
+    it('should be able to download ssh keys during pactice',
+    function(done) {
+      let sshId = roundBFCSsh.substring(roundBFCSsh.lastIndexOf('/')+1)
+      sshId.should.not.be.empty()
+      agent
+      .get('/sshkeys/' + sshId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
         done()
       })
     })
@@ -628,6 +792,216 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
+  // Test in competition mode
+  // Post as admin to set practice mode to false
+  describe('Set SRC competiton mode', function() {
+    it('should be able to change mode', function(done) {
+      // post to set practice to false
+      agent
+      .post('/srcrounds_practice')
+      .set('Accept', 'application/json')
+      .set('authorization', adminToken)
+      .send({
+        'practice': false
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.success.should.equal(true)
+        done()
+      })
+    })
+  })
+
+  // Start new round with admin for competitor B in competition mode
+  describe('Start a new round with admin in competition mode, for team B',
+  function() {
+    it('should create a resource with the correct permissions', function(done) {
+      // create a round in competition mode
+      let roundId
+      let socAdmin = createSocket(srcAdminToken)
+      socAdmin.on('connect', function() {
+        agent
+        .post('/srcrounds')
+        .set('Accept', 'application/json')
+        .set('authorization', srcAdminToken)
+        .send({
+          'dockerurl': dockerUrl,
+          'team': teamB,
+          'simulator': simData,
+          'fieldcomputer': fcData
+        })
+        .end(function(err,res) {
+          res.status.should.be.equal(200)
+          let response = getResponse(res)
+          response.success.should.equal(true)
+          roundId = response.id
+        })
+      })
+      socAdmin.on('resource', res => {
+        if (res.operation === 'update' && res.resource.indexOf('src') >= 0) {
+          roundId.should.not.be.empty()
+          res.resource.should.equal(roundId)
+          socAdmin.disconnect()
+          socAdmin.close()
+          done()
+        }
+      })
+    })
+  })
+
+  let compRoundB
+  let compRoundBSimSsh
+  let compRoundBFCSsh
+  // Competitor B should be able to see round data in competition mode
+  describe('Get rounds with competitor B in competition mode', function() {
+    it('should be able to see round resource', function(done) {
+      agent
+      .get('/srcrounds')
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.success.should.equal(true)
+        response.requester.should.equal(competitorB)
+        response.result.length.should.equal(1)
+
+        // Round data
+        compRoundB = response.result[0].name
+        compRoundB.indexOf('srcround').should.be.above(-1)
+
+        // competition data permission
+        // secure data are hidden
+        should.not.exist(response.result[0].data.secure)
+        // resource permissions are hidden
+        should.not.exist(response.result[0].permissions)
+        // only public data are avaialble
+        should.exist(response.result[0].data.public)
+
+        // ssh data
+        should.exist(response.result[0].data.simulator_ssh)
+        should.exist(response.result[0].data.fieldcomputer_ssh)
+        compRoundBSimSsh = response.result[0].data.simulator_ssh
+        compRoundBFCSsh = response.result[0].data.fieldcomputer_ssh
+
+        response.result[0].data.dockerurl.should.equal(dockerUrl)
+        response.result[0].data.team.should.equal(teamB)
+
+        done()
+      })
+    })
+  })
+
+  // Simulator started by admin so competitor B should not be able to download
+  // the ssh key in competition mode
+  describe('Check download simulator SSH keys with competitor B',
+  function() {
+    it('should not be able to download ssh keys in competition mode',
+    function(done) {
+      let sshId = compRoundBSimSsh.substring(
+        compRoundBSimSsh.lastIndexOf('/')+1)
+      sshId.should.not.be.empty()
+      agent
+      .get('/sshkeys/' + sshId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(401)
+        done()
+      })
+    })
+  })
+
+  // Field computer started by admin so competitor B should not be able to
+  // download the ssh key in competition mode
+  describe('Check download field computer SSH keys with competitor B',
+  function() {
+    it('should not be able to download ssh keys in competition mode',
+    function(done) {
+      let sshId = compRoundBFCSsh.substring(
+        compRoundBFCSsh.lastIndexOf('/')+1)
+      sshId.should.not.be.empty()
+      agent
+      .get('/sshkeys/' + sshId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(401)
+        done()
+      })
+    })
+  })
+
+  // Admin should be able to download simulator ssh key
+  describe('Check download simulator SSH keys with admin',
+  function() {
+    it('should be able to download ssh keys', function(done) {
+      let sshId = compRoundBSimSsh.substring(
+        compRoundBSimSsh.lastIndexOf('/')+1)
+      sshId.should.not.be.empty()
+      agent
+      .get('/sshkeys/' + sshId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Admin should be able to download field computer ssh key
+  describe('Check download field computer SSH keys with admin',
+  function() {
+    it('should be able to download ssh keys',
+    function(done) {
+      let sshId = compRoundBFCSsh.substring(
+        compRoundBFCSsh.lastIndexOf('/')+1)
+      sshId.should.not.be.empty()
+      agent
+      .get('/sshkeys/' + sshId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Competitor B should not be able to delete round in competition mode
+  describe('Delete round B with competitor B', function() {
+    it('should not be successful', function(done) {
+      agent
+      .delete('/srcrounds/' + compRoundB)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(401)
+        let response = getResponse(res)
+        response.success.should.equal(false)
+        done()
+      })
+    })
+  })
+
+  // Only admins can delete a round in competition mode
+  describe('Delete round with admin', function() {
+    it('should be successful', function(done) {
+      agent
+      .delete('/srcrounds/' + compRoundB)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.success.should.equal(true)
+        done()
+      })
+    })
+  })
+
   // after all tests have run, we need to clean up our mess
   after(function(done) {
     csgrant.model.clearDb()
@@ -636,5 +1010,4 @@ describe('<Unit test SRC rounds>', function() {
       done()
     })
   })
-
 })
