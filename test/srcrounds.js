@@ -814,6 +814,23 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
+  // Post as admin to set practice mode to false
+  describe('Get SRC competiton mode', function() {
+    it('should be able to see mode changed', function(done) {
+      // post to set practice to false
+      agent
+      .get('/srcrounds_practice')
+      .set('Accept', 'application/json')
+      .set('authorization', adminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.practice.should.equal(false)
+        done()
+      })
+    })
+  })
+
   // Start new round with admin for competitor B in competition mode
   describe('Start a new round with admin in competition mode, for team B',
   function() {
@@ -852,7 +869,7 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   let compRoundB
-
+  let compFCBId
   // Competitor B should be able to see round data in competition mode
   describe('Get rounds with competitor B in competition mode', function() {
     it('should be able to see round resource', function(done) {
@@ -878,6 +895,9 @@ describe('<Unit test SRC rounds>', function() {
         should.not.exist(response.result[0].permissions)
         // only public data are avaialble
         should.exist(response.result[0].data.public)
+        should.exist(response.result[0].data.public.simulator_id)
+        should.exist(response.result[0].data.public.fieldcomputer_id)
+        compFCBId = response.result[0].data.public.fieldcomputer_id
 
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamB)
@@ -887,9 +907,27 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
+  describe('Get field computer with competitor B in competiton mode',
+  function() {
+    it('should be possible to see the field computer resource', function(done) {
+      const route = '/simulators/' + compFCBId
+      agent
+      .get(route)
+      .set('authorization', competitorBToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        const r = getResponse(res)
+        r.result.data.id.should.equal(compFCBId)
+        r.success.should.equal(true)
+        done()
+      })
+    })
+  })
+
   let compRoundBSimSsh
   let compRoundBFCSsh
-  // Competitor B should be able to see round data in competition mode
+  // Admin should be able to see round data in competition mode
   describe('Get rounds with admin in competition mode', function() {
     it('should be able to see round resource', function(done) {
       agent
@@ -924,7 +962,6 @@ describe('<Unit test SRC rounds>', function() {
       })
     })
   })
-
 
   // Simulator started by admin so competitor B should not be able to download
   // the ssh key in competition mode

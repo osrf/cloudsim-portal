@@ -353,6 +353,17 @@ function setRoutes(app) {
       res.status(200).jsonp({success: true})
       return
     })
+
+  // Get practice mode - to be used by admin only
+  app.get('/srcrounds_practice',
+    csgrant.authenticate,
+    function(req, res) {
+      if (req.user !== adminUser) {
+        res.status(403).jsonp({error: 'Access Forbidden'})
+        return
+      }
+      return res.jsonp({practice: practice})
+    })
 }
 
 // Create an instance and generate ssh keys. The src-admins will be granted
@@ -396,7 +407,7 @@ const createInstance = function(user, team, teamPerm, keyName, resource, cb) {
               return
             }
             // Give team write access to instance only during practice
-            csgrant.grantPermission(user, srcAdmin, simResp.id,
+            csgrant.grantPermission(user, team, simResp.id,
             teamPerm, function(err) {
               if (err) {
                 cb(err)
@@ -423,6 +434,8 @@ const terminateInstance = function(user, machineInfo, term, cb) {
 
 // generate vpn key by posting to the keys server
 const generateVpnKey = function(userToken, keyName, grantee, cb) {
+  // skip vpn key generation if url is not specified.
+  // This is mainly used in tests
   if (!keysurl) {
     cb({id: 'vpn_key'})
     return
