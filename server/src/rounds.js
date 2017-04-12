@@ -66,8 +66,14 @@ function setRoutes(app) {
         let error = {error: {
           msg: 'Only SRC admins or competitors can start rounds.'
         }}
-        res.status(403).jsonp(error)
-        return
+        return res.status(403).jsonp(error)
+      }
+
+      if (!practice && !isAdmin) {
+        let error = {error: {
+          msg: 'Only SRC admins can start rounds in competition mode.'
+        }}
+        return res.status(403).jsonp(error)
       }
 
       // Get round data

@@ -831,6 +831,29 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
+  // Start new round with competitor B in competition mode
+  describe('Start a new round with team B in competition mode',
+  function() {
+    it('should not be able for competitor B to start new round',
+    function(done) {
+      // create a round in competition mode
+      agent
+      .post('/srcrounds')
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .send({
+        'dockerurl': dockerUrl,
+        'team': teamB,
+        'simulator': simData,
+        'fieldcomputer': fcData
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(403)
+        done()
+      })
+    })
+  })
+
   // Start new round with admin for competitor B in competition mode
   describe('Start a new round with admin in competition mode, for team B',
   function() {
