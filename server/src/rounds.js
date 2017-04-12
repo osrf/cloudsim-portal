@@ -202,7 +202,7 @@ function setRoutes(app) {
                   getInstanceIp(req.user, simId,
                   instanceIpUpdateInterval+10, 10, (err, server_ip) => {
                     if (err) {
-                      console.log (JSON.stringify(err))
+                      console.log (JSON.stringify(err, null, 2))
                       return
                     }
                     // Create field computer
@@ -227,7 +227,7 @@ function setRoutes(app) {
                     createInstance(req.user, resourceData.team, !practice,
                     clientSshkeyName, fieldcomputer, (resp) => {
                       if (resp.error) {
-                        console.log(JSON.stringify(resp.error))
+                        console.log(JSON.stringify(resp.error, null, 2))
                         return
                       }
                       const fcId = resp.id
@@ -251,7 +251,7 @@ function setRoutes(app) {
                       (err) => {
                         if (err) {
                           console.log('Update round error: ' +
-                            JSON.stringify(err))
+                            JSON.stringify(err, null, 2))
                           return
                         }
                       })
@@ -345,7 +345,7 @@ function setRoutes(app) {
         res.status(403).jsonp({error: 'Access Forbidden'})
         return
       }
-      if (req.body.practice == "undefined") {
+      if (!req.body.hasOwnProperty('practice')) {
         res.status(400).jsonp({error: 'Missing required field'})
         return
       }
