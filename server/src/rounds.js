@@ -309,14 +309,14 @@ function setRoutes(app) {
         // cloudsim-sim using the src-admins token after uploading the logs
         terminateInstance(user, simulatorData, practice, (resp) => {
           if (resp.error) {
-            json.status(500).resp(resp)
+            res.status(500).resp(resp)
             return
           }
 
           // Terminate field computer
           terminateInstance(user, fieldcomputerData, practice, (resp) => {
             if (resp.error) {
-              json.status(500).resp(resp)
+              res.status(500).resp(resp)
               return
             }
 
