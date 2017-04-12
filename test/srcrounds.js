@@ -679,6 +679,23 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
+  // Competitor B should not be able to download team A's simulator ssh keys
+  describe('Check download team A\'s simulator SSH keys with competitor B',
+  function() {
+    it('should not be authorized', function(done) {
+      let sshId = roundASimSsh.substring(roundASimSsh.lastIndexOf('/')+1)
+      sshId.should.not.be.empty()
+      agent
+      .get('/sshkeys/' + sshId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(401)
+        done()
+      })
+    })
+  })
+
   // Simulator started by admin but competitor B should still be able to
   // download the ssh key during practice
   describe('Check download simulator SSH keys with competitor B',
@@ -794,10 +811,55 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   // Test in competition mode
-  // Post as admin to set practice mode to false
   describe('Set SRC competiton mode', function() {
-    it('should be able to change mode', function(done) {
-      // post to set practice to false
+
+    // Post as competitor to set practice mode to false
+    it('should not be possible for a competitor to change mode', function(done) {
+      agent
+      .post('/srcrounds_practice')
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .send({
+        'practice': false
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(403)
+        done()
+      })
+    })
+
+    // Post as SRC admin to set practice mode to false
+    it('should not be possible for an SRC admin to change mode', function(done) {
+      agent
+      .post('/srcrounds_practice')
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .send({
+        'practice': false
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(403)
+        done()
+      })
+    })
+
+    // Post as admin missing required fields
+    it('should fail to change mode with malformed request', function(done) {
+      agent
+      .post('/srcrounds_practice')
+      .set('Accept', 'application/json')
+      .set('authorization', adminToken)
+      .send({
+        'banana': false
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(400)
+        done()
+      })
+    })
+
+    // Post as admin to set practice mode to false
+    it('should be possible for Cloudsim admin to change mode', function(done) {
       agent
       .post('/srcrounds_practice')
       .set('Accept', 'application/json')
@@ -950,18 +1012,18 @@ describe('<Unit test SRC rounds>', function() {
 
   let compRoundBSimSsh
   let compRoundBFCSsh
-  // Admin should be able to see round data in competition mode
+  // Admins should be able to see round data in competition mode
   describe('Get rounds with admin in competition mode', function() {
     it('should be able to see round resource', function(done) {
       agent
       .get('/srcrounds')
       .set('Accept', 'application/json')
-      .set('authorization', srcAdminToken)
+      .set('authorization', srcAdmin2Token)
       .end(function(err,res) {
         res.status.should.be.equal(200)
         let response = getResponse(res)
         response.success.should.equal(true)
-        response.requester.should.equal(srcAdmin)
+        response.requester.should.equal(srcAdmin2)
         response.result.length.should.equal(1)
 
         // Round data
