@@ -157,6 +157,21 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
+  describe('Try to launch a custom machine with a competitor', function() {
+    it('should not be possible to launch a simulator outside of the SRC context',
+      function(done) {
+        agent
+        .post('/simulators')
+        .set('Acccept', 'application/json')
+        .set('authorization', competitorAToken)
+        .send(simData)
+        .end(function(err,res){
+          res.status.should.be.equal(401);
+          done();
+        });
+      });
+  });
+
   describe('Check initial rounds with admin', function() {
     it('should be empty', function(done) {
       agent
@@ -876,7 +891,7 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
-  // Post as admin to set practice mode to false
+  // Get practice mode with CloudSim admin
   describe('Get SRC competiton mode', function() {
     it('should be able to see mode changed', function(done) {
       // post to set practice to false
@@ -1005,6 +1020,20 @@ describe('<Unit test SRC rounds>', function() {
         const r = getResponse(res)
         r.result.data.id.should.equal(compFCBId)
         r.success.should.equal(true)
+        done()
+      })
+    })
+  })
+
+  describe('Terminate field computer with competitor B in competiton mode',
+  function() {
+    it('should not be possible', function(done) {
+      const route = '/simulators/' + compFCBId
+      agent
+      .delete(route)
+      .set('authorization', competitorBToken)
+      .end(function(err,res){
+        res.status.should.be.equal(401);
         done()
       })
     })
