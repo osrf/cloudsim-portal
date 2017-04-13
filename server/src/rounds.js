@@ -206,7 +206,7 @@ function setRoutes(app) {
                   // computer instance as we need to pass the ip onto the
                   // fieldcomputer via options
                   getInstanceIp(req.user, simId,
-                  instanceIpUpdateInterval+10, 10, (err, server_ip) => {
+                  instanceIpUpdateInterval+10, 100, (err, server_ip) => {
                     if (err) {
                       console.log (JSON.stringify(err, null, 2))
                       return
@@ -309,14 +309,14 @@ function setRoutes(app) {
         // cloudsim-sim using the src-admins token after uploading the logs
         terminateInstance(user, simulatorData, practice, (resp) => {
           if (resp.error) {
-            res.status(500).resp(resp)
+            res.status(500).jsonp(resp)
             return
           }
 
           // Terminate field computer
           terminateInstance(user, fieldcomputerData, practice, (resp) => {
             if (resp.error) {
-              res.status(500).resp(resp)
+              res.status(500).jsonp(resp)
               return
             }
 
