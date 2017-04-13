@@ -80,6 +80,15 @@ function setRoutes(app) {
         return res.status(403).jsonp(error)
       }
 
+      // Admin must specify a team
+      if (isAdmin && !resourceData.team) {
+        let error = {error: {
+          msg: 'Admin must specify a team to create a round.'
+        }}
+        res.status(400).jsonp(error)
+        return
+      }
+
       // Add secure and public fields
       // These will be populated as we create other resources below
       resourceData.secure = {}

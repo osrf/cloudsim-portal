@@ -598,6 +598,30 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
+  let roundAforB
+  describe('Start a round for B with competitor A', function() {
+    it('should start a round for A, not B', function(done) {
+      agent
+      .post('/srcrounds')
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .send({
+        'dockerurl': dockerUrl,
+        'team': teamB,
+        'simulator': simData,
+        'fieldcomputer': fcData
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.success.should.equal(true)
+        response.result.data.team.should.equal(teamA)
+        roundAforB = response.id
+        done()
+      })
+    })
+  })
+
   describe('Get rounds with competitor A', function() {
     it('should not see team B round', function(done) {
       agent
@@ -608,8 +632,9 @@ describe('<Unit test SRC rounds>', function() {
         res.status.should.be.equal(200)
         let response = getResponse(res)
         response.success.should.equal(true)
-        response.result.length.should.equal(1)
+        response.result.length.should.equal(2)
         response.result[0].data.team.should.equal(teamA)
+        response.result[1].data.team.should.equal(teamA)
         done()
       })
     })
@@ -767,6 +792,19 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
+  describe('Delete another round A with competitor A', function() {
+    it('should delete successfully', function(done) {
+      agent
+      .delete('/srcrounds/' + roundAforB)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
   describe('Delete round B with competitor B', function() {
     it('should be successful', function(done) {
       agent
@@ -843,42 +881,6 @@ describe('<Unit test SRC rounds>', function() {
         })
       })
 
-  })
-
-  describe('Start a round for B with competitor A', function() {
-    it('should start a round for A, not B', function(done) {
-      agent
-      .post('/srcrounds')
-      .set('Accept', 'application/json')
-      .set('authorization', competitorAToken)
-      .send({
-        'dockerurl': dockerUrl,
-        'team': teamB,
-        'simulator': simData,
-        'fieldcomputer': fcData
-      })
-      .end(function(err,res) {
-        res.status.should.be.equal(200)
-        let response = getResponse(res)
-        response.success.should.equal(true)
-        response.result.data.team.should.equal(teamA)
-        roundA = response.id
-        done()
-      })
-    })
-  })
-
-  describe('Delete round A with competitor A', function() {
-    it('should delete successfully', function(done) {
-      agent
-      .delete('/srcrounds/' + roundA)
-      .set('Accept', 'application/json')
-      .set('authorization', competitorAToken)
-      .end(function(err,res) {
-        res.status.should.be.equal(200)
-        done()
-      })
-    })
   })
 
   // Test in competition mode
