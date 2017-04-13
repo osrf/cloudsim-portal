@@ -232,6 +232,11 @@ describe('<Unit test SRC rounds>', function() {
       .post('/srcrounds')
       .set('Accept', 'application/json')
       .set('authorization', notCompetitorToken)
+      .send({
+        'dockerurl': dockerUrl,
+        'simulator': simData,
+        'fieldcomputer': fcData
+      })
       .end(function(err,res) {
         res.status.should.be.equal(403)
         done()
@@ -593,25 +598,9 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
-  describe('Get rounds with competitor A', function() {
-    it('should not see team B round', function(done) {
-      agent
-      .get('/srcrounds')
-      .set('Accept', 'application/json')
-      .set('authorization', competitorAToken)
-      .end(function(err,res) {
-        res.status.should.be.equal(200)
-        let response = getResponse(res)
-        response.success.should.equal(true)
-        response.result.length.should.equal(1)
-        response.result[0].data.team.should.equal(teamA)
-        done()
-      })
-    })
-  })
-
+  let roundAforB
   describe('Start a round for B with competitor A', function() {
-    it('should not be authorized', function(done) {
+    it('should start a round for A, not B', function(done) {
       agent
       .post('/srcrounds')
       .set('Accept', 'application/json')
@@ -623,7 +612,29 @@ describe('<Unit test SRC rounds>', function() {
         'fieldcomputer': fcData
       })
       .end(function(err,res) {
-        res.status.should.be.equal(403)
+        res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.success.should.equal(true)
+        response.result.data.team.should.equal(teamA)
+        roundAforB = response.id
+        done()
+      })
+    })
+  })
+
+  describe('Get rounds with competitor A', function() {
+    it('should not see team B round', function(done) {
+      agent
+      .get('/srcrounds')
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.success.should.equal(true)
+        response.result.length.should.equal(2)
+        response.result[0].data.team.should.equal(teamA)
+        response.result[1].data.team.should.equal(teamA)
         done()
       })
     })
@@ -776,6 +787,19 @@ describe('<Unit test SRC rounds>', function() {
         res.status.should.be.equal(200)
         let response = getResponse(res)
         response.success.should.equal(true)
+        done()
+      })
+    })
+  })
+
+  describe('Delete another round A with competitor A', function() {
+    it('should delete successfully', function(done) {
+      agent
+      .delete('/srcrounds/' + roundAforB)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
         done()
       })
     })

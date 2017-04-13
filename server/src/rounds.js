@@ -1,5 +1,6 @@
 'use strict'
 
+const parameters = require('parameters-middleware')
 const request = require('request')
 const csgrant = require('cloudsim-grant')
 const common = require('../common')
@@ -40,9 +41,14 @@ function setRoutes(app) {
   // Start a new round
   app.post('/srcrounds',
     csgrant.authenticate,
+    parameters(
+      {body : ['dockerurl', 'fieldcomputer', 'simulator']},
+      {message : 'Missing required fields.'}
+    ),
     function(req, res) {
 
-      let team
+      // Get round data
+      const resourceData = req.body
 
       // Check if user is allowed to start rounds
       let isAdmin = false
@@ -51,16 +57,14 @@ function setRoutes(app) {
 
       // competitor starts with capital SRC prefix
       let isCompetitor = false
-      req.identities.forEach(function(id){
-        if (id.indexOf("SRC-") > -1) {
-          team = id
-          isCompetitor = true
-        }
-      })
-
-      // If both admin and competitor, be only admin
-      if (isAdmin)
-        isCompetitor = false
+      if (!isAdmin) {
+        req.identities.forEach(function(id){
+          if (id.indexOf("SRC-") > -1) {
+            resourceData.team = id
+            isCompetitor = true
+          }
+        })
+      }
 
       if (!isAdmin && !isCompetitor) {
         let error = {error: {
@@ -76,28 +80,10 @@ function setRoutes(app) {
         return res.status(403).jsonp(error)
       }
 
-      // Get round data
-      const resourceData = req.body
-
-      // A competitor can't start a round for another team
-      if (isCompetitor && resourceData.team != undefined &&
-      resourceData.team != team) {
+      // Admin must specify a team
+      if (isAdmin && !resourceData.team) {
         let error = {error: {
-          msg: 'Attempting to create a round for another team.'
-        }}
-        res.status(403).jsonp(error)
-        return
-      }
-
-      // Fill team
-      if (isCompetitor)
-        resourceData.team = team
-
-      // Check data is complete
-      if (!resourceData.dockerurl || !resourceData.team ||
-          !resourceData.fieldcomputer || !resourceData.simulator) {
-        let error = {error: {
-          msg: 'Missing required fields.'
+          msg: 'Admin must specify a team to create a round.'
         }}
         res.status(400).jsonp(error)
         return

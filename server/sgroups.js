@@ -1,6 +1,7 @@
 'use strict';
 
 /// Module dependencies.
+const parameters = require('parameters-middleware');
 var csgrant = require('cloudsim-grant');
 const common = require('./common')
 
@@ -33,17 +34,6 @@ const create = function(req, res) {
   }
 
   const sgroupName = req.body.resource;
-
-  if (!sgroupName)
-  {
-    error = {
-      success: false,
-      error: 'Missing required fields (resource)'
-    }
-    console.log(error.error)
-    res.jsonp(error);
-    return;
-  }
 
   // get unique resource id
   csgrant.getNextResourceId('sgroup', (err, resourceName) => {
@@ -299,6 +289,10 @@ exports.setRoutes = function(app) {
   app.post('/sgroups',
               csgrant.authenticate,
               csgrant.ownsResource('sgroups', false),
+              parameters(
+                {body : ['resource']},
+                {message : 'Missing required field (resource).'}
+              ),
               create);
 
   /// Get a list of security groups

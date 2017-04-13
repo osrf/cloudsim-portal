@@ -43,7 +43,6 @@ function parseResponse(res, log) {
   }
   catch (e) {
     console.log(text)
-    throw e
   }
   if(log){
     console.log('======== status:', res.status,'==========')
@@ -83,7 +82,7 @@ describe('<Unit test Machine types>', function() {
         name: 'test-1',
         region: 'us-west-1',
         hardware: 'hard',
-        software: 'soft'
+        image: 'soft'
       })
       .end(function(err,res) {
         const response = parseResponse(res, res.status != 200)
@@ -115,7 +114,7 @@ describe('<Unit test Machine types>', function() {
         response.result[0].data.name.should.equal('test-1')
         response.result[0].data.region.should.equal('us-west-1')
         response.result[0].data.hardware.should.equal('hard')
-        response.result[0].data.software.should.equal('soft')
+        response.result[0].data.image.should.equal('soft')
         done()
       })
     })
@@ -130,7 +129,6 @@ describe('<Unit test Machine types>', function() {
       .set('authorization', adminToken)
       .send({
         region: 'us-east-1'
-
       })
       .end(function(err,res){
         res.status.should.be.equal(200)
@@ -160,7 +158,7 @@ describe('<Unit test Machine types>', function() {
         response.result[0].data.name.should.equal('test-1')
         response.result[0].data.region.should.equal('us-east-1')
         response.result[0].data.hardware.should.equal('hard')
-        response.result[0].data.software.should.equal('soft')
+        response.result[0].data.image.should.equal('soft')
         done()
       })
     })
@@ -198,6 +196,25 @@ describe('<Unit test Machine types>', function() {
         response.success.should.equal(true)
         response.requester.should.equal(admin)
         response.result.length.should.equal(0)
+        done()
+      })
+    })
+  })
+
+  describe('Create machine type with wrong parameters', function() {
+    it('should not be possible to create a machine type', function(done) {
+      agent
+      .post('/machinetypes')
+      .set('Accept', 'application/json')
+      .set('authorization', adminToken)
+      .send({
+        name: 'test-1',
+        region: 'us-west-1',
+        hardware: 'hard',
+        software: 'soft'
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(400)
         done()
       })
     })
