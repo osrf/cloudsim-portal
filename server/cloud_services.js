@@ -445,7 +445,7 @@ date > $logpath
 echo "writing $fullpath file" >> $logpath
 
 # This script is generated as part of the cloud-init when the ec2 instance is
-# launched. However it is too early at that tim to launch the container because
+# launched. However it is too early at that time to launch the container because
 # the docker daemon is not running yet.
 # see cloudsim-portal/docker_cloudsim_env.bash for the source code
 # A custom upstart service running on the host will source this script
