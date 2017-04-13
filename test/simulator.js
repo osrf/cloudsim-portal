@@ -82,7 +82,6 @@ describe('<Simulator controller test>', function() {
     const keys = csgrant.token.generateKeys()
     csgrant.token.initKeys(keys.public, keys.private)
     csgrant.token.signToken(userTokenData, (e, tok)=>{
-      console.log('token signed for user "' + userTokenData.identities[0]  + '"')
       if(e) {
         should.fail('sign error: ' + e)
       }
@@ -94,7 +93,6 @@ describe('<Simulator controller test>', function() {
 
   before(function(done) {
     csgrant.token.signToken(user2TokenData, (e, tok)=>{
-      console.log('token signed for "user2"')
       if(e) {
         should.fail('sign error: ' + e)
       }
@@ -638,7 +636,7 @@ describe('<Simulator controller test>', function() {
         text.result.permissions[teamA].readOnly.should.equal(true);
         done();
       });
-    });    
+    });
     it('competitorA should NOT be able to launch another simulator due to exhausted balance', function(done) {
       agent
       .post('/simulators')
@@ -1282,7 +1280,6 @@ describe('<Simulator controller test>', function() {
 
   // after all tests have run, we need to clean up our mess
   after(function(done) {
-    console.log('after everything')
     csgrant.model.clearDb()
     app.close(function() {
       clearRequire.all()
