@@ -343,6 +343,8 @@ describe('<Unit test SRC rounds>', function() {
 
   let roundDebug
   let roundA
+  let practiceSimIdDebug
+  let practiceFCIdDebug
   describe('Get rounds with admin', function() {
     it('should have two rounds and full access to secure data', function(done) {
       agent
@@ -369,7 +371,9 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.secure.simulator_machine_id)
         should.exist(response.result[0].data.secure.fieldcomputer_machine_id)
         should.exist(response.result[0].data.public.simulator_id)
+        practiceSimIdDebug = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
+        practiceFCIdDebug = response.result[0].data.public.fieldcomputer_id
 
         response.result[0].permissions.length.should.equal(2)
         response.result[0].permissions[0].username.should.equal(
@@ -825,6 +829,36 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
+  describe('Get deleted resources with admin', function() {
+
+    it('should check that simulator machine is terminated',
+      function(done) {
+        agent
+        .get('/simulators/' + practiceSimIdDebug)
+        .set('authorization', srcAdminToken)
+        .end(function(err,res){
+          res.status.should.be.equal(200)
+          const r = getResponse(res)
+          r.result.data.status.should.equal('TERMINATED');
+          done()
+        })
+      })
+
+    it('should check that field computer is terminated',
+      function(done) {
+        agent
+        .get('/simulators/' + practiceFCIdDebug)
+        .set('authorization', srcAdminToken)
+        .end(function(err,res){
+          res.status.should.be.equal(200)
+          const r = getResponse(res)
+          r.result.data.status.should.equal('TERMINATED');
+          done()
+        })
+      })
+
+  })
+
   // Test in competition mode
   describe('Set SRC competiton mode', function() {
 
@@ -969,6 +1003,7 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   let compRoundB
+  let compSimBId
   let compFCBId
   // Competitor B should be able to see round data in competition mode
   describe('Get rounds with competitor B in competition mode', function() {
@@ -996,6 +1031,7 @@ describe('<Unit test SRC rounds>', function() {
         // only public data are avaialble
         should.exist(response.result[0].data.public)
         should.exist(response.result[0].data.public.simulator_id)
+        compSimBId = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
         compFCBId = response.result[0].data.public.fieldcomputer_id
 
@@ -1184,6 +1220,36 @@ describe('<Unit test SRC rounds>', function() {
         done()
       })
     })
+  })
+
+  describe('Get machines with admin', function() {
+
+    it('should check that simulator machine is not terminated',
+      function(done) {
+        agent
+        .get('/simulators/' + compSimBId)
+        .set('authorization', srcAdminToken)
+        .end(function(err,res){
+          res.status.should.be.equal(200)
+          const r = getResponse(res)
+          r.result.data.status.should.equal('LAUNCHING');
+          done()
+        })
+      })
+
+    it('should check that field computer is not terminated',
+      function(done) {
+        agent
+        .get('/simulators/' + compFCBId)
+        .set('authorization', srcAdminToken)
+        .end(function(err,res){
+          res.status.should.be.equal(200)
+          const r = getResponse(res)
+          r.result.data.status.should.equal('LAUNCHING');
+          done()
+        })
+      })
+
   })
 
   // after all tests have run, we need to clean up our mess
