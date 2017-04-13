@@ -77,7 +77,7 @@ function setRoutes(app) {
       const newData = req.body
       console.log(' Update machine type: ' + resourceName)
       console.log(' new data: ' + JSON.stringify(newData))
-      const user = req.user
+      const user = req.authorizedIdentity
 
       const r = {success: false}
 

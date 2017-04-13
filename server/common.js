@@ -56,5 +56,16 @@ function redactFromResources(_prop) {
   }
 }
 
+// function to get portal url
+function portalUrl() {
+  const portalurl = process.env.CLOUDSIM_PORTAL_URL || 'http://localhost:'
+    + process.env.PORT;
+  return portalurl
+}
+
+// middle ware
 exports.filterResources = filterResources
 exports.redactFromResources = redactFromResources
+
+// general functions
+exports.portalUrl = portalUrl
