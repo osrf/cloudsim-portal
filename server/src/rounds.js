@@ -294,16 +294,20 @@ function setRoutes(app) {
         // During competition, the instances will be terminated by
         // cloudsim-sim using the src-admins token after uploading the logs
         terminateInstance(user, simulatorData, practice, (resp) => {
+          let simError
           if (resp.error) {
-            res.status(500).jsonp(resp)
-            return
+            console.log('Error terminating simulator: ' +
+              JSON.stringify(resp.error))
+            simError = resp.error
           }
 
           // Terminate field computer
           terminateInstance(user, fieldcomputerData, practice, (resp) => {
+            let fcError
             if (resp.error) {
-              res.status(500).jsonp(resp)
-              return
+              console.log('Error terminating field computer: ' +
+                JSON.stringify(resp.error))
+              fcError = resp.error
             }
 
             // delete srcround resource
@@ -315,7 +319,12 @@ function setRoutes(app) {
                 success: true,
                 result: data
               }
-
+              if (simError || fcError) {
+                r.error = {
+                  simulator: simError,
+                  fieldcomputer: fcError
+                }
+              }
               res.jsonp(r)
             })
           })
