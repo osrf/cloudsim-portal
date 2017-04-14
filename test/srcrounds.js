@@ -509,7 +509,6 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.fieldcomputer)
         should.not.exist(response.result[0].data.fieldcomputer.options)
 
-
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamA)
 
