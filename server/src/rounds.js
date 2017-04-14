@@ -229,6 +229,7 @@ function setRoutes(app) {
                       // populate resource data with more info
                       resourceData.public.simulator_id = simId
                       resourceData.public.fieldcomputer_id = fcId
+                      resourceData.public.vpn = clientVpnKeyUrl
                       resourceData.secure.simulator_ssh = simSsh
                       resourceData.secure.fieldcomputer_ssh = fcSsh
                       resourceData.secure.simulator_machine_id = simMachineId
