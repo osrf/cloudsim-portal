@@ -379,6 +379,7 @@ describe('<Unit test SRC rounds>', function() {
         practiceSimIdDebug = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
         practiceFCIdDebug = response.result[0].data.public.fieldcomputer_id
+        should.exist(response.result[0].data.public.vpn)
         should.exist(response.result[0].data.simulator)
         should.not.exist(response.result[0].data.simulator.options)
         should.exist(response.result[0].data.fieldcomputer)
@@ -407,6 +408,7 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[1].data.secure.fieldcomputer_machine_id)
         should.exist(response.result[1].data.public.simulator_id)
         should.exist(response.result[1].data.public.fieldcomputer_id)
+        should.exist(response.result[0].data.public.vpn)
         should.exist(response.result[1].data.simulator)
         should.not.exist(response.result[1].data.simulator.options)
         should.exist(response.result[1].data.fieldcomputer)
@@ -503,6 +505,7 @@ describe('<Unit test SRC rounds>', function() {
         roundAFCSsh = response.result[0].data.secure.fieldcomputer_ssh
         should.exist(response.result[0].data.public.simulator_id)
         should.exist(response.result[0].data.public.fieldcomputer_id)
+        should.exist(response.result[0].data.public.vpn)
         should.exist(response.result[0].data.simulator)
         should.not.exist(response.result[0].data.simulator.options)
         should.exist(response.result[0].data.fieldcomputer)
@@ -1070,6 +1073,7 @@ describe('<Unit test SRC rounds>', function() {
         compSimBId = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
         compFCBId = response.result[0].data.public.fieldcomputer_id
+        should.exist(response.result[0].data.public.vpn)
 
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamB)
@@ -1136,6 +1140,7 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.secure)
         should.exist(response.result[0].permissions)
         should.exist(response.result[0].data.public)
+        should.exist(response.result[0].data.public.vpn)
 
         // admins should be able to get ssh key data
         compRoundBSimSsh = response.result[0].data.secure.simulator_ssh
