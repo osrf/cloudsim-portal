@@ -179,7 +179,7 @@ function setRoutes(app) {
                     return
                   }
                   // remove simulator options data
-                  // delete simulator.options
+                  delete simulator.options
 
                   // respond without waiting for fc to be ready
                   res.jsonp(r)
@@ -235,7 +235,7 @@ function setRoutes(app) {
                       resourceData.secure.fieldcomputer_machine_id = fcMachineId
 
                       // remove fieldcompuer options data
-                      // delete fieldcomputer.options
+                      delete fieldcomputer.options
 
                       // save simulator and field computer id and ssh data
                       // this triggers websocket notifications
