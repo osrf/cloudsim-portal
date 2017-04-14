@@ -379,6 +379,10 @@ describe('<Unit test SRC rounds>', function() {
         practiceSimIdDebug = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
         practiceFCIdDebug = response.result[0].data.public.fieldcomputer_id
+        should.exist(response.result[0].data.simulator)
+        should.not.exist(response.result[0].data.simulator.options)
+        should.exist(response.result[0].data.fieldcomputer)
+        should.not.exist(response.result[0].data.fieldcomputer.options)
 
         response.result[0].permissions.length.should.equal(2)
         response.result[0].permissions[0].username.should.equal(
@@ -403,6 +407,11 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[1].data.secure.fieldcomputer_machine_id)
         should.exist(response.result[1].data.public.simulator_id)
         should.exist(response.result[1].data.public.fieldcomputer_id)
+        should.exist(response.result[1].data.simulator)
+        should.not.exist(response.result[1].data.simulator.options)
+        should.exist(response.result[1].data.fieldcomputer)
+        should.not.exist(response.result[1].data.fieldcomputer.options)
+
 
         response.result[1].permissions.length.should.equal(2)
         response.result[1].permissions[0].username.should.equal('src-admins')
@@ -495,6 +504,11 @@ describe('<Unit test SRC rounds>', function() {
         roundAFCSsh = response.result[0].data.secure.fieldcomputer_ssh
         should.exist(response.result[0].data.public.simulator_id)
         should.exist(response.result[0].data.public.fieldcomputer_id)
+        should.exist(response.result[0].data.simulator)
+        should.not.exist(response.result[0].data.simulator.options)
+        should.exist(response.result[0].data.fieldcomputer)
+        should.not.exist(response.result[0].data.fieldcomputer.options)
+
 
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamA)
