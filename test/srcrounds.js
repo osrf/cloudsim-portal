@@ -412,7 +412,6 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[1].data.fieldcomputer)
         should.not.exist(response.result[1].data.fieldcomputer.options)
 
-
         response.result[1].permissions.length.should.equal(2)
         response.result[1].permissions[0].username.should.equal('src-admins')
         response.result[1].permissions[0].permissions.readOnly.should.equal(
