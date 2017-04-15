@@ -1466,6 +1466,35 @@ describe('<Unit test SRC rounds>', function() {
 
   })
 
+  describe('Delete simulator machine type and try to start a round', function() {
+
+    it('should be possible to delete machine type', function(done) {
+      agent
+      .delete('/machinetypes/' + simMachineId)
+      .set('Accept', 'application/json')
+      .set('authorization', adminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+
+    it('should not be possible to start a round without official machine types', function(done) {
+      agent
+      .post('/srcrounds')
+      .set('Accept', 'application/json')
+      .set('authorization', adminToken)
+      .send({
+        'dockerurl': dockerUrl,
+        'team': teamA,
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(500)
+        done()
+      })
+    })
+  })
+
   // after all tests have run, we need to clean up our mess
   after(function(done) {
     csgrant.model.clearDb()

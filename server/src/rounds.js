@@ -53,8 +53,10 @@ function setRoutes(app) {
 
       // Check if user is allowed to start rounds
       let isAdmin = false
-      if (req.identities.indexOf(srcAdmin) >= 0)
+      if (req.identities.indexOf(srcAdmin) >= 0 ||
+          req.identities.indexOf(adminUser) >= 0) {
         isAdmin = true
+      }
 
       // competitor starts with capital SRC prefix
       let isCompetitor = false
@@ -89,6 +91,9 @@ function setRoutes(app) {
         res.status(400).jsonp(error)
         return
       }
+
+      // Create srcround resource
+      const operation = 'Start SRC round'
 
       // Machine types
       let simMachine
@@ -129,9 +134,6 @@ function setRoutes(app) {
       // These will be populated as we create other resources below
       resourceData.secure = {}
       resourceData.public = {}
-
-      // Create srcround resource
-      const operation = 'Start SRC round'
 
       csgrant.createResourceWithType(req.user, 'srcround', resourceData,
       (err, data, resourceName) => {
