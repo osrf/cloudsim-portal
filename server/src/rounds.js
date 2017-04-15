@@ -324,8 +324,9 @@ function setRoutes(app) {
                   simulator: simError,
                   fieldcomputer: fcError
                 }
+                return res.status(500).jsonp(r)
               }
-              res.jsonp(r)
+              return res.jsonp(r)
             })
           })
         })
