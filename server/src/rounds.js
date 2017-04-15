@@ -42,9 +42,10 @@ function setRoutes(app) {
   app.post('/srcrounds',
     csgrant.authenticate,
     parameters(
-      {body : ['dockerurl', 'fieldcomputer', 'simulator']},
+      {body : ['dockerurl']},
       {message : 'Missing required fields.'}
     ),
+    csgrant.userResources,
     function(req, res) {
 
       // Get round data
@@ -52,8 +53,10 @@ function setRoutes(app) {
 
       // Check if user is allowed to start rounds
       let isAdmin = false
-      if (req.identities.indexOf(srcAdmin) >= 0)
+      if (req.identities.indexOf(srcAdmin) >= 0 ||
+          req.identities.indexOf(adminUser) >= 0) {
         isAdmin = true
+      }
 
       // competitor starts with capital SRC prefix
       let isCompetitor = false
@@ -89,13 +92,48 @@ function setRoutes(app) {
         return
       }
 
+      // Create srcround resource
+      const operation = 'Start SRC round'
+
+      // Machine types
+      let simMachine
+      let fcMachine
+
+      // Find machine types
+      for (let r in req.userResources) {
+        let resource = req.userResources[r]
+        if (!resource.data.name)
+          continue
+        if (resource.data.name == "src-simulator")
+          simMachine = resource.data
+        if (resource.data.name == "src-fieldcomputer")
+          fcMachine = resource.data
+      }
+
+      // Only admin is able to override predefined machine types
+      if (isAdmin && resourceData.simulator)
+        simMachine = resourceData.simulator
+
+      if (isAdmin && resourceData.fieldcomputer)
+        fcMachine = resourceData.fieldcomputer
+
+      if (!simMachine || !fcMachine) {
+        let error = {
+          operation: operation,
+          success: false,
+          error: "Failed to get machine types."
+        }
+        res.status(500).jsonp(error)
+        return
+      }
+
+      resourceData.simulator = simMachine
+      resourceData.fieldcomputer = fcMachine
+
       // Add secure and public fields
       // These will be populated as we create other resources below
       resourceData.secure = {}
       resourceData.public = {}
-
-      // Create srcround resource
-      const operation = 'Start SRC round'
 
       csgrant.createResourceWithType(req.user, 'srcround', resourceData,
       (err, data, resourceName) => {
