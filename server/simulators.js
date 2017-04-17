@@ -155,21 +155,42 @@ const createImpl = function(user, opts, cb) {
               // console.log(simulator.id, 'launch!')
             })
 
-            setTimeout(function() {
-              cloudServices.simulatorStatus(info, function(err, state) {
-                // update resource (this triggers socket notification)
-                simulator.machine_ip = state.ip
-                simulator.aws_launch_time = state.launchTime
-                simulator.aws_creation_time = state.creationTime
-                csgrant.updateResource(user, simulator.id, simulator, ()=>{
-                  // console.log(simulator.id, 'ip:', simulator.machine_ip)
-                })
+            getInstanceIp(info, instanceIpUpdateInterval, 10, (err, state) => {
+              if (err) {
+                console.log(JSON.stringify(err))
+                return
+              }
 
+              // update resource (this triggers socket notification)
+              simulator.machine_ip = state.ip
+              simulator.aws_launch_time = state.launchTime
+              simulator.aws_creation_time = state.creationTime
+              csgrant.updateResource(user, simulator.id, simulator, ()=>{
+                // console.log(simulator.id, 'ip:', simulator.machine_ip)
               })
-            }, instanceIpUpdateInterval);
+            })
           })
       })
   })
+}
+
+// repeatedly poll machine_ip using cloud services
+const getInstanceIp = function(info, delay, maxRetry, cb) {
+  if (maxRetry < 0) {
+    return cb({error: 'Cannot get instance ip'}, null)
+  }
+
+  setTimeout(() => {
+    cloudServices.simulatorStatus(info, (err, state) => {
+      if (!state.ip) {
+        let retry = maxRetry-1
+        getInstanceIp(info, 1000, retry, cb)
+      }
+      else {
+        return cb(null, state)
+      }
+    })
+  }, delay)
 }
 
 function getUserFromResource(resource) {
