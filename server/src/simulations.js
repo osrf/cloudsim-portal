@@ -55,7 +55,7 @@ function setRoutes(app) {
 }
 
 
-// Create simulation da resource. The src-admins will be granted
+// Create simulation data resource. The src-admins will be granted
 //  write access. The team will have read access.
 const createSimulationData = function(user, team, resource, cb) {
   csgrant.createResourceWithType(user, 'srcsimulations', resource,
