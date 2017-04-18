@@ -1245,6 +1245,7 @@ describe('<Unit test SRC rounds>', function() {
   let compRoundB
   let compSimBId
   let compFCBId
+  let compBSimDataId
   // Competitor B should be able to see round data in competition mode
   describe('Get rounds with competitor B in competition mode', function() {
     it('should be able to see round resource', function(done) {
@@ -1275,6 +1276,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.public.fieldcomputer_id)
         compFCBId = response.result[0].data.public.fieldcomputer_id
         should.exist(response.result[0].data.public.vpn)
+        should.exist(response.result[0].data.public.simulation_data_id)
+        compBSimDataId = response.result[0].data.public.simulation_data_id
 
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamB)
@@ -1342,6 +1345,7 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].permissions)
         should.exist(response.result[0].data.public)
         should.exist(response.result[0].data.public.vpn)
+        should.exist(response.result[0].data.public.simulation_data_id)
 
         // admins should be able to get ssh key data
         compRoundBSimSsh = response.result[0].data.secure.simulator_ssh
@@ -1350,6 +1354,88 @@ describe('<Unit test SRC rounds>', function() {
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamB)
 
+        done()
+      })
+    })
+  })
+
+  // Admin should be able to see simulation data
+  describe('Check get competition B simulation data with admin',
+  function() {
+    it('should be able to get simulation data',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + compBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Competitor B should be able to see their own simulation data
+  describe('Check get competitor B\'s simulation data with competitor B',
+  function() {
+    it('should be able to get simulation data',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + compBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Competitor A should not be able to see competitor B's simulation data
+  describe('Check get competitor B\'s simulation data with competitor A',
+  function() {
+    it('should be able to get simulation data',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + compBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(401)
+        done()
+      })
+    })
+  })
+
+  // Admin should be able to update simulation data
+  describe('Check update competitor B\'s simulation data with admin',
+  function() {
+    it('should be able to update simulation data during competition',
+    function(done) {
+      agent
+      .put('/srcsimulations/' + compBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .send({myData: 'anyData'})
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Competitor should not be able to update simulation data during competition
+  describe('Check update competitor B\'s simulation data with competitor B',
+  function() {
+    it('should not be able to update simulation data during competition',
+    function(done) {
+      agent
+      .put('/srcsimulations/' + compBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .send({myData: 'anyData'})
+      .end(function(err,res) {
+        res.status.should.be.equal(401)
         done()
       })
     })
@@ -1433,7 +1519,7 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   // Admin should be able to see simulation data
-  describe('Check get simulation data with admin',
+  describe('Check get debug simulation data with admin',
   function() {
     it('should be able to get simulation data',
     function(done) {
@@ -1448,8 +1534,8 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
-  // Competitor A should be able to see simulation data
-  describe('Check get simulation data with competitor A',
+  // Competitor A should be able to see their own simulation data
+  describe('Check get competitor A\'s simulation data with competitor A',
   function() {
     it('should be able to get simulation data',
     function(done) {
@@ -1480,8 +1566,8 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
-  // Competitor B should be able to see simulation data
-  describe('Check get simulation data with competitor B',
+  // Competitor B should be able to see their own simulation data
+  describe('Check get competitor B\'s simulation data with competitor B',
   function() {
     it('should be able to get simulation data',
     function(done) {
@@ -1529,7 +1615,7 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   // Admin should be able to update simulation data
-  describe('Check update simulation data with admin',
+  describe('Check update debug simulation data with admin',
   function() {
     it('should be able to update simulation data',
     function(done) {
@@ -1557,7 +1643,7 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   // Competitor A should be able to update simulation data
-  describe('Check update simulation data with competitor A',
+  describe('Check update competitor A\'s simulation data with competitor A',
   function() {
     it('should be able to update simulation data',
     function(done) {

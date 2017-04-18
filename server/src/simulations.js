@@ -23,7 +23,7 @@ function setRoutes(app) {
   // Update simulation data
   app.put('/srcsimulations/:srcsimulation',
     csgrant.authenticate,
-    csgrant.ownsResource(':srcsimulation'),
+    csgrant.ownsResource(':srcsimulation', false),
     function(req, res) {
 
       const user = req.user
