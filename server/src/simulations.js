@@ -47,7 +47,7 @@ function setRoutes(app) {
     })
 
 
-  // srcround route parameter
+  // srcsimulation route parameter
   app.param('srcsimulation', function(req, res, next, id) {
     req.srcsimulation = id
     next()
@@ -56,7 +56,10 @@ function setRoutes(app) {
 
 
 // Create simulation data resource. The src-admins will be granted
-//  write access. The team will have read access.
+//  write access. The team will have read access. During practice, we don't
+// prevent the user from updating the data (e.g. score) since they are the owner
+// of the resource. In the final competition, src-admins will be the one
+// creating this resource so only they can update the data.
 const createSimulationData = function(user, team, resource, cb) {
   csgrant.createResourceWithType(user, 'srcsimulations', resource,
   (err, data, resourceName) => {
