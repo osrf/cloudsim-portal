@@ -85,18 +85,18 @@ function setRoutes(app) {
       const error = function(err) {
         res.status(500).jsonp({success: false, error: err})
       }
-      csgrant.deleteResource(user, resource, (err, data) => {
+      csgrant.deleteResource(user, resource, (err) => {
         if(err) {
           return error(err)
         }
         const region = cloudServices.awsDefaults.region
         // remove key from AWS
-        cloudServices.deleteKey(resource, region, (err)=> {
+        cloudServices.deleteKey(req.resourceData.data.keyName, region, (err)=> {
           if(err) {
             return error(err)
           }
           r.success = true
-          r.result = data
+          r.result = req.resourceData
           res.jsonp(r)
         })
       })
@@ -133,7 +133,7 @@ const createImpl = function(user, opts, cb) {
     }
     // generate the key using the resource name
     const region = cloudServices.awsDefaults.region
-    cloudServices.generateKey(resourceName, region, (err, sshkeyData )=>{
+    cloudServices.generateKey(keyName, region, (err, sshkeyData )=>{
       if (err) {
         return error(err)
       }
