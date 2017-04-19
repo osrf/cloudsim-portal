@@ -6,6 +6,7 @@ const csgrant = require('cloudsim-grant')
 const common = require('../common')
 const simulators = require('../simulators')
 const sshkeys = require('../sshkeys')
+const srcsimulations = require('./simulations')
 
 
 // global variables and settings
@@ -169,147 +170,166 @@ function setRoutes(app) {
           res.status(500).jsonp(error)
           return
         }
-        const r = {
-          success: true,
-          operation: operation,
-          result: data,
-          id: resourceName
-        }
 
-        // Give all admins write access to srcround
-        // This allows them to see secure information
-        csgrant.grantPermission(req.user, srcAdmin, r.id, false,
-        function(err) {
-          if (err) {
-            res.status(500).jsonp(err)
-            return
+        // create src simulation data that will keep track of
+        // application-specific data like scores, time remaining, etc
+        const simulationData = {srcround: resourceName}
+        srcsimulations.createSimulationData(req.user, resourceData.team,
+        simulationData, (dataResp) => {
+          if (dataResp.error)
+            return res.status(500).jsonp(dataResp.error)
+
+          const simDataId = dataResp.id
+          const simDataUrl = common.portalUrl() + '/srcsimulations/' +
+            simDataId
+
+          const r = {
+            success: true,
+            operation: operation,
+            result: data,
+            id: resourceName
           }
 
-          // Give team access to srcound
-          // This allows them to see "public" information
-          csgrant.grantPermission(req.user, resourceData.team, r.id, !practice,
+          // Give all admins write access to srcround
+          // This allows them to see secure information
+          csgrant.grantPermission(req.user, srcAdmin, r.id, false,
           function(err) {
             if (err) {
               res.status(500).jsonp(err)
               return
             }
 
-            // Revoke user permission, users should inherit permissions from
-            // teams
-            csgrant.revokePermission(req.user, req.user, r.id, false,
+            // Give team access to srcound
+            // This allows them to see "public" information
+            csgrant.grantPermission(req.user, resourceData.team, r.id, !practice,
             function(err) {
               if (err) {
                 res.status(500).jsonp(err)
                 return
               }
 
-              // post to keys server to generate server key
-              // this will return us the id of the vpn key resource
-              const userToken = req.headers.authorization
-              const vpnKeyName = resourceName + '_vpnkey'
-              generateVpnKey(userToken, vpnKeyName, resourceData.team,
-              (vpnKeyResp) => {
-                if (vpnKeyResp.error) {
-                  res.status(500).jsonp(vpnKeyResp)
+              // Revoke user permission, users should inherit permissions from
+              // teams
+              csgrant.revokePermission(req.user, req.user, r.id, false,
+              function(err) {
+                if (err) {
+                  res.status(500).jsonp(err)
                   return
                 }
 
-                // Create simulator
-                // the options will be passed to the simulator instance and
-                // used for downloading the vpn keys. Note:
-                // write permission is needed to download server vpn keys
-                const keyResourceId = vpnKeyResp.id
-                const serverVpnKeyUrl = keysurl + '/tap/src/server/'
-                    + keyResourceId
-                const serverSshkeyName = resourceName + '_sim_sshkey'
-                let simulator = resourceData.simulator
-                let options =  simulator.options || {}
-                options.role = 'simulator'
-                options.token = req.headers.authorization
-                options.route = serverVpnKeyUrl
-                options.subnet = '192.168.2'
-                options.resources = simResources
-                simulator.options = options
-
-                // create sim instance using user identity and share with team
-                // During practice, the user and team will have write access
-                // that lets them download ssh key and terminate the instances
-                createInstance(req.user, resourceData.team, !practice,
-                serverSshkeyName, simulator, (resp) => {
-                  if (resp.error) {
-                    res.status(500).jsonp(resp)
+                // post to keys server to generate server key
+                // this will return us the id of the vpn key resource
+                const userToken = req.headers.authorization
+                const vpnKeyName = resourceName + '_vpnkey'
+                generateVpnKey(userToken, vpnKeyName, resourceData.team,
+                (vpnKeyResp) => {
+                  if (vpnKeyResp.error) {
+                    res.status(500).jsonp(vpnKeyResp)
                     return
                   }
-                  // remove simulator options data
-                  delete simulator.options
 
-                  // respond without waiting for fc to be ready
-                  res.jsonp(r)
+                  // Create simulator
+                  // the options will be passed to the simulator instance and
+                  // used for downloading the vpn keys. Note:
+                  // write permission is needed to download server vpn keys
+                  const keyResourceId = vpnKeyResp.id
+                  const serverVpnKeyUrl = keysurl + '/tap/src/server/'
+                      + keyResourceId
+                  const serverSshkeyName = resourceName + '_sim_sshkey'
+                  let simulator = resourceData.simulator
+                  let options =  simulator.options || {}
+                  options.role = 'simulator'
+                  options.token = req.headers.authorization
+                  options.route = serverVpnKeyUrl
+                  options.subnet = '192.168.2'
+                  options.resources = simResources
+                  // route to post back sim data
+                  options.simulation_data_route = simDataUrl
 
-                  const simId = resp.id
-                  const simSsh = resp.ssh
-                  const simMachineId = resp.machine_id
+                  simulator.options = options
 
-                  // wait till simulator has its ip before creating the field
-                  // computer instance as we need to pass the ip onto the
-                  // fieldcomputer via options
-                  getInstanceIp(req.user, simId,
-                  instanceIpUpdateInterval+10, 100, (err, server_ip) => {
-                    if (err) {
-                      console.log (JSON.stringify(err, null, 2))
+                  // create sim instance using user identity and share with team
+                  // During practice, the user and team will have write access
+                  // that lets them download ssh key and terminate the instances
+                  createInstance(req.user, resourceData.team, !practice,
+                  serverSshkeyName, simulator, (resp) => {
+                    if (resp.error) {
+                      res.status(500).jsonp(resp)
                       return
                     }
-                    // Create field computer
-                    // the options will be passed to the fieldcomputer
-                    // instance and used for downloading the vpn keys. Note:
-                    // onlyread permission is needed to download client vpn
-                    // keys
-                    const clientSshkeyName = resourceName + '_fc_sshkey'
-                    const clientVpnKeyUrl = keysurl + '/tap/src/client/'
-                        + keyResourceId
-                    let fieldcomputer = resourceData.fieldcomputer
-                    options = fieldcomputer.options || {}
-                    options.role = 'fieldcomputer'
-                    options.token = userToken
-                    options.server_ip = server_ip
-                    options.client_id = 'fieldcomputer'
-                    options.client_route = clientVpnKeyUrl
-                    options.dockerurl = resourceData.dockerurl
-                    options.resources = simResources
-                    fieldcomputer.options = options
-                    // create fc instance using user identity and share with
-                    // team
-                    createInstance(req.user, resourceData.team, !practice,
-                    clientSshkeyName, fieldcomputer, (resp) => {
-                      if (resp.error) {
-                        console.log(JSON.stringify(resp.error, null, 2))
+                    // remove simulator options data
+                    delete simulator.options
+
+                    // respond without waiting for fc to be ready
+                    res.jsonp(r)
+
+                    const simId = resp.id
+                    const simSsh = resp.ssh
+                    const simMachineId = resp.machine_id
+
+                    // wait till simulator has its ip before creating the field
+                    // computer instance as we need to pass the ip onto the
+                    // fieldcomputer via options
+                    getInstanceIp(req.user, simId,
+                    instanceIpUpdateInterval+10, 100, (err, server_ip) => {
+                      if (err) {
+                        console.log (JSON.stringify(err, null, 2))
                         return
                       }
-                      const fcId = resp.id
-                      const fcSsh = resp.ssh
-                      const fcMachineId = resp.machine_id
-
-                      // populate resource data with more info
-                      resourceData.public.simulator_id = simId
-                      resourceData.public.fieldcomputer_id = fcId
-                      resourceData.public.vpn = clientVpnKeyUrl
-                      resourceData.secure.simulator_ssh = simSsh
-                      resourceData.secure.fieldcomputer_ssh = fcSsh
-                      resourceData.secure.simulator_machine_id = simMachineId
-                      resourceData.secure.fieldcomputer_machine_id = fcMachineId
-
-                      // remove fieldcompuer options data
-                      delete fieldcomputer.options
-
-                      // save simulator and field computer id and ssh data
-                      // this triggers websocket notifications
-                      csgrant.updateResource(srcAdmin, r.id, resourceData,
-                      (err) => {
-                        if (err) {
-                          console.log('Update round error: ' +
-                            JSON.stringify(err, null, 2))
+                      // Create field computer
+                      // the options will be passed to the fieldcomputer
+                      // instance and used for downloading the vpn keys. Note:
+                      // onlyread permission is needed to download client vpn
+                      // keys
+                      const clientSshkeyName = resourceName + '_fc_sshkey'
+                      const clientVpnKeyUrl = keysurl + '/tap/src/client/'
+                          + keyResourceId
+                      let fieldcomputer = resourceData.fieldcomputer
+                      options = fieldcomputer.options || {}
+                      options.role = 'fieldcomputer'
+                      options.token = userToken
+                      options.server_ip = server_ip
+                      options.client_id = 'fieldcomputer'
+                      options.client_route = clientVpnKeyUrl
+                      options.dockerurl = resourceData.dockerurl
+                      options.resources = simResources
+                      fieldcomputer.options = options
+                      // create fc instance using user identity and share with
+                      // team
+                      createInstance(req.user, resourceData.team, !practice,
+                      clientSshkeyName, fieldcomputer, (resp) => {
+                        if (resp.error) {
+                          console.log(JSON.stringify(resp.error, null, 2))
                           return
                         }
+                        const fcId = resp.id
+                        const fcSsh = resp.ssh
+                        const fcMachineId = resp.machine_id
+
+                        // populate resource data with more info
+                        resourceData.public.simulation_data_id = simDataId
+                        resourceData.public.simulator_id = simId
+                        resourceData.public.fieldcomputer_id = fcId
+                        resourceData.public.vpn = clientVpnKeyUrl
+                        resourceData.secure.simulator_ssh = simSsh
+                        resourceData.secure.fieldcomputer_ssh = fcSsh
+                        resourceData.secure.simulator_machine_id = simMachineId
+                        resourceData.secure.fieldcomputer_machine_id =
+                          fcMachineId
+
+                        // remove fieldcompuer options data
+                        delete fieldcomputer.options
+
+                        // save simulator and field computer id and ssh data
+                        // this triggers websocket notifications
+                        csgrant.updateResource(srcAdmin, r.id, resourceData,
+                        (err) => {
+                          if (err) {
+                            console.log('Update round error: ' +
+                              JSON.stringify(err, null, 2))
+                            return
+                          }
+                        })
                       })
                     })
                   })

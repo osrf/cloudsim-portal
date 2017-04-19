@@ -31,9 +31,6 @@ function setRoutes(app) {
     ),
     function(req, res) {
 
-      console.log('create machine type:')
-      console.log('  body:' +  JSON.stringify(req.body))
-
       const resourceData = req.body
 
       const op = 'create machine type'
@@ -75,8 +72,6 @@ function setRoutes(app) {
 
       const resourceName = req.machinetype
       const newData = req.body
-      console.log(' Update machine type: ' + resourceName)
-      console.log(' new data: ' + JSON.stringify(newData))
       const user = req.authorizedIdentity
 
       const r = {success: false}
@@ -109,7 +104,6 @@ function setRoutes(app) {
     csgrant.authenticate,
     csgrant.ownsResource(':machinetype', false),
     function(req, res) {
-      console.log('delete machine type ' + req.machinetype)
       const r = {success: false}
       const user = req.user  // from previous middleware
       const resource = req.machinetype // from app.param (see below)
