@@ -1360,7 +1360,7 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   // Admin should be able to see simulation data
-  describe('Check get competition B simulation data with admin',
+  describe('Check get competitor B simulation data with admin',
   function() {
     it('should be able to get simulation data',
     function(done) {
