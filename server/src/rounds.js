@@ -544,7 +544,7 @@ const getInstanceIp = function(user, simId, delay, maxRetry, cb) {
       }
       if (!data.data.machine_ip) {
         let retry = maxRetry-1
-        getInstanceIp(user, simId, 10, retry, cb)
+        getInstanceIp(user, simId, 1000, retry, cb)
       }
       else {
         cb(null, data.data.machine_ip)
