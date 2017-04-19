@@ -519,6 +519,7 @@ describe('<Unit test SRC rounds>', function() {
   let roundA
   let practiceSimIdDebug
   let practiceFCIdDebug
+  let roundDebugSimDataId
   describe('Get rounds with admin', function() {
     it('should have two rounds and full access to secure data', function(done) {
       agent
@@ -549,6 +550,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.public.fieldcomputer_id)
         practiceFCIdDebug = response.result[0].data.public.fieldcomputer_id
         should.exist(response.result[0].data.public.vpn)
+        should.exist(response.result[0].data.public.simulation_data_id)
+        roundDebugSimDataId = response.result[0].data.public.simulation_data_id
         should.exist(response.result[0].data.simulator)
         should.not.exist(response.result[0].data.simulator.options)
         should.exist(response.result[0].data.fieldcomputer)
@@ -578,6 +581,7 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[1].data.public.simulator_id)
         should.exist(response.result[1].data.public.fieldcomputer_id)
         should.exist(response.result[0].data.public.vpn)
+        should.exist(response.result[0].data.public.simulation_data_id)
         should.exist(response.result[1].data.simulator)
         should.not.exist(response.result[1].data.simulator.options)
         should.exist(response.result[1].data.fieldcomputer)
@@ -651,6 +655,7 @@ describe('<Unit test SRC rounds>', function() {
 
   let roundASimSsh
   let roundAFCSsh
+  let roundASimDataId
   describe('Get rounds with competitor A', function() {
     it('should have one round and access to secure data', function(done) {
       agent
@@ -675,6 +680,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.public.simulator_id)
         should.exist(response.result[0].data.public.fieldcomputer_id)
         should.exist(response.result[0].data.public.vpn)
+        should.exist(response.result[0].data.public.simulation_data_id)
+        roundASimDataId = response.result[0].data.public.simulation_data_id
         should.exist(response.result[0].data.simulator)
         should.not.exist(response.result[0].data.simulator.options)
         should.exist(response.result[0].data.fieldcomputer)
@@ -767,6 +774,7 @@ describe('<Unit test SRC rounds>', function() {
   let roundB
   let roundBSimSsh
   let roundBFCSsh
+  let roundBSimDataId
   describe('Get rounds with competitor B', function() {
     it('should have one round', function(done) {
       agent
@@ -791,6 +799,9 @@ describe('<Unit test SRC rounds>', function() {
         roundBFCSsh = response.result[0].data.secure.fieldcomputer_ssh
         should.exist(response.result[0].data.public.simulator_id)
         should.exist(response.result[0].data.public.fieldcomputer_id)
+        should.exist(response.result[0].data.public.vpn)
+        should.exist(response.result[0].data.public.simulation_data_id)
+        roundBSimDataId = response.result[0].data.public.simulation_data_id
 
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamB)
@@ -1234,6 +1245,7 @@ describe('<Unit test SRC rounds>', function() {
   let compRoundB
   let compSimBId
   let compFCBId
+  let compBSimDataId
   // Competitor B should be able to see round data in competition mode
   describe('Get rounds with competitor B in competition mode', function() {
     it('should be able to see round resource', function(done) {
@@ -1264,6 +1276,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.public.fieldcomputer_id)
         compFCBId = response.result[0].data.public.fieldcomputer_id
         should.exist(response.result[0].data.public.vpn)
+        should.exist(response.result[0].data.public.simulation_data_id)
+        compBSimDataId = response.result[0].data.public.simulation_data_id
 
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamB)
@@ -1331,6 +1345,7 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].permissions)
         should.exist(response.result[0].data.public)
         should.exist(response.result[0].data.public.vpn)
+        should.exist(response.result[0].data.public.simulation_data_id)
 
         // admins should be able to get ssh key data
         compRoundBSimSsh = response.result[0].data.secure.simulator_ssh
@@ -1339,6 +1354,88 @@ describe('<Unit test SRC rounds>', function() {
         response.result[0].data.dockerurl.should.equal(dockerUrl)
         response.result[0].data.team.should.equal(teamB)
 
+        done()
+      })
+    })
+  })
+
+  // Admin should be able to see simulation data
+  describe('Check get competitor B simulation data with admin',
+  function() {
+    it('should be able to get simulation data',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + compBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Competitor B should be able to see their own simulation data
+  describe('Check get competitor B\'s simulation data with competitor B',
+  function() {
+    it('should be able to get simulation data',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + compBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Competitor A should not be able to see competitor B's simulation data
+  describe('Check get competitor B\'s simulation data with competitor A',
+  function() {
+    it('should be able to get simulation data',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + compBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(401)
+        done()
+      })
+    })
+  })
+
+  // Admin should be able to update simulation data
+  describe('Check update competitor B\'s simulation data with admin',
+  function() {
+    it('should be able to update simulation data during competition',
+    function(done) {
+      agent
+      .put('/srcsimulations/' + compBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .send({myData: 'anyData'})
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Competitor should not be able to update simulation data during competition
+  describe('Check update competitor B\'s simulation data with competitor B',
+  function() {
+    it('should not be able to update simulation data during competition',
+    function(done) {
+      agent
+      .put('/srcsimulations/' + compBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .send({myData: 'anyData'})
+      .end(function(err,res) {
+        res.status.should.be.equal(401)
         done()
       })
     })
@@ -1416,6 +1513,175 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', srcAdminToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Admin should be able to see simulation data
+  describe('Check get debug simulation data with admin',
+  function() {
+    it('should be able to get simulation data',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + roundDebugSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Competitor A should be able to see their own simulation data
+  describe('Check get competitor A\'s simulation data with competitor A',
+  function() {
+    it('should be able to get simulation data',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + roundASimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Admin should be able to see competitor A's simulation data
+  describe('Check get competitor A\'s simulation data with admin',
+  function() {
+    it('should be able to get simulation data',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + roundASimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Competitor B should be able to see their own simulation data
+  describe('Check get competitor B\'s simulation data with competitor B',
+  function() {
+    it('should be able to get simulation data',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + roundBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Admin should be able to see competitor B's simulation data
+  describe('Check get competitor B\'s simulation data with admin',
+  function() {
+    it('should be able to get simulation data',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + roundBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  // Competitor B should not be able to see competitor A's simulation data
+  describe('Check get competitor A\'s simulation data with competitor B',
+  function() {
+    it('should not be possible to get simulation data',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + roundASimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(401)
+        done()
+      })
+    })
+  })
+
+  // Admin should be able to update simulation data
+  describe('Check update debug simulation data with admin',
+  function() {
+    it('should be able to update simulation data',
+    function(done) {
+      agent
+      .put('/srcsimulations/' + roundDebugSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .send({myData: 'anyData'})
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+
+        agent
+        .get('/srcsimulations/' + roundDebugSimDataId)
+        .set('Accept', 'application/json')
+        .set('authorization', srcAdminToken)
+        .end(function(err,res) {
+          res.status.should.be.equal(200)
+          let response = getResponse(res)
+          response.success.should.equal(true)
+          response.result.data.myData.should.equal('anyData')
+          done()
+        })
+      })
+    })
+  })
+
+  // Competitor A should be able to update simulation data
+  describe('Check update competitor A\'s simulation data with competitor A',
+  function() {
+    it('should be able to update simulation data',
+    function(done) {
+      agent
+      .put('/srcsimulations/' + roundASimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .send({compAData: 'anyCompAData'})
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+
+        agent
+        .get('/srcsimulations/' + roundASimDataId)
+        .set('Accept', 'application/json')
+        .set('authorization', competitorAToken)
+        .end(function(err,res) {
+          res.status.should.be.equal(200)
+          let response = getResponse(res)
+          response.success.should.equal(true)
+          response.result.data.compAData.should.equal('anyCompAData')
+          done()
+        })
+      })
+    })
+  })
+
+  // Competitor B should not be able to update competitor A's data
+  describe('Check update Competitor A\'s simulation data with competitor B',
+  function() {
+    it('should be able to update simulation data',
+    function(done) {
+      agent
+      .put('/srcsimulations/' + roundASimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
+      .send({compBData: 'anyCompBData'})
+      .end(function(err,res) {
+        res.status.should.be.equal(401)
         done()
       })
     })
