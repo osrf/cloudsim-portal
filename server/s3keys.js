@@ -6,55 +6,52 @@ const common = require('./common')
 
 function setRoutes(app) {
 
-  console.log('MACHINE TYPES setRoutes')
-
-  // Get all machine types which this user has permission to
-  app.get('/machinetypes',
+  // Get all S3 keys which this user has permission to
+  app.get('/s3keys',
     csgrant.authenticate,
     csgrant.userResources,
-    common.filterResources('machinetype-'),
+    common.filterResources('s3key-'),
     csgrant.allResources)
 
-  // Get a specific machine type
-  app.get('/machinetypes/:machinetype',
+  // Get a specific S3 key
+  app.get('/s3keys/:s3key',
     csgrant.authenticate,
-    csgrant.ownsResource(':machinetype', true),
+    csgrant.ownsResource(':s3key', true),
     csgrant.resource)
 
-  // Create a new machine type
-  app.post('/machinetypes',
+  // Create an S3 key
+  app.post('/s3keys',
     csgrant.authenticate,
-    csgrant.ownsResource('machinetypes', false),
+    csgrant.ownsResource('s3keys', false),
     parameters(
-      {body : ['name', 'region', 'hardware', 'image']},
-      {message : 'Missing required fields (name, region, hardware, image).'}
+      {body : ['identity', 'bucket_name', 'access_key', 'secret_key']},
+      {message : 'Missing required fields (identity, bucket_name, access_key, secret_key).'}
     ),
     function(req, res) {
 
-      console.log('create machine type:')
-      console.log('  body:' +  JSON.stringify(req.body))
-
       const resourceData = req.body
 
-      const op = 'create machine type'
+      const op = 'create S3 key'
       const error = function(msg) {
-        return {operation: op,
+        return {
+          operation: op,
           success: false,
-          error: msg}
+          error: msg
+        }
       }
 
       const user = req.authorizedIdentity
-      csgrant.getNextResourceId('machinetype', (err, resourceName) => {
+      csgrant.getNextResourceId('s3key', (err, resourceName) => {
 
         if(err) {
-          res.jsonp(error(err))
+          res.status(500).jsonp(error(err))
           return
         }
 
         csgrant.createResource(user, resourceName, resourceData,
           (err, data) => {
             if(err) {
-              res.jsonp(error(err))
+              res.status(500).jsonp(error(err))
               return
             }
 
@@ -67,23 +64,21 @@ function setRoutes(app) {
       })
     })
 
-  // Update a machine type
-  app.put('/machinetypes/:machinetype',
+  // Update S3 key
+  app.put('/s3keys/:s3key',
     csgrant.authenticate,
-    csgrant.ownsResource(':machinetype', false),
+    csgrant.ownsResource(':s3key', false),
     function(req, res) {
 
-      const resourceName = req.machinetype
+      const resourceName = req.s3key
       const newData = req.body
-      console.log(' Update machine type: ' + resourceName)
-      console.log(' new data: ' + JSON.stringify(newData))
       const user = req.authorizedIdentity
 
       const r = {success: false}
 
       csgrant.readResource(user, resourceName, function(err, oldData) {
         if(err) {
-          return res.jsonp({success: false,
+          return res.status(500).jsonp({success: false,
             error: 'error trying to read existing data: ' + err})
         }
 
@@ -94,7 +89,7 @@ function setRoutes(app) {
         }
         csgrant.updateResource(user, resourceName, futureData, (err, data) => {
           if(err) {
-            return res.jsonp({success: false, error: err})
+            return res.status(500).jsonp({success: false, error: err})
           }
           r.success = true
           r.result = data
@@ -104,29 +99,27 @@ function setRoutes(app) {
       })
     })
 
-  // Delete a machine type
-  app.delete('/machinetypes/:machinetype',
+  // Delete an S3 key
+  app.delete('/s3keys/:s3key',
     csgrant.authenticate,
-    csgrant.ownsResource(':machinetype', false),
+    csgrant.ownsResource(':s3key', false),
     function(req, res) {
-      console.log('delete machine type ' + req.machinetype)
       const r = {success: false}
-      const user = req.user  // from previous middleware
-      const resource = req.machinetype // from app.param (see below)
+      const user = req.user
+      const resource = req.s3key
       csgrant.deleteResource(user, resource, (err, data) => {
         if(err) {
-          return res.jsonp({success: false, error: err})
+          return res.status(500).jsonp({success: false, error: err})
         }
         r.success = true
         r.result = data
-        // success
         res.jsonp(r)
       })
     })
 
   // machine type route parameter
-  app.param('machinetype', function( req, res, next, id) {
-    req.machinetype = id
+  app.param('s3key', function( req, res, next, id) {
+    req.s3key = id
     next()
   })
 }

@@ -72,6 +72,10 @@
             "description": "Manage machine types",
           },
           {
+            "name": "s3keys",
+            "description": "S3 keys",
+          },
+          {
             "name": "srcrounds",
             "description": "Manage rounds for SRC",
           },
@@ -448,7 +452,7 @@
                   "description": "Team name for which to return grouped simulator metrics",
                   "required": false,
                   "type": "string",
-                }                
+                }
               ],
               "responses": {
                 "200": {
@@ -675,7 +679,7 @@
                   "token": [],
                 }
               ]
-            },            
+            },
           },
 
 
@@ -834,7 +838,7 @@
                 {
                   "name": "resourceId",
                   "in": "path",
-                  "description": "Id of signup resource",
+                  "description": "Id of resource",
                   "required": true,
                   "type": "string",
                 }
@@ -1048,7 +1052,7 @@
                 {
                   "name": "resourceId",
                   "in": "path",
-                  "description": "Id of signup resource",
+                  "description": "Id of resource",
                   "required": true,
                   "type": "string",
                 }
@@ -1249,7 +1253,7 @@
                         "type": "string",
                         "default": "AWS hardware type",
                       },
-                      "software": {
+                      "image": {
                         "type": "string",
                         "default": "AWS ami",
                       },
@@ -1304,7 +1308,7 @@
                 {
                   "name": "resourceId",
                   "in": "path",
-                  "description": "Id of signup resource",
+                  "description": "Id of resource",
                   "required": true,
                   "type": "string",
                 }
@@ -1441,9 +1445,290 @@
                         "type": "string",
                         "default": "AWS hardware type",
                       },
-                      "software": {
+                      "image": {
                         "type": "string",
                         "default": "AWS ami",
+                      },
+                    },
+                  }
+                }
+          // /s3keys
+          "\/s3keys": {
+            // GET
+            "get": {
+              "tags": [
+                "s3keys"
+              ],
+              "summary": "Get all S3 keys for a user",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "result": {
+                        "type" : "array",
+                        "items": {
+                          "$ref": "#\/definitions\/ResourceWithoutPerm"
+                        },
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // POST
+            "post": {
+              "tags": [
+                "s3keys"
+              ],
+              "summary": "Create an S3 key.",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Object with S3 key information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "identity": {
+                        "type": "string",
+                        "default": "id",
+                      },
+                      "bucket_name": {
+                        "type": "string",
+                        "default": "bucket_name",
+                      },
+                      "access_key": {
+                        "type": "string",
+                        "default": "Access key",
+                      },
+                      "secret_key": {
+                        "type": "string",
+                        "default": "Secret key",
+                      },
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/ResourceWithId"
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
+          // /s3keys/{resourceId}
+          "\/s3keys\/{resourceId}": {
+            // DELETE
+            "delete": {
+              "tags": [
+                "s3keys"
+              ],
+              "summary": "Delete an S3 key.",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of resource",
+                  "required": true,
+                  "type": "string",
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                        "default": false,
+                      },
+                      "error": {
+                        "type": "string",
+                      },
+                    },
+                  },
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // GET
+            "get": {
+              "tags": [
+                "s3keys"
+              ],
+              "summary": "Get a specific S3 key",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of resource",
+                  "required": true,
+                  "type": "string",
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "resource": {
+                        "$ref": "#\/definitions\/ResourceId"
+                      },
+                      "id": {
+                        "$ref": "#\/definitions\/ResourceId"
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/Resource"
+                      },
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // PUT
+            "put": {
+              "tags": [
+                "s3keys"
+              ],
+              "summary": "Update an S3 key",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of resource",
+                  "required": true,
+                  "type": "string",
+                },
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Object with S3 key information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "identity": {
+                        "type": "string",
+                        "default": "id",
+                      },
+                      "bucket_name": {
+                        "type": "string",
+                        "default": "bucket_name",
+                      },
+                      "access_key": {
+                        "type": "string",
+                        "default": "Access key",
+                      },
+                      "secret_key": {
+                        "type": "string",
+                        "default": "Secret key",
                       },
                     },
                   }
