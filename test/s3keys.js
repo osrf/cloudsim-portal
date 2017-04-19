@@ -94,7 +94,6 @@ describe('<Unit test S3 keys>', function() {
   })
 
   let s3keyId
-  let identityData = 'aidentitii'
   let bucketData = 'baketto_neemu'
   let accessKeyData = 'akusesu_kii'
   let secretKeyData = 'shikuretto_kii'
@@ -105,7 +104,6 @@ describe('<Unit test S3 keys>', function() {
       .set('Accept', 'application/json')
       .set('authorization', adminToken)
       .send({
-        identity: identityData,
         bucket_name: bucketData,
         access_key: accessKeyData,
         secret_key: secretKeyData
@@ -143,7 +141,6 @@ describe('<Unit test S3 keys>', function() {
       .set('Accept', 'application/json')
       .set('authorization', userToken)
       .send({
-        identity: identityData,
         bucket_name: bucketData,
         access_key: accessKeyData,
         secret_key: secretKeyData
@@ -170,7 +167,6 @@ describe('<Unit test S3 keys>', function() {
         response.requester.should.equal(admin)
         response.result.length.should.equal(1)
         response.result[0].name.should.equal(s3keyId)
-        response.result[0].data.identity.should.equal(identityData)
         response.result[0].data.bucket_name.should.equal(bucketData)
         response.result[0].data.access_key.should.equal(accessKeyData)
         response.result[0].data.secret_key.should.equal(secretKeyData)
@@ -186,7 +182,7 @@ describe('<Unit test S3 keys>', function() {
       .set('Acccept', 'application/json')
       .set('authorization', adminToken)
       .send({
-        identity: 'id'
+        bucket_name: 'newbucket'
       })
       .end(function(err,res){
         res.status.should.be.equal(200)
@@ -204,7 +200,7 @@ describe('<Unit test S3 keys>', function() {
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
       .send({
-        identity: 'userId'
+        bucket_name: 'usernew_bucket'
       })
       .end(function(err,res){
         res.status.should.be.equal(401)
@@ -228,8 +224,7 @@ describe('<Unit test S3 keys>', function() {
         response.requester.should.equal(admin)
         response.result.length.should.equal(1)
         response.result[0].name.should.equal(s3keyId)
-        response.result[0].data.identity.should.equal('id')
-        response.result[0].data.bucket_name.should.equal(bucketData)
+        response.result[0].data.bucket_name.should.equal("newbucket")
         response.result[0].data.access_key.should.equal(accessKeyData)
         response.result[0].data.secret_key.should.equal(secretKeyData)
         done()

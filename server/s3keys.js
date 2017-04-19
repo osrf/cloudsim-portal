@@ -24,8 +24,8 @@ function setRoutes(app) {
     csgrant.authenticate,
     csgrant.ownsResource('s3keys', false),
     parameters(
-      {body : ['identity', 'bucket_name', 'access_key', 'secret_key']},
-      {message : 'Missing required fields (identity, bucket_name, access_key, secret_key).'}
+      {body : ['bucket_name', 'access_key', 'secret_key']},
+      {message : 'Missing required fields (bucket_name, access_key, secret_key).'}
     ),
     function(req, res) {
 
