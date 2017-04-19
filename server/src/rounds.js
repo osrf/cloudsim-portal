@@ -136,6 +136,29 @@ function setRoutes(app) {
       resourceData.secure = {}
       resourceData.public = {}
 
+      // cloudsim-sim options resources
+      // this will be used to initialize cloudsim-sim on the simulator and the
+      // field computer instances
+      const simResources = [{
+        name: "simulations",
+        data: {},
+        permissions: [
+          {
+            username: srcAdmin,
+            permissions: {
+              readOnly: false
+            }
+          },
+          {
+            username: resourceData.team,
+            permissions: {
+              readOnly: false
+            }
+          }
+        ]
+      }]
+
+      // create src round resource
       csgrant.createResourceWithType(req.user, 'srcround', resourceData,
       (err, data, resourceName) => {
         if(err) {
@@ -219,6 +242,7 @@ function setRoutes(app) {
                   options.token = req.headers.authorization
                   options.route = serverVpnKeyUrl
                   options.subnet = '192.168.2'
+                  options.resources = simResources
                   // route to post back sim data
                   options.simulation_data_route = simDataUrl
 
@@ -268,6 +292,7 @@ function setRoutes(app) {
                       options.client_id = 'fieldcomputer'
                       options.client_route = clientVpnKeyUrl
                       options.dockerurl = resourceData.dockerurl
+                      options.resources = simResources
                       fieldcomputer.options = options
                       // create fc instance using user identity and share with
                       // team
