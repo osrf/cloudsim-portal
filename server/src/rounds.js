@@ -212,7 +212,8 @@ function setRoutes(app) {
                   const keyResourceId = vpnKeyResp.id
                   const serverVpnKeyUrl = keysurl + '/tap/src/server/'
                       + keyResourceId
-                  const serverSshkeyName = resourceName + '_sim_sshkey'
+                  const serverSshkeyName = resourceName + '_sim_sshkey_' +
+                    (new Date()).valueOf()
                   let simulator = resourceData.simulator
                   let options =  simulator.options || {}
                   options.role = 'simulator'
@@ -257,7 +258,8 @@ function setRoutes(app) {
                       // instance and used for downloading the vpn keys. Note:
                       // onlyread permission is needed to download client vpn
                       // keys
-                      const clientSshkeyName = resourceName + '_fc_sshkey'
+                      const clientSshkeyName = resourceName + '_fc_sshkey_' +
+                        (new Date()).valueOf()
                       const clientVpnKeyUrl = keysurl + '/tap/src/client/'
                           + keyResourceId
                       let fieldcomputer = resourceData.fieldcomputer
@@ -453,7 +455,7 @@ const createInstance = function(user, team, teamPerm, keyName, resource, cb) {
           cb(err)
           return
         }
-        resource.sshkey = sshResp.id
+        resource.sshkey = sshResp.result.name
         // Launch instance
         simulators.create(user, resource, function(simResp){
           if (simResp.error) {
