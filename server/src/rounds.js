@@ -247,7 +247,7 @@ function setRoutes(app) {
                     // computer instance as we need to pass the ip onto the
                     // fieldcomputer via options
                     getInstanceIp(req.user, simId,
-                    instanceIpUpdateInterval+10, 100, (err, server_ip) => {
+                    instanceIpUpdateInterval+10, 50, (err, server_ip) => {
                       if (err) {
                         console.log (JSON.stringify(err, null, 2))
                         return
@@ -544,7 +544,7 @@ const getInstanceIp = function(user, simId, delay, maxRetry, cb) {
       }
       if (!data.data.machine_ip) {
         let retry = maxRetry-1
-        getInstanceIp(user, simId, 1000, retry, cb)
+        getInstanceIp(user, simId, 500, retry, cb)
       }
       else {
         cb(null, data.data.machine_ip)
