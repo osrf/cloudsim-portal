@@ -14,6 +14,7 @@ const csgrant = require('cloudsim-grant')
 
 // resources
 const machinetypes = require('./machinetypes')
+const s3keys = require('./s3keys')
 const sgroups = require('./sgroups')
 const simulators = require('./simulators')
 const sshkeys = require('./sshkeys')
@@ -87,6 +88,7 @@ else {
 const initialResources =  {
   'simulators': {},
   'machinetypes': {},
+  's3keys': {},
   'sgroups': {},
   'srcrounds': {},
   'srcsimulations': {},
@@ -123,6 +125,7 @@ csgrant.setPermissionsRoutes(app)
 simulators.setRoutes(app)
 sgroups.setRoutes(app)
 machinetypes.setRoutes(app)
+s3keys.setRoutes(app)
 sshkeys.setRoutes(app)
 srcrounds.setRoutes(app)
 srcsimulations.setRoutes(app)

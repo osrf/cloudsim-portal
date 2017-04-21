@@ -159,9 +159,13 @@ describe('<Simulator controller test>', function() {
         data.result[1].permissions[0].username.should.be.equal(adminUser);
         data.result[1].permissions[0].permissions.readOnly.should.be.equal(false);
 
-        data.result[2].name.should.be.equal("sgroups");
+        data.result[2].name.should.be.equal("s3keys");
         data.result[2].permissions[0].username.should.be.equal(adminUser);
         data.result[2].permissions[0].permissions.readOnly.should.be.equal(false);
+
+        data.result[3].name.should.be.equal("sgroups");
+        data.result[3].permissions[0].username.should.be.equal(adminUser);
+        data.result[3].permissions[0].permissions.readOnly.should.be.equal(false);
 
         done();
       });
