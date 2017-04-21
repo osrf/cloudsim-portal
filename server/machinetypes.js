@@ -78,29 +78,18 @@ function setRoutes(app) {
       console.log(' Update machine type: ' + resourceName)
       console.log(' new data: ' + JSON.stringify(newData))
       const user = req.authorizedIdentity
+      const oldData = req.resourceData
 
-      const r = {success: false}
-
-      csgrant.readResource(user, resourceName, function(err, oldData) {
+      const futureData = oldData.data
+      // merge with existing fields of the newData... thus keeping old fields intact
+      for (var attrname in newData) {
+        futureData[attrname] = newData[attrname]
+      }
+      csgrant.updateResource(user, resourceName, futureData, (err, data) => {
         if(err) {
-          return res.jsonp({success: false,
-            error: 'error trying to read existing data: ' + err})
+          return res.jsonp({success: false, error: err})
         }
-
-        const futureData = oldData.data
-        // merge with existing fields of the newData... thus keeping old fields intact
-        for (var attrname in newData) {
-          futureData[attrname] = newData[attrname]
-        }
-        csgrant.updateResource(user, resourceName, futureData, (err, data) => {
-          if(err) {
-            return res.jsonp({success: false, error: err})
-          }
-          r.success = true
-          r.result = data
-          // success
-          res.jsonp(r)
-        })
+        res.jsonp({success: true, result: data})
       })
     })
 

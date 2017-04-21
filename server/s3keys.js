@@ -73,29 +73,18 @@ function setRoutes(app) {
       const resourceName = req.s3key
       const newData = req.body
       const user = req.authorizedIdentity
+      const oldData = req.resourceData
 
-      const r = {success: false}
-
-      csgrant.readResource(user, resourceName, function(err, oldData) {
+      const futureData = oldData.data
+      // merge with existing fields of the newData... thus keeping old fields intact
+      for (var attrname in newData) {
+        futureData[attrname] = newData[attrname]
+      }
+      csgrant.updateResource(user, resourceName, futureData, (err, data) => {
         if(err) {
-          return res.status(500).jsonp({success: false,
-            error: 'error trying to read existing data: ' + err})
+          return res.status(500).jsonp({success: false, error: err})
         }
-
-        const futureData = oldData.data
-        // merge with existing fields of the newData... thus keeping old fields intact
-        for (var attrname in newData) {
-          futureData[attrname] = newData[attrname]
-        }
-        csgrant.updateResource(user, resourceName, futureData, (err, data) => {
-          if(err) {
-            return res.status(500).jsonp({success: false, error: err})
-          }
-          r.success = true
-          r.result = data
-          // success
-          res.jsonp(r)
-        })
+        res.jsonp({success: true, result: data})
       })
     })
 
