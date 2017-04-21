@@ -26,10 +26,15 @@
     "cors": "^2.7.1",
     "dotenv": "^2.0.0",
     "express": "^4.13.4",
+    "moment": "^2.18.1",
     "morgan": "^1.7.0",
-    "path": "^0.12.7"
+    "parameters-middleware": "^0.1.0",
+    "path": "^0.12.7",
+    "request": "^2.81.0",
+    "underscore": "^1.8.3"
   },
   "devDependencies": {
+    "clear-require": "^2.0.0",
     "coveralls": "^2.11.15",
     "eslint": "^3.14.1",
     "istanbul": "^0.4.5",

@@ -1,18 +1,14 @@
 'use strict';
 
-console.log('test/machinetypes.js')
-
 const should = require('should')
 const supertest = require('supertest')
 const clearRequire = require('clear-require');
 
-// current dir: test
 const app = require('../server/cloudsim_portal')
 const agent = supertest.agent(app)
 
 const csgrant = require('cloudsim-grant')
 const token = csgrant.token
-
 
 // we need fresh keys for this test
 const keys = csgrant.token.generateKeys()
@@ -20,9 +16,12 @@ token.initKeys(keys.public, keys.private)
 
 const admin = process.env.CLOUDSIM_ADMIN || 'admin'
 
-
 const adminTokenData = {identities: [admin]}
 let adminToken
+
+const user = 'user'
+const userTokenData = {identities: [user]}
+let userToken
 
 // parsing a response on steroids:
 // this helper function parses a response into json.
@@ -55,7 +54,7 @@ function parseResponse(res, log) {
   return result
 }
 
-describe('<Unit test Machine types>', function() {
+describe('<Unit test S3 keys>', function() {
 
   before(function(done) {
     token.signToken(adminTokenData, (e, tok)=>{
@@ -65,125 +64,20 @@ describe('<Unit test Machine types>', function() {
         should.fail()
       }
       adminToken = tok
-      done()
-    })
-  })
-
-  let machinetypeId
-  describe('Create machine type', function() {
-    it('should be possible to create a machine type', function(done) {
-      agent
-      .post('/machinetypes')
-      .set('Accept', 'application/json')
-      .set('authorization', adminToken)
-      .send({
-        name: 'test-1',
-        region: 'us-west-1',
-        hardware: 'hard',
-        image: 'soft'
-      })
-      .end(function(err,res) {
-        const response = parseResponse(res, res.status != 200)
-        res.status.should.be.equal(200)
-        res.redirect.should.equal(false)
-        response.success.should.equal(true)
-        machinetypeId = response.id
+      csgrant.token.signToken(userTokenData, (e, tok)=>{
+        if(e) {
+          console.log('sign error: ' + e)
+        }
+        userToken = tok
         done()
       })
     })
   })
 
-  // get all resources
-  describe('Get all machine types', function() {
-    it('should be possible for admin to get all resources', function(done) {
+  describe('Get all S3 keys', function() {
+    it('should be no resources yet', function(done) {
       agent
-      .get('/machinetypes')
-      .set('Acccept', 'application/json')
-      .set('authorization', adminToken)
-      .send({})
-      .end(function(err,res){
-        res.status.should.be.equal(200)
-        res.redirect.should.equal(false)
-        let response = parseResponse(res)
-        response.success.should.equal(true)
-        response.requester.should.equal(admin)
-        response.result.length.should.equal(1)
-        response.result[0].name.should.equal(machinetypeId)
-        response.result[0].data.name.should.equal('test-1')
-        response.result[0].data.region.should.equal('us-west-1')
-        response.result[0].data.hardware.should.equal('hard')
-        response.result[0].data.image.should.equal('soft')
-        done()
-      })
-    })
-  })
-
-  // update resource
-  describe('Update resource', function() {
-    it('change the region', function(done) {
-      agent
-      .put('/machinetypes/' + machinetypeId)
-      .set('Acccept', 'application/json')
-      .set('authorization', adminToken)
-      .send({
-        region: 'us-east-1'
-      })
-      .end(function(err,res){
-        res.status.should.be.equal(200)
-        const response = parseResponse(res)
-        response.success.should.equal(true)
-        done()
-      })
-    })
-  })
-
-  // get all resources
-  describe('Get all machine types', function() {
-    it('region has changed', function(done) {
-      agent
-      .get('/machinetypes')
-      .set('Acccept', 'application/json')
-      .set('authorization', adminToken)
-      .send({})
-      .end(function(err,res){
-        res.status.should.be.equal(200)
-        res.redirect.should.equal(false)
-        let response = parseResponse(res)
-        response.success.should.equal(true)
-        response.requester.should.equal(admin)
-        response.result.length.should.equal(1)
-        response.result[0].name.should.equal(machinetypeId)
-        response.result[0].data.name.should.equal('test-1')
-        response.result[0].data.region.should.equal('us-east-1')
-        response.result[0].data.hardware.should.equal('hard')
-        response.result[0].data.image.should.equal('soft')
-        done()
-      })
-    })
-  })
-
-  // update resource
-  describe('Update resource', function() {
-    it('change the region', function(done) {
-      agent
-      .delete('/machinetypes/' + machinetypeId)
-      .set('Acccept', 'application/json')
-      .set('authorization', adminToken)
-      .send({})
-      .end(function(err,res){
-        res.status.should.be.equal(200)
-        const response = parseResponse(res)
-        response.success.should.equal(true)
-        done()
-      })
-    })
-  })
-
-  // get all resources
-  describe('Get all machine types', function() {
-    it('no resources left', function(done) {
-      agent
-      .get('/machinetypes')
+      .get('/s3keys')
       .set('Acccept', 'application/json')
       .set('authorization', adminToken)
       .send({})
@@ -199,17 +93,39 @@ describe('<Unit test Machine types>', function() {
     })
   })
 
-  describe('Create machine type with wrong parameters', function() {
-    it('should not be possible to create a machine type', function(done) {
+  let s3keyId
+  let bucketData = 'baketto_neemu'
+  let accessKeyData = 'akusesu_kii'
+  let secretKeyData = 'shikuretto_kii'
+  describe('Create S3 key with admin', function() {
+    it('should be possible to create S3 key', function(done) {
       agent
-      .post('/machinetypes')
+      .post('/s3keys')
       .set('Accept', 'application/json')
       .set('authorization', adminToken)
       .send({
-        name: 'test-1',
-        region: 'us-west-1',
-        hardware: 'hard',
-        software: 'soft'
+        bucket_name: bucketData,
+        access_key: accessKeyData,
+        secret_key: secretKeyData
+      })
+      .end(function(err,res) {
+        const response = parseResponse(res, res.status != 200)
+        res.status.should.be.equal(200)
+        response.success.should.equal(true)
+        s3keyId = response.id
+        done()
+      })
+    })
+  })
+
+  describe('Create S3 key with wrong parameters', function() {
+    it('should not be possible to create a S3 key', function(done) {
+      agent
+      .post('/s3keys')
+      .set('Accept', 'application/json')
+      .set('authorization', adminToken)
+      .send({
+        banana: 'banana',
       })
       .end(function(err,res) {
         res.status.should.be.equal(400)
@@ -218,9 +134,149 @@ describe('<Unit test Machine types>', function() {
     })
   })
 
+  describe('Create S3 key with user', function() {
+    it('should not have permission', function(done) {
+      agent
+      .post('/s3keys')
+      .set('Accept', 'application/json')
+      .set('authorization', userToken)
+      .send({
+        bucket_name: bucketData,
+        access_key: accessKeyData,
+        secret_key: secretKeyData
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(401)
+        done()
+      })
+    })
+  })
+
+  describe('Get all S3 keys', function() {
+    it('should be possible for admin to get all resources', function(done) {
+      agent
+      .get('/s3keys')
+      .set('Acccept', 'application/json')
+      .set('authorization', adminToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(200)
+        res.redirect.should.equal(false)
+        let response = parseResponse(res)
+        response.success.should.equal(true)
+        response.requester.should.equal(admin)
+        response.result.length.should.equal(1)
+        response.result[0].name.should.equal(s3keyId)
+        response.result[0].data.bucket_name.should.equal(bucketData)
+        response.result[0].data.access_key.should.equal(accessKeyData)
+        response.result[0].data.secret_key.should.equal(secretKeyData)
+        done()
+      })
+    })
+  })
+
+  describe('Update resource with admin', function() {
+    it('should be successful', function(done) {
+      agent
+      .put('/s3keys/' + s3keyId)
+      .set('Acccept', 'application/json')
+      .set('authorization', adminToken)
+      .send({
+        bucket_name: 'newbucket'
+      })
+      .end(function(err,res){
+        res.status.should.be.equal(200)
+        const response = parseResponse(res)
+        response.success.should.equal(true)
+        done()
+      })
+    })
+  })
+
+  describe('Update resource with user', function() {
+    it('should not be allowed', function(done) {
+      agent
+      .put('/s3keys/' + s3keyId)
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({
+        bucket_name: 'usernew_bucket'
+      })
+      .end(function(err,res){
+        res.status.should.be.equal(401)
+        done()
+      })
+    })
+  })
+
+  describe('Get all S3 keys', function() {
+    it('should have the new id', function(done) {
+      agent
+      .get('/s3keys')
+      .set('Acccept', 'application/json')
+      .set('authorization', adminToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(200)
+        res.redirect.should.equal(false)
+        let response = parseResponse(res)
+        response.success.should.equal(true)
+        response.requester.should.equal(admin)
+        response.result.length.should.equal(1)
+        response.result[0].name.should.equal(s3keyId)
+        response.result[0].data.bucket_name.should.equal("newbucket")
+        response.result[0].data.access_key.should.equal(accessKeyData)
+        response.result[0].data.secret_key.should.equal(secretKeyData)
+        done()
+      })
+    })
+  })
+
+  describe('Remove S3 key with user', function() {
+    it('should not have permission', function(done) {
+      agent
+      .delete('/s3keys/' + s3keyId)
+      .set('authorization', userToken)
+      .end(function(err,res){
+        res.status.should.be.equal(401)
+        done()
+      })
+    })
+  })
+
+  describe('Remove S3 key with admin', function() {
+    it('should not have permission', function(done) {
+      agent
+      .delete('/s3keys/' + s3keyId)
+      .set('authorization', adminToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200)
+        done()
+      })
+    })
+  })
+
+  describe('Get all S3 keys', function() {
+    it('should be empty', function(done) {
+      agent
+      .get('/s3keys')
+      .set('Acccept', 'application/json')
+      .set('authorization', adminToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(200)
+        res.redirect.should.equal(false)
+        let response = parseResponse(res)
+        response.success.should.equal(true)
+        response.requester.should.equal(admin)
+        response.result.length.should.equal(0)
+        done()
+      })
+    })
+  })
+
   // after all tests have run, we need to clean up our mess
   after(function(done) {
-    console.log('after everything')
     csgrant.model.clearDb()
     app.close(function() {
       clearRequire.all()

@@ -2,19 +2,16 @@
 
 console.log('test/mocha/simulator/sockets.js')
 
-const app = require('../server/cloudsim_portal.js')
-
+let app
+let csgrant
+let agent
+const io = require('socket.io-client')
 const util = require('util')
 const should = require('should')
 const supertest = require('supertest')
-const io = require('socket.io-client')
+const clearRequire = require('clear-require');
 
-let adminUser = 'admin'
-if (process.env.CLOUDSIM_ADMIN)
-  adminUser = process.env.CLOUDSIM_ADMIN
-
-// we need fresh keys for this test
-const csgrant = require('cloudsim-grant')
+const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
 
 // the tokens to identify our users
 let adminToken
@@ -25,7 +22,6 @@ let user4Token
 // the simulators created in this test
 let simId1
 let simId2
-
 
 const adminTokenData = {identities:[adminUser]}
 const user2TokenData = {identities:['user2']}
@@ -38,10 +34,8 @@ const log = enableLog ? console.log: function(){
   // log or not
 }
 
-const agent = supertest.agent(app)
 const port = process.env.PORT || 4000
 const socketAddress = 'http://localhost:' + port
-
 
 let user4socket
 let user4events = []
@@ -57,6 +51,7 @@ const launchData = {
 function createSocket(token, events) {
   const query = 'token=' + token
   const client = io.connect(socketAddress, {
+    reconnection: false,
     query: query,
     transports: ['websocket'],
     rejectUnauthorized: false
@@ -121,10 +116,23 @@ function parseResponse(text, log) {
 
 describe('<Unit Test sockets>', function() {
   before(function(done) {
+    // Important: the database has to be cleared early, before
+    // the server is launched (otherwise, root resources will be missing)
+    csgrant = require('cloudsim-grant')
+    csgrant.model.clearDb()
+    done()
+  })
+
+  before(function(done) {
+    app = require('../server/cloudsim_portal')
+    agent = supertest.agent(app)
+    done()
+  })
+
+  before(function(done) {
     // we need fresh keys for this test
     const keys = csgrant.token.generateKeys()
     csgrant.token.initKeys(keys.public, keys.private)
-    log('keys done')
     done()
   })
 
@@ -156,7 +164,6 @@ describe('<Unit Test sockets>', function() {
         should.fail('sign error: ' + e)
       }
       user3Token = tok
-      console.log('token signed for user "' + user3TokenData.identities[0]  + '"')
       done()
     })
   })
@@ -167,7 +174,6 @@ describe('<Unit Test sockets>', function() {
         should.fail('sign error: ' + e)
       }
       user4Token = tok
-      console.log('token signed for user "' + user4TokenData.identities[0]  + '"')
       done()
     })
   })
@@ -183,8 +189,7 @@ describe('<Unit Test sockets>', function() {
           res.status.should.be.equal(200)
           res.redirect.should.equal(false)
           const r = parseResponse(res.text)
-          r.result.length.should.be.exactly(4)
-          r.result[0].data.status.should.equal('TERMINATED')
+          r.result.length.should.be.exactly(0)
           done()
         })
       })
@@ -195,6 +200,7 @@ describe('<Unit Test sockets>', function() {
       const soc = createSocket(adminToken)
       soc.once('connect', function() {
         soc.disconnect()
+        soc.close()
         done()
       })
     })
@@ -236,6 +242,7 @@ describe('<Unit Test sockets>', function() {
         res.operation.should.equal('create')
         simId1 = res.resource
         soc.disconnect()
+        soc.close()
         done()
       })
     })
@@ -266,6 +273,7 @@ describe('<Unit Test sockets>', function() {
           soc.once('resource', res => {
             res.operation.should.equal('grant')
             soc.disconnect()
+            soc.close()
             done()
           })
         })
@@ -296,6 +304,7 @@ describe('<Unit Test sockets>', function() {
           soc.once('resource', res => {
             res.operation.should.equal('grant')
             soc.disconnect()
+            soc.close()
             done()
           })
         })
@@ -327,6 +336,7 @@ describe('<Unit Test sockets>', function() {
             res.resource.should.equal(simId1)
             res.operation.should.equal('revoke')
             soc.disconnect()
+            soc.close()
             done()
           })
         })
@@ -369,6 +379,7 @@ describe('<Unit Test sockets>', function() {
           if (res.operation == 'update') {
             res.resource.should.equal(simId2)
             soc.disconnect()
+            soc.close()
             done()
           }
         })
@@ -408,6 +419,7 @@ describe('<Unit Test sockets>', function() {
           count += 1
           if (count == 2) {
             socAdmin.disconnect()
+            socAdmin.close()
             done()
           }
         })
@@ -415,6 +427,7 @@ describe('<Unit Test sockets>', function() {
           count += 1
           if (count == 2) {
             socU2.disconnect()
+            socU2.close()
             done()
           }
         })
@@ -423,15 +436,19 @@ describe('<Unit Test sockets>', function() {
 
   describe('Check user4 was left alone', function() {
     it ('Should not be possible for user4 to get notifications', done => {
-      console.log(user4events)
       user4events.length.should.equal(0)
-
+      user4socket.disconnect()
+      user4socket.close()
       done()
     })
   })
 
+  // after all tests have run, we need to clean up our mess
   after(function(done) {
     csgrant.model.clearDb()
-    done()
+    app.close(function() {
+      clearRequire.all()
+      done()
+    })
   })
 })
