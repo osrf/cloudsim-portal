@@ -14,12 +14,12 @@ const token = csgrant.token
 const keys = csgrant.token.generateKeys()
 token.initKeys(keys.public, keys.private)
 
-const admin = process.env.CLOUDSIM_ADMIN?process.env.CLOUDSIM_ADMIN:'admin'
+const admin = process.env.CLOUDSIM_ADMIN || 'admin'
 
 const adminTokenData = {identities: [admin]}
 let adminToken
 
-const user = "user"
+const user = 'user'
 const userTokenData = {identities: [user]}
 let userToken
 
@@ -277,7 +277,6 @@ describe('<Unit test S3 keys>', function() {
 
   // after all tests have run, we need to clean up our mess
   after(function(done) {
-    console.log('after everything')
     csgrant.model.clearDb()
     app.close(function() {
       clearRequire.all()

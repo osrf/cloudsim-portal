@@ -25,7 +25,8 @@ function setRoutes(app) {
     csgrant.ownsResource('s3keys', false),
     parameters(
       {body : ['bucket_name', 'access_key', 'secret_key']},
-      {message : 'Missing required fields (bucket_name, access_key, secret_key).'}
+      {message :
+        'Missing required fields (bucket_name, access_key, secret_key).'}
     ),
     function(req, res) {
 
@@ -76,7 +77,8 @@ function setRoutes(app) {
       const oldData = req.resourceData
 
       const futureData = oldData.data
-      // merge with existing fields of the newData... thus keeping old fields intact
+      // merge with existing fields of the newData...
+      // thus keeping old fields intact
       for (var attrname in newData) {
         futureData[attrname] = newData[attrname]
       }
@@ -106,7 +108,7 @@ function setRoutes(app) {
       })
     })
 
-  // machine type route parameter
+  // s3key parameter
   app.param('s3key', function( req, res, next, id) {
     req.s3key = id
     next()
