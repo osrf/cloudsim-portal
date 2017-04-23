@@ -1779,7 +1779,7 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   // test src proxy
-  describe('Post to proxy with admin', function() {
+  describe('Post to proxy', function() {
 
     const express = require('express')
     const bodyParser = require('body-parser')
@@ -1800,7 +1800,7 @@ describe('<Unit test SRC rounds>', function() {
       })
     })
 
-    it('should be possible to post to proxy', function(done) {
+    it('should be possible to post to proxy with admin', function(done) {
       agent
       .post('/srcproxy')
       .set('Accept', 'application/json')
@@ -1819,7 +1819,7 @@ describe('<Unit test SRC rounds>', function() {
       })
     })
 
-    it('should be possible to post to proxy', function(done) {
+    it('should be possible to post to proxy with competitor', function(done) {
       agent
       .post('/srcproxy')
       .set('Accept', 'application/json')
