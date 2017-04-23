@@ -20,6 +20,7 @@ const simulators = require('./simulators')
 const sshkeys = require('./sshkeys')
 const srcrounds = require('./src/rounds')
 const srcsimulations = require('./src/simulations')
+const srcproxy = require('./src/proxy')
 const metrics = require('./metric_configs')
 
 dotenv.load();
@@ -129,6 +130,7 @@ s3keys.setRoutes(app)
 sshkeys.setRoutes(app)
 srcrounds.setRoutes(app)
 srcsimulations.setRoutes(app)
+srcproxy.setRoutes(app)
 metrics.setRoutes(app)
 
 // a little home page for general info

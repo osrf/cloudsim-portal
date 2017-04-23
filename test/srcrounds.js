@@ -1778,6 +1778,61 @@ describe('<Unit test SRC rounds>', function() {
     })
   })
 
+  // test src proxy
+  describe('Post to proxy with admin', function() {
+    it('should be possible to post to proxy', function(done) {
+      const http = require('http')
+      const server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'application/json')
+        res.end('{"success":true}')
+      })
+      server.listen(1234)
+      agent
+      .post('/srcproxy')
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .send({
+        'host': 'localhost:1234',
+        'path': '/srcproxy-test',
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        const r = getResponse(res)
+        r.success.should.equal(true)
+        server.close()
+        done()
+      })
+    })
+  })
+
+  describe('Post to proxy with competitor', function() {
+    it('should be possible to post to proxy', function(done) {
+      const http = require('http')
+      const server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'application/json')
+        res.end('{"success":true}')
+      })
+      server.listen(1234)
+      agent
+      .post('/srcproxy')
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .send({
+        'host': 'localhost:1234',
+        'path': '/srcproxy-test',
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        const r = getResponse(res)
+        r.success.should.equal(true)
+        server.close()
+        done()
+      })
+    })
+  })
+
+
+
   // after all tests have run, we need to clean up our mess
   after(function(done) {
     csgrant.model.clearDb()
