@@ -1781,6 +1781,7 @@ describe('<Unit test SRC rounds>', function() {
   // test src proxy
   describe('Post to proxy', function() {
 
+    // set up test server
     const express = require('express')
     const bodyParser = require('body-parser')
     let testApp
@@ -1790,7 +1791,6 @@ describe('<Unit test SRC rounds>', function() {
       testHttpServer = require('http').Server(testApp)
       testApp.use(bodyParser.json())
       testApp.post('/srcproxy-test', (req, res) => {
-        console.log('got post!!! ')
         let obj = req.body
         obj.success = true
         res.jsonp(obj)
