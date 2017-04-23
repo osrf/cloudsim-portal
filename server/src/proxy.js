@@ -13,6 +13,8 @@ function setRoutes(app) {
       const target = 'http://' + host + path
       request({
         url: target,
+        json: true,
+        body: req.body,
         method: 'POST'
       }).on('error', function(e) {
         res.end(e);

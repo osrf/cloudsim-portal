@@ -1780,13 +1780,27 @@ describe('<Unit test SRC rounds>', function() {
 
   // test src proxy
   describe('Post to proxy with admin', function() {
-    it('should be possible to post to proxy', function(done) {
-      const http = require('http')
-      const server = http.createServer((req, res) => {
-        res.setHeader('Content-Type', 'application/json')
-        res.end('{"success":true}')
+
+    const express = require('express')
+    const bodyParser = require('body-parser')
+    let testApp
+    let testHttpServer
+    before(function(done) {
+      testApp = express()
+      testHttpServer = require('http').Server(testApp)
+      testApp.use(bodyParser.json())
+      testApp.post('/srcproxy-test', (req, res) => {
+        console.log('got post!!! ')
+        let obj = req.body
+        obj.success = true
+        res.jsonp(obj)
       })
-      server.listen(1234)
+      testHttpServer.listen(1234, () => {
+        done()
+      })
+    })
+
+    it('should be possible to post to proxy', function(done) {
       agent
       .post('/srcproxy')
       .set('Accept', 'application/json')
@@ -1794,25 +1808,18 @@ describe('<Unit test SRC rounds>', function() {
       .send({
         'host': 'localhost:1234',
         'path': '/srcproxy-test',
+        'data': 'src_admin'
       })
       .end(function(err,res) {
         res.status.should.be.equal(200)
         const r = getResponse(res)
         r.success.should.equal(true)
-        server.close()
+        r.data.should.equal('src_admin')
         done()
       })
     })
-  })
 
-  describe('Post to proxy with competitor', function() {
     it('should be possible to post to proxy', function(done) {
-      const http = require('http')
-      const server = http.createServer((req, res) => {
-        res.setHeader('Content-Type', 'application/json')
-        res.end('{"success":true}')
-      })
-      server.listen(1234)
       agent
       .post('/srcproxy')
       .set('Accept', 'application/json')
@@ -1820,18 +1827,22 @@ describe('<Unit test SRC rounds>', function() {
       .send({
         'host': 'localhost:1234',
         'path': '/srcproxy-test',
+        'data': 'competitor'
       })
       .end(function(err,res) {
         res.status.should.be.equal(200)
         const r = getResponse(res)
         r.success.should.equal(true)
-        server.close()
+        r.data.should.equal('competitor')
         done()
       })
     })
+
+    after(function(done) {
+      testHttpServer.close()
+      done()
+    })
   })
-
-
 
   // after all tests have run, we need to clean up our mess
   after(function(done) {
