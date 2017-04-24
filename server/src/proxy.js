@@ -14,7 +14,7 @@ function setRoutes(app) {
       request({
         url: target,
         json: true,
-        body: req.body,
+        body: req.body.data,
         method: 'POST',
         headers: {'authorization': req.headers.authorization}
       }).on('error', function(e) {
