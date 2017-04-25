@@ -4,19 +4,12 @@ const should = require('should')
 const supertest = require('supertest')
 const clearRequire = require('clear-require');
 
-const app = require('../server/cloudsim_portal')
-const agent = supertest.agent(app)
+let app
+let agent
+let csgrant
 
-const csgrant = require('cloudsim-grant')
-const token = csgrant.token
-
-// we need fresh keys for this test
-const keys = csgrant.token.generateKeys()
-token.initKeys(keys.public, keys.private)
-
-const admin = process.env.CLOUDSIM_ADMIN || 'admin'
-
-const adminTokenData = {identities: [admin]}
+let admin
+let adminTokenData
 let adminToken
 
 const user = 'user'
@@ -57,7 +50,33 @@ function parseResponse(res, log) {
 describe('<Unit test S3 keys>', function() {
 
   before(function(done) {
-    token.signToken(adminTokenData, (e, tok)=>{
+    // Important: the database has to be cleared early, before
+    // the server is launched (otherwise, root resources will be missing)
+    csgrant = require('cloudsim-grant')
+    csgrant.model.clearDb()
+    done()
+  })
+
+  before(function(done) {
+    app = require('../server/cloudsim_portal')
+    app.on('ready', () => {
+      agent = supertest.agent(app)
+      done()
+    })
+  })
+
+  before(function(done) {
+    // we need fresh keys for this test
+    const keys = csgrant.token.generateKeys()
+    csgrant.token.initKeys(keys.public, keys.private)
+    done()
+  })
+
+  before(function(done) {
+    admin = process.env.CLOUDSIM_ADMIN || 'admin'
+    adminTokenData = {identities: [admin]}
+
+    csgrant.token.signToken(adminTokenData, (e, tok)=>{
       console.log('token signed for user "' + admin + '"')
       if(e) {
         console.log('sign error: ' + e)
@@ -277,10 +296,11 @@ describe('<Unit test S3 keys>', function() {
 
   // after all tests have run, we need to clean up our mess
   after(function(done) {
-    csgrant.model.clearDb()
     app.close(function() {
-      clearRequire.all()
-      done()
+      csgrant.model.clearDb(() => {
+        clearRequire.all()
+        done()
+      })
     })
   })
 })

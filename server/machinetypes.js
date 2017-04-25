@@ -5,9 +5,6 @@ const csgrant = require('cloudsim-grant')
 const common = require('./common')
 
 function setRoutes(app) {
-
-  console.log('MACHINE TYPES setRoutes')
-
   // Get all machine types which this user has permission to
   app.get('/machinetypes',
     csgrant.authenticate,

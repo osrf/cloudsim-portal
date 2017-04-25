@@ -10,11 +10,11 @@ const should = require('should')
 const supertest = require('supertest')
 const clearRequire = require('clear-require');
 
-const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
+let adminUser
+let userToken
+let userTokenData
 
 // Users
-let userToken
-const userTokenData = {identities:[adminUser]}
 let user2Token
 const user2TokenData = {identities:['user2']}
 
@@ -37,16 +37,25 @@ describe('<Unit test Metrics>', function() {
     // the server is launched (otherwise, root resources will be missing)
     csgrant = require('cloudsim-grant')
     csgrant.model.clearDb()
-
-    app = require('../server/cloudsim_portal')
-    agent = supertest.agent(app)
     done()
+  })
+
+  before(function(done) {
+    app = require('../server/cloudsim_portal')
+    app.on('ready', () => {
+      agent = supertest.agent(app)
+      done()
+    })
   })
 
   before(function(done) {
     // we need fresh keys for this test
     const keys = csgrant.token.generateKeys()
     csgrant.token.initKeys(keys.public, keys.private)
+
+    adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
+    userTokenData = {identities:[adminUser]}
+
     csgrant.token.signToken(userTokenData, (e, tok)=>{
       console.log('token signed for user "' + userTokenData.identities[0]  + '"')
       if(e) {
@@ -265,16 +274,16 @@ describe('<Unit test Metrics>', function() {
         res.status.should.be.equal(404);
         done();
       });
-    });    
+    });
   });
 
   // after all tests have run, we need to clean up our mess
   after(function(done) {
-    console.log('after everything')
-    csgrant.model.clearDb()
     app.close(function() {
-      clearRequire.all()
-      done()
+      csgrant.model.clearDb(() => {
+        clearRequire.all()
+        done()
+      })
     })
   })
 })

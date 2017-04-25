@@ -4,17 +4,16 @@
 let csgrant
 let app
 
-
 /// Module dependencies.
 const should = require('should')
 const supertest = require('supertest')
 const clearRequire = require('clear-require');
 
-const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
+let adminUser
+let userTokenData
+let userToken
 
 // Users
-let userToken
-const userTokenData = {identities:[adminUser]}
 let user2Token
 const user2TokenData = {identities:['user2']}
 
@@ -73,14 +72,20 @@ describe('<Simulator controller test>', function() {
 
   before(function(done) {
     app = require('../server/cloudsim_portal')
-    agent = supertest.agent(app)
-    done()
+    app.on('ready', () => {
+      agent = supertest.agent(app)
+      done()
+    })
   })
 
   before(function(done) {
     // we need fresh keys for this test
     const keys = csgrant.token.generateKeys()
     csgrant.token.initKeys(keys.public, keys.private)
+
+    adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
+    userTokenData = {identities:[adminUser]}
+
     csgrant.token.signToken(userTokenData, (e, tok)=>{
       if(e) {
         should.fail('sign error: ' + e)
@@ -151,21 +156,29 @@ describe('<Simulator controller test>', function() {
         data.requester.should.equal(adminUser);
         data.result.length.should.be.greaterThanOrEqual(2);
 
-        data.result[0].name.should.be.equal("simulators");
+        data.result[0].name.should.be.equal("root");
         data.result[0].permissions[0].username.should.be.equal(adminUser);
         data.result[0].permissions[0].permissions.readOnly.should.be.equal(false);
 
-        data.result[1].name.should.be.equal("machinetypes");
+        data.result[1].name.should.be.equal("simulators");
         data.result[1].permissions[0].username.should.be.equal(adminUser);
         data.result[1].permissions[0].permissions.readOnly.should.be.equal(false);
 
-        data.result[2].name.should.be.equal("s3keys");
+        data.result[2].name.should.be.equal("machinetypes");
         data.result[2].permissions[0].username.should.be.equal(adminUser);
         data.result[2].permissions[0].permissions.readOnly.should.be.equal(false);
 
-        data.result[3].name.should.be.equal("sgroups");
+        data.result[3].name.should.be.equal("s3keys");
         data.result[3].permissions[0].username.should.be.equal(adminUser);
         data.result[3].permissions[0].permissions.readOnly.should.be.equal(false);
+
+        data.result[4].name.should.be.equal("sgroups");
+        data.result[4].permissions[0].username.should.be.equal(adminUser);
+        data.result[4].permissions[0].permissions.readOnly.should.be.equal(false);
+
+        data.result[5].name.should.be.equal("metrics-configs");
+        data.result[5].permissions[0].username.should.be.equal(adminUser);
+        data.result[5].permissions[0].permissions.readOnly.should.be.equal(false);
 
         done();
       });
@@ -1298,10 +1311,11 @@ describe('<Simulator controller test>', function() {
 
   // after all tests have run, we need to clean up our mess
   after(function(done) {
-    csgrant.model.clearDb()
     app.close(function() {
-      clearRequire.all()
-      done()
+      csgrant.model.clearDb(() => {
+        clearRequire.all()
+        done()
+      })
     })
   })
 })
