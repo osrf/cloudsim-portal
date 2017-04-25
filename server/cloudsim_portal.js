@@ -282,6 +282,7 @@ csgrant.init(
     httpServer.listen(port, function(){
       console.log('ssl: ' + useHttps)
       console.log('listening on port ' + port);
+      app.emit('ready')
     })
   }
 )

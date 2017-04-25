@@ -36,8 +36,8 @@ const notCompetitor = "not-competitor"
 const notCompetitorTokenData = {identities: [notCompetitor]}
 let notCompetitorToken
 
-const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
-const adminTokenData = {identities:[adminUser]}
+let adminUser
+let adminTokenData
 let adminToken
 
 // Fake official machine type params
@@ -70,7 +70,7 @@ function getResponse(res, print) {
 
 // this function creates a socket.io socket connection for the token's user.
 // events will be added to the events array
-const socketAddress = 'http://localhost:' + process.env.PORT
+let socketAddress
 function createSocket(token) {
   const query = 'token=' + token
   const client = io.connect(socketAddress, {
@@ -110,8 +110,14 @@ describe('<Unit test SRC rounds>', function() {
     csgrant.model.clearDb()
 
     app = require('../server/cloudsim_portal')
-    agent = supertest.agent(app)
-    done()
+    app.on('ready', () => {
+      agent = supertest.agent(app)
+      adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
+      adminTokenData = {identities:[adminUser]}
+      const port = process.env.PORT || 4000
+      socketAddress = 'http://localhost:' + port
+      done()
+    })
   })
 
   before(function(done) {
@@ -122,7 +128,6 @@ describe('<Unit test SRC rounds>', function() {
   })
 
   before(function(done) {
-
     csgrant.token.signToken(srcAdminTokenData, (e, tok)=>{
       if(e) {
         console.log('sign error: ' + e)
@@ -1846,10 +1851,11 @@ describe('<Unit test SRC rounds>', function() {
 
   // after all tests have run, we need to clean up our mess
   after(function(done) {
-    csgrant.model.clearDb()
     app.close(function() {
-      clearRequire.all()
-      done()
+      csgrant.model.clearDb(() => {
+        clearRequire.all()
+        done()
+      })
     })
   })
 })
