@@ -9,10 +9,9 @@ const should = require('should');
 const supertest = require('supertest');
 const clearRequire = require('clear-require');
 
-const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
-
+let adminUser
+let userTokenData
 let userToken
-const userTokenData = {identities:[adminUser]}
 
 let agent;
 
@@ -28,8 +27,10 @@ describe('<SGroup Unit Test>', function() {
 
   before(function(done) {
     app = require('../server/cloudsim_portal')
-    agent = supertest.agent(app)
-    done()
+    app.on('ready', () => {
+      agent = supertest.agent(app)
+      done()
+    })
   })
 
   before(function(done) {
@@ -40,6 +41,9 @@ describe('<SGroup Unit Test>', function() {
   })
 
   before(function(done) {
+    adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
+    userTokenData = {identities:[adminUser]}
+
     csgrant.token.signToken(userTokenData, (e, tok)=>{
       if(e) {
         console.log('sign error: ' + e)
@@ -399,11 +403,11 @@ describe('<SGroup Unit Test>', function() {
 
     // after all tests have run, we need to clean up our mess
     after(function(done) {
-      console.log('after everything')
-      csgrant.model.clearDb()
       app.close(function() {
-        clearRequire.all()
-        done()
+        csgrant.model.clearDb(() => {
+          clearRequire.all()
+          done()
+        })
       })
     })
   });

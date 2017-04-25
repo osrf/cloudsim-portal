@@ -11,7 +11,8 @@ const should = require('should')
 const supertest = require('supertest')
 const clearRequire = require('clear-require');
 
-const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
+let adminUser
+let adminTokenData
 
 // the tokens to identify our users
 let adminToken
@@ -23,7 +24,6 @@ let user4Token
 let simId1
 let simId2
 
-const adminTokenData = {identities:[adminUser]}
 const user2TokenData = {identities:['user2']}
 const user3TokenData = {identities:['user3']}
 const user4TokenData = {identities:['user4']}
@@ -34,8 +34,7 @@ const log = enableLog ? console.log: function(){
   // log or not
 }
 
-const port = process.env.PORT || 4000
-const socketAddress = 'http://localhost:' + port
+let socketAddress
 
 let user4socket
 let user4events = []
@@ -125,8 +124,14 @@ describe('<Unit Test sockets>', function() {
 
   before(function(done) {
     app = require('../server/cloudsim_portal')
-    agent = supertest.agent(app)
-    done()
+    app.on('ready', () => {
+      agent = supertest.agent(app)
+      adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
+      adminTokenData = {identities:[adminUser]}
+      const port = process.env.PORT || 4000
+      socketAddress = 'http://localhost:' + port
+      done()
+    })
   })
 
   before(function(done) {
@@ -445,10 +450,11 @@ describe('<Unit Test sockets>', function() {
 
   // after all tests have run, we need to clean up our mess
   after(function(done) {
-    csgrant.model.clearDb()
     app.close(function() {
-      clearRequire.all()
-      done()
+      csgrant.model.clearDb(() => {
+        clearRequire.all()
+        done()
+      })
     })
   })
 })
