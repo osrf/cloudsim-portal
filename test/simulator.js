@@ -151,21 +151,29 @@ describe('<Simulator controller test>', function() {
         data.requester.should.equal(adminUser);
         data.result.length.should.be.greaterThanOrEqual(2);
 
-        data.result[0].name.should.be.equal("simulators");
+        data.result[0].name.should.be.equal("root");
         data.result[0].permissions[0].username.should.be.equal(adminUser);
         data.result[0].permissions[0].permissions.readOnly.should.be.equal(false);
 
-        data.result[1].name.should.be.equal("machinetypes");
+        data.result[1].name.should.be.equal("simulators");
         data.result[1].permissions[0].username.should.be.equal(adminUser);
         data.result[1].permissions[0].permissions.readOnly.should.be.equal(false);
 
-        data.result[2].name.should.be.equal("s3keys");
+        data.result[2].name.should.be.equal("machinetypes");
         data.result[2].permissions[0].username.should.be.equal(adminUser);
         data.result[2].permissions[0].permissions.readOnly.should.be.equal(false);
 
-        data.result[3].name.should.be.equal("sgroups");
+        data.result[3].name.should.be.equal("s3keys");
         data.result[3].permissions[0].username.should.be.equal(adminUser);
         data.result[3].permissions[0].permissions.readOnly.should.be.equal(false);
+
+        data.result[4].name.should.be.equal("sgroups");
+        data.result[4].permissions[0].username.should.be.equal(adminUser);
+        data.result[4].permissions[0].permissions.readOnly.should.be.equal(false);
+
+        data.result[5].name.should.be.equal("metrics-configs");
+        data.result[5].permissions[0].username.should.be.equal(adminUser);
+        data.result[5].permissions[0].permissions.readOnly.should.be.equal(false);
 
         done();
       });

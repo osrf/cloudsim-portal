@@ -265,7 +265,7 @@ describe('<Unit test Metrics>', function() {
         res.status.should.be.equal(404);
         done();
       });
-    });    
+    });
   });
 
   // after all tests have run, we need to clean up our mess

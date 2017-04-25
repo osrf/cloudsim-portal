@@ -86,16 +86,119 @@ else {
   httpServer = require('http').Server(app)
 }
 
-const initialResources =  {
-  'simulators': {},
-  'machinetypes': {},
-  's3keys': {},
-  'sgroups': {},
-  'srcrounds': {},
-  'srcsimulations': {},
-  'metrics-configs': {},
-  'metrics-configs-000': { "identity": adminUser, "whitelisted": true }
-}
+const initialResources = [
+  {
+    name: 'root',
+    data : {},
+    permissions: [
+      {
+        username: adminUser,
+        permissions: {
+          readOnly: false
+        }
+      }
+    ]
+  },
+  {
+    name: 'simulators',
+    data:{},
+    permissions: [
+      {
+        username: adminUser,
+        permissions: {
+          readOnly: false
+        }
+      }
+    ]
+  },
+  {
+    name: 'machinetypes',
+    data:{},
+    permissions: [
+      {
+        username: adminUser,
+        permissions: {
+          readOnly: false
+        }
+      }
+    ]
+  },
+  {
+    name: 's3keys',
+    data:{},
+    permissions: [
+      {
+        username: adminUser,
+        permissions: {
+          readOnly: false
+        }
+      }
+    ]
+  },
+  {
+    name: 'sgroups',
+    data:{},
+    permissions: [
+      {
+        username: adminUser,
+        permissions: {
+          readOnly: false
+        }
+      }
+    ]
+  },
+  {
+    name: 'metrics-configs',
+    data:{},
+    permissions: [
+      {
+        username: adminUser,
+        permissions: {
+          readOnly: false
+        }
+      }
+    ]
+  },
+  {
+    name: 'metrics-configs-000',
+    data:{
+      identity: adminUser,
+      whitelisted: true
+    },
+    permissions: [
+      {
+        username: adminUser,
+        permissions: {
+          readOnly: false
+        }
+      }
+    ],
+  },
+  {
+    name: 'srcrounds',
+    data:{},
+    permissions: [
+      {
+        username: adminUser,
+        permissions: {
+          readOnly: false
+        }
+      }
+    ]
+  },
+  {
+    name: 'srcsimulations',
+    data:{},
+    permissions: [
+      {
+        username: adminUser,
+        permissions: {
+          readOnly: false
+        }
+      }
+    ]
+  },
+]
 
 // use body parser so we can get info from POST and/or URL parameters
 app.use(bodyParser.json())
@@ -169,7 +272,7 @@ app.close = function(cb) {
   httpServer.close(cb)
 }
 
-csgrant.init(adminUser,
+csgrant.init(
   initialResources,
   permissionDbName,
   process.env.CLOUDSIM_PORTAL_DB,
