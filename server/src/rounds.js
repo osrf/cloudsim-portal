@@ -267,6 +267,7 @@ function setRoutes(app) {
                     const simId = resp.id
                     const simSsh = resp.ssh
                     const simMachineId = resp.machine_id
+                    const simDataRoute = resp.sim_data_url
 
                     // wait till simulator has its ip before creating the field
                     // computer instance as we need to pass the ip onto the
@@ -295,6 +296,7 @@ function setRoutes(app) {
                       options.client_route = clientVpnKeyUrl
                       options.dockerurl = resourceData.dockerurl
                       options.resources = simResources
+                      options.sim_data_route = simDataRoute
                       fieldcomputer.options = options
                       // create fc instance using user identity and share with
                       // team
@@ -502,6 +504,8 @@ const createInstance = function(user, team, teamPerm, keyName, resource, cb) {
                 return
               }
               simResp.ssh = common.portalUrl() + '/sshkeys/' + sshResp.id
+              // route for sim instance to post data (.e.g. status) back
+              simResp.sim_data_route = common.portalUrl() + '/srcsimulations/'
               cb(simResp)
             })
           })
