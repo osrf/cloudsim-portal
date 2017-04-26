@@ -267,7 +267,7 @@ function setRoutes(app) {
                     const simId = resp.id
                     const simSsh = resp.ssh
                     const simMachineId = resp.machine_id
-                    const simDataRoute = resp.sim_data_url
+                    const simDataRoute = resp.sim_data_route
 
                     // wait till simulator has its ip before creating the field
                     // computer instance as we need to pass the ip onto the
