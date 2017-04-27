@@ -286,6 +286,10 @@ function setRoutes(app) {
                         (new Date()).valueOf()
                       const clientVpnKeyUrl = keysurl + '/tap/src/client/'
                           + keyResourceId
+                      // route for sim instance to post data (.e.g. status)
+                      // back
+                      const portalDataRoute = common.portalUrl() +
+                        '/srcsimulations/'
                       let fieldcomputer = resourceData.fieldcomputer
                       options = fieldcomputer.options || {}
                       options.role = 'fieldcomputer'
@@ -295,6 +299,7 @@ function setRoutes(app) {
                       options.client_route = clientVpnKeyUrl
                       options.dockerurl = resourceData.dockerurl
                       options.resources = simResources
+                      options.portal_data_route = portalDataRoute
                       fieldcomputer.options = options
                       // create fc instance using user identity and share with
                       // team
