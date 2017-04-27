@@ -298,6 +298,7 @@ function setRoutes(app) {
                       options.client_id = 'fieldcomputer'
                       options.client_route = clientVpnKeyUrl
                       options.dockerurl = resourceData.dockerurl
+                      options.github_deploy_key = resourceData.github_deploy_key || 'undefined'
                       options.resources = simResources
                       options.portal_data_route = portalDataRoute
                       fieldcomputer.options = options
