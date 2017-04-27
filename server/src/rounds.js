@@ -579,7 +579,7 @@ const generateVpnKey = function(userToken, keyName, grantee, cb) {
     }
     request(grantOptions, (err, response, body) => {
       if (err || response.statusCode != 200) {
-        cb({error: 'Unable to generate vpn keys'})
+        cb({error: 'Unable to share vpn keys'})
         return
       }
 
