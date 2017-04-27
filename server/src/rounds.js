@@ -557,12 +557,10 @@ const generateVpnKey = function(userToken, keyName, grantee, cb) {
       cb({error: 'Unable to generate vpn keys'})
       return
     }
+    const vpnKeyResponse = body
 
     // grant admin access
-    const keyResource = body.id
-    console.log('granting1 ' + JSON.stringify(body))
-    console.log('granting2 ' + JSON.stringify(response))
-    console.log('granting access to vpn key resource: ' + keyResource)
+    const keyResource = vpnKeyResponse.id
     const vpnKeyGrantUrl = keysurl + '/permissions'
     const vpnKeyGrantData = {
       grantee: srcAdmin,
@@ -585,7 +583,7 @@ const generateVpnKey = function(userToken, keyName, grantee, cb) {
         return
       }
 
-      cb(body)
+      cb(vpnKeyResponse)
     })
   })
 }
