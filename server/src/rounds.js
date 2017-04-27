@@ -201,8 +201,8 @@ function setRoutes(app) {
 
             // Give team access to srcound
             // This allows them to see "public" information
-            csgrant.grantPermission(req.user, resourceData.team, r.id, !practice,
-            function(err) {
+            csgrant.grantPermission(req.user, resourceData.team, r.id,
+            !practice, function(err) {
               if (err) {
                 res.status(500).jsonp(err)
                 return
@@ -557,7 +557,36 @@ const generateVpnKey = function(userToken, keyName, grantee, cb) {
       cb({error: 'Unable to generate vpn keys'})
       return
     }
-    cb(body)
+
+    // grant admin access
+    const keyResource = body.id
+    console.log('granting1 ' + JSON.stringify(body))
+    console.log('granting2 ' + JSON.stringify(response))
+    console.log('granting access to vpn key resource: ' + keyResource)
+    const vpnKeyGrantUrl = keysurl + '/permissions'
+    const vpnKeyGrantData = {
+      grantee: srcAdmin,
+      resource: keyResource,
+      readOnly: false
+    }
+
+    const grantOptions = {
+      method: 'post',
+      body: vpnKeyGrantData,
+      json: true,
+      url: vpnKeyGrantUrl,
+      headers: {
+        Authorization: userToken
+      }
+    }
+    request(grantOptions, (err, response, body) => {
+      if (err || response.statusCode != 200) {
+        cb({error: 'Unable to generate vpn keys'})
+        return
+      }
+
+      cb(body)
+    })
   })
 }
 
