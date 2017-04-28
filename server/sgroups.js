@@ -1,7 +1,9 @@
 'use strict';
 
 /// Module dependencies.
+const parameters = require('parameters-middleware');
 var csgrant = require('cloudsim-grant');
+const common = require('./common')
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
@@ -32,17 +34,6 @@ const create = function(req, res) {
   }
 
   const sgroupName = req.body.resource;
-
-  if (!sgroupName)
-  {
-    error = {
-      success: false,
-      error: 'Missing required fields (resource)'
-    }
-    console.log(error.error)
-    res.jsonp(error);
-    return;
-  }
 
   // get unique resource id
   csgrant.getNextResourceId('sgroup', (err, resourceName) => {
@@ -298,23 +289,17 @@ exports.setRoutes = function(app) {
   app.post('/sgroups',
               csgrant.authenticate,
               csgrant.ownsResource('sgroups', false),
+              parameters(
+                {body : ['resource']},
+                {message : 'Missing required field (resource).'}
+              ),
               create);
 
   /// Get a list of security groups
   app.get('/sgroups',
              csgrant.authenticate,
              csgrant.userResources,
-             function (req, res, next) {
-               // we're going to filter out the non
-               // groups types before the next middleware.
-               req.allResources = req.userResources
-               req.userResources = req.allResources.filter( (obj)=>{
-                 if(obj.name.indexOf('sgroup-') == 0)
-                   return true
-                 return false
-               })
-               next()
-             },
+             common.filterResources('sgroup-'),
              csgrant.allResources)
 
   /// Delete a security group
