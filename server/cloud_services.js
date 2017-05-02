@@ -17,7 +17,7 @@ log('process.env.CLOUDSIM_DRY_RUN (true means enabled): ' +  process.env.CLOUDSI
 exports.awsDefaults = {
   region : 'us-west-1',
   keyName : 'cloudsim',
-  security : 'cloudsim-sim',
+  security : 'cloudsim-sim-src',
 }
 
 
