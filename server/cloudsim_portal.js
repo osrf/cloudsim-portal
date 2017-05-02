@@ -218,6 +218,18 @@ if (app.get('env') != 'test') {
   }))
 }
 
+// Redirect to HTTPS
+app.use(function (req, res, next) {
+    // Insecure request?
+    /* istanbul ignore if */
+  if (req.get('x-forwarded-proto') == 'http') {
+        // Redirect to https://
+    return res.redirect('https://' + req.get('host') + req.url);
+  }
+
+  next();
+});
+
 if (!process.env.CLOUDSIM_AUTH_PUB_KEY) {
   console.log('*** WARNING: No cloudsim auth public key found. \
       Did you forget to set "CLOUDSIM_AUTH_PUB_KEY"? ***')
