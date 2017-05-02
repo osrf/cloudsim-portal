@@ -80,8 +80,12 @@ const createImpl = function(user, opts, cb) {
   }
   simulator.options = opts.options || {}
 
-  if (opts.sgroup)
+  // we use just one (1) security group
+  if (opts.sgroup) {
     simulator.sgroup = opts.sgroup
+  } else {
+    simulator.sgroup = awsDefaults.security
+  }
   // Set the simulator user
   simulator.creator = user;
   simulator.launch_date = new Date();
@@ -118,9 +122,7 @@ const createImpl = function(user, opts, cb) {
         const scriptTxt = cloudServices.generateScript(
           simulator.creator,
           simulator.options)
-        let sgroups = [awsDefaults.security];
-        if (opts.sgroup)
-          sgroups.push(opts.sgroup)
+        let sgroups = [simulator.sgroup];
         cloudServices.launchSimulator(
           simulator.region,
           simulator.sshkey,

@@ -17,10 +17,8 @@ log('process.env.CLOUDSIM_DRY_RUN (true means enabled): ' +  process.env.CLOUDSI
 exports.awsDefaults = {
   region : 'us-west-1',
   keyName : 'cloudsim',
-  security : 'cloudsim-sim-src',
+  security : 'cloudsim-sim',
 }
-
-
 
 // Generates a new ssh key, registers the public key on the cloud
 // provider and saves the private key

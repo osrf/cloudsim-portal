@@ -487,6 +487,7 @@ const createInstance = function(user, team, teamPerm, keyName, resource, cb) {
           return
         }
         resource.sshkey = sshResp.result.name
+        resource.sgroup = 'cloudsim-sim-src'
         // Launch instance
         simulators.create(user, resource, function(simResp){
           if (simResp.error) {
