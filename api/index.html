@@ -71,6 +71,14 @@
             "name": "machinetypes",
             "description": "Manage machine types",
           },
+          {
+            "name": "s3keys",
+            "description": "S3 keys",
+          },
+          {
+            "name": "srcrounds",
+            "description": "Manage rounds for SRC",
+          },
         ],
         paths: {
           // /permissions
@@ -322,7 +330,7 @@
           },
 
 
-          // /tap/sasc/server/:resourceId
+          // /sshkeys/:resourceId
           "\/sshkeys\/{resourceId}": {
             // GET
             "get": {
@@ -423,6 +431,256 @@
 
           },
 
+          // /metrics/simulators
+          "\/metrics/simulators": {
+            // GET
+            "get": {
+              "tags": [
+                "metrics"
+              ],
+              "summary": "Get all metrics associated to simulators grouped by user",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "team",
+                  "in": "query",
+                  "description": "Team name for which to return grouped simulator metrics",
+                  "required": false,
+                  "type": "string",
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "result": {
+                        "type" : "array",
+                        "items": {
+                          "$ref": "#\/definitions\/ResourceWithoutPerm"
+                        },
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            }
+          },
+          // /metrics/config
+          "\/metrics/configs": {
+            // GET
+            "get": {
+              "tags": [
+                "metrics"
+              ],
+              "summary": "Get all metrics configurations",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "result": {
+                        "type" : "array",
+                        "items": {
+                          "$ref": "#\/definitions\/ResourceWithoutPerm"
+                        },
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // POST
+            "post": {
+              "tags": [
+                "metrics"
+              ],
+              "summary": "Create a metrics config.",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Object with metric config information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "identity": {
+                        "type": "string",
+                        "default": "",
+                      },
+                      "check_enabled": {
+                        "type": "boolean",
+                        "default": "true",
+                      },
+                      "max_instance_hours": {
+                        "type": "string",
+                        "default": "500",
+                      },
+                      "whitelisted": {
+                        "type": "boolean",
+                        "default": "false",
+                      },
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/ResourceWithId"
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
+
+          // /metrics/config/{resourceId}
+          "\/metrics\/configs\/{resourceId}": {
+            // PUT
+            "put": {
+              "tags": [
+                "metrics"
+              ],
+              "summary": "Update the metrics config",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of metrics-config",
+                  "required": true,
+                  "type": "string",
+                },
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Object with metrics config information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "check_enabled": {
+                        "type": "boolean",
+                        "default": "true",
+                      },
+                      "max_instance_hours": {
+                        "type": "string",
+                        "default": "500",
+                      },
+                      "whitelisted": {
+                        "type": "boolean",
+                        "default": "false",
+                      },
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/Resource"
+                      },
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
 
 
           // /simulators
@@ -580,7 +838,7 @@
                 {
                   "name": "resourceId",
                   "in": "path",
-                  "description": "Id of signup resource",
+                  "description": "Id of resource",
                   "required": true,
                   "type": "string",
                 }
@@ -794,7 +1052,7 @@
                 {
                   "name": "resourceId",
                   "in": "path",
-                  "description": "Id of signup resource",
+                  "description": "Id of resource",
                   "required": true,
                   "type": "string",
                 }
@@ -995,7 +1253,7 @@
                         "type": "string",
                         "default": "AWS hardware type",
                       },
-                      "software": {
+                      "image": {
                         "type": "string",
                         "default": "AWS ami",
                       },
@@ -1050,7 +1308,7 @@
                 {
                   "name": "resourceId",
                   "in": "path",
-                  "description": "Id of signup resource",
+                  "description": "Id of resource",
                   "required": true,
                   "type": "string",
                 }
@@ -1187,9 +1445,285 @@
                         "type": "string",
                         "default": "AWS hardware type",
                       },
-                      "software": {
+                      "image": {
                         "type": "string",
                         "default": "AWS ami",
+                      },
+                    },
+                  }
+                }
+              ]
+            },
+          },
+          // /s3keys
+          "\/s3keys": {
+            // GET
+            "get": {
+              "tags": [
+                "s3keys"
+              ],
+              "summary": "Get all S3 keys for a user",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "result": {
+                        "type" : "array",
+                        "items": {
+                          "$ref": "#\/definitions\/ResourceWithoutPerm"
+                        },
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // POST
+            "post": {
+              "tags": [
+                "s3keys"
+              ],
+              "summary": "Create an S3 key.",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Object with S3 key information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "bucket_name": {
+                        "type": "string",
+                        "default": "bucket_name",
+                      },
+                      "access_key": {
+                        "type": "string",
+                        "default": "Access key",
+                      },
+                      "secret_key": {
+                        "type": "string",
+                        "default": "Secret key",
+                      },
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/ResourceWithId"
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
+          // /s3keys/{resourceId}
+          "\/s3keys\/{resourceId}": {
+            // DELETE
+            "delete": {
+              "tags": [
+                "s3keys"
+              ],
+              "summary": "Delete an S3 key.",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of resource",
+                  "required": true,
+                  "type": "string",
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                        "default": false,
+                      },
+                      "error": {
+                        "type": "string",
+                      },
+                    },
+                  },
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // GET
+            "get": {
+              "tags": [
+                "s3keys"
+              ],
+              "summary": "Get a specific S3 key",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of resource",
+                  "required": true,
+                  "type": "string",
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "resource": {
+                        "$ref": "#\/definitions\/ResourceId"
+                      },
+                      "id": {
+                        "$ref": "#\/definitions\/ResourceId"
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/Resource"
+                      },
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // PUT
+            "put": {
+              "tags": [
+                "s3keys"
+              ],
+              "summary": "Update an S3 key",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of resource",
+                  "required": true,
+                  "type": "string",
+                },
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Object with S3 key information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "bucket_name": {
+                        "type": "string",
+                        "default": "bucket_name",
+                      },
+                      "access_key": {
+                        "type": "string",
+                        "default": "Access key",
+                      },
+                      "secret_key": {
+                        "type": "string",
+                        "default": "Secret key",
                       },
                     },
                   }
@@ -1209,6 +1743,143 @@
                       },
                     }
                   }
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
+          // /srcrounds
+          "\/srcrounds": {
+            // GET
+            "get": {
+              "tags": [
+                "srcrounds"
+              ],
+              "summary": "Get all SRC rounds for a user",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // POST
+            "post": {
+              "tags": [
+                "srcrounds"
+              ],
+              "summary": "Start a new round",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Round information",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "dockerurl": {
+                        "type": "string",
+                      },
+                      "team": {
+                        "type": "string",
+                      },
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
+          // /srcrounds
+          "\/srcrounds\/{resourceId}": {
+            // DELETE
+            "delete": {
+              "tags": [
+                "srcrounds"
+              ],
+              "summary": "Delete a round",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of srcround resource",
+                  "required": true,
+                  "type": "string",
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                    },
+                  },
                 },
                 "401": {
                   "description": "Not authorized"

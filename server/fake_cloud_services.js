@@ -43,15 +43,27 @@ exports.launchSimulator = function (region, keyName, hardware, security,
   var machineInfo = { id: simId,
     region: 'us-east-1'
   };
-  fakeSims.push({id: simId, state: 'pending'});
+  fakeSims.push({
+    id: simId,
+    state: 'pending',
+    launchTime: new Date(),
+    creationTime: new Date()
+  });
   cb(null, machineInfo);
 };
 
 exports.simulatorStatus = function (machineInfo, cb) {
-  var idx = fakeSims.map(
-      function(e){return e.id}).indexOf(machineInfo.id);
+  let idx = fakeSims.map(function(e) {return e.id})
+                    .indexOf(machineInfo.id);
 
-  cb(null, {ip:'1.1.1.1', state: fakeSims[idx].state});
+  let sim = fakeSims[idx]
+  cb(null, {
+    ip:'1.1.1.1',
+    state: sim.state,
+    launchTime: sim.launchTime,
+    creationTime: sim.creationTime,
+    terminationTime: sim.terminationTime
+  });
 };
 
 exports.terminateSimulator = function (machineInfo, cb) {
