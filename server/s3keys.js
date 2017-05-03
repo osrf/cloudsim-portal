@@ -4,6 +4,18 @@ const parameters = require('parameters-middleware');
 const csgrant = require('cloudsim-grant')
 const common = require('./common')
 
+// Reads the s3key associated with the given team name
+// cb is a callback(err, items)
+const getS3Keys = function(identities, cb) {
+  csgrant.readAllResourcesForUser(identities, (err, items) => {
+    const keys = items.filter((obj)=>{
+      return obj.name.indexOf('s3key-') == 0
+    })
+    cb(null, keys)
+  })
+}
+
+
 function setRoutes(app) {
 
   // Get all S3 keys which this user has permission to
@@ -116,3 +128,4 @@ function setRoutes(app) {
 }
 
 exports.setRoutes = setRoutes
+exports.getS3Keys = getS3Keys
