@@ -20,8 +20,6 @@ exports.awsDefaults = {
   security : 'cloudsim-sim',
 }
 
-
-
 // Generates a new ssh key, registers the public key on the cloud
 // provider and saves the private key
 // @param[in] keyName the key name
