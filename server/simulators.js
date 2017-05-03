@@ -257,29 +257,46 @@ const terminateImpl = function(user, opts, cb) {
 }
 
 // Terminates a simulator.
+// cb parameter is a callback function with 2 arguments: error and simulator.
 const terminateSimulator = function(user, simulator, cb) {
-
+  if (!simulator.id) {
+    throw new Error("Missing simulator.id")
+  }
+  // Requirement: simulator must contain the "id". It will be read from DB.
   const machineInfo = {region: simulator.region,
     id: simulator.machine_id};
-  cloudServices.terminateSimulator(machineInfo, function(err) {
+  cloudServices.terminateSimulator(machineInfo, function(err, info) {
     if(err) {
       cb(err)
     }
     else {
-      simulator.status = 'TERMINATING';
-      simulator.termination_date = new Date();
-      // send response . Aws timestamps will be updated afterwards
-      cb(null, simulator)
+      // need to re-read the simulator resource based on the given simulator.id
+      // to make sure we have the latest data.
+      csgrant.readResource(user, simulator.id, function(err, readData) {
+        if(err) {
+          return cb(err)
+        }
+        simulator = readData.data
 
-      setTimeout(function() {
-        cloudServices.simulatorStatus(machineInfo, function(err, state) {
-          simulator.aws_termination_request_time = state.terminationTime
-          // update resource (this triggers socket notification)
-          csgrant.updateResource(user, simulator.id, simulator, ()=>{
-            // console.log(simulator.id, 'terminate')
-          })
+        simulator.status = 'TERMINATING';
+        simulator.termination_date = new Date();
+        // Update db with termination date
+        csgrant.updateResource(user, simulator.id, simulator, (err, res) => {
+          // send response . Aws timestamps will be updated afterwards
+          cb(null, simulator)
+
+          setTimeout(function() {
+            cloudServices.simulatorStatus(machineInfo, function(err, state) {
+              simulator.aws_termination_request_time = state.terminationTime
+              // update resource (this triggers socket notification)
+              csgrant.updateResource(user, simulator.id, simulator, () => {
+                console.log(simulator.id, 'aws_termination_time set:', state.terminationTime)
+              })
+            })
+          }, instanceIpUpdateInterval);
+
         })
-      }, instanceIpUpdateInterval);
+      })
     }
   }) // terminate
 }
@@ -355,6 +372,11 @@ function updateInstanceStatus() {
           simulator.data.status = awsState
           const user = getUserFromResource(simulator)
           const resourceName = simulator.data.id
+          // if terminated, let's also set the termination_date if it wasn't
+          // set yet (due to some inconsistency, for example).
+          if (awsState === 'TERMINATED' && !simulator.data.termination_date) {
+            simulator.termination_date = new Date();
+          }
           csgrant.updateResource(user, resourceName, simulator.data, ()=>{
             if (simulator.data.status === 'TERMINATED') {
               // extra console.log for issue 13
@@ -389,7 +411,7 @@ function _computeSimulatorMetrics(user, simulators) {
     const launchTime = moment.utc(s.data.aws_launch_time || s.data.launch_date)
     let terminationTime = moment.utc(s.data.aws_termination_request_time
       || s.data.termination_date
-      || new Date())
+      || new Date()) // we also count still running instances
     const runningTime = moment.duration(terminationTime.diff(launchTime))
     const roundUpHours = Math.floor(runningTime.asHours() + 1)
     for(let pId in s.permissions) {
