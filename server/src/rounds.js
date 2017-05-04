@@ -8,7 +8,6 @@ const simulators = require('../simulators')
 const sshkeys = require('../sshkeys')
 const srcsimulations = require('./simulations')
 
-
 // global variables and settings
 const srcAdmin = 'src-admins'
 let keysurl = process.env.CLOUDSIM_KEYS_URL
@@ -254,6 +253,7 @@ function setRoutes(app) {
                   // that lets them download ssh key and terminate the instances
                   createInstance(req.user, resourceData.team, !practice,
                   serverSshkeyName, simulator, (resp) => {
+                    // resp is the created "simulator" resource, or an error
                     if (resp.error) {
                       res.status(500).jsonp(resp)
                       return
@@ -369,12 +369,14 @@ function setRoutes(app) {
         // create machineInfo data needed for terminating instances
         const simulatorData = {
           data: {
+            id: data.data.public.simulator_id,
             region: data.data.simulator.region,
             machine_id: data.data.secure.simulator_machine_id
           }
         }
         const fieldcomputerData = {
           data: {
+            id: data.data.public.fieldcomputer_id,
             region: data.data.fieldcomputer.region,
             machine_id: data.data.secure.fieldcomputer_machine_id
           }
@@ -509,6 +511,7 @@ const createInstance = function(user, team, teamPerm, keyName, resource, cb) {
                 return
               }
               simResp.ssh = common.portalUrl() + '/sshkeys/' + sshResp.id
+              // returned simResp is the created "simulator" resource
               cb(simResp)
             })
           })
@@ -520,6 +523,7 @@ const createInstance = function(user, team, teamPerm, keyName, resource, cb) {
 
 // terminate instance only in practice mode but keep the machines running
 // in the competition so that the logs can be uploaded
+// Note: machineInfo must contain the simulator's resource id.
 const terminateInstance = function(user, machineInfo, term, cb) {
   if (term)
     simulators.terminate(user, machineInfo, cb)
@@ -579,7 +583,7 @@ const generateVpnKey = function(userToken, keyName, grantee, cb) {
         Authorization: userToken
       }
     }
-    request(grantOptions, (err, response, body) => {
+    request(grantOptions, (err, response) => {
       if (err || response.statusCode != 200) {
         cb({error: 'Unable to share vpn keys'})
         return

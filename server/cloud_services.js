@@ -202,6 +202,7 @@ exports.simulatorStatus = function (machineInfo, cb) {
 // machineInfo must contain:
 //       id: the AWS instance id
 //       region: the region where the machine exists
+// cb argument is a callback function with 2 args: error and info.
 exports.terminateSimulator = function (machineInfo, cb) {
   // parameters for terminateInstances
   // we specifiy which machine to
