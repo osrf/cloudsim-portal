@@ -329,6 +329,87 @@ describe('<Unit test SRC rounds>', function() {
     });
   });
 
+  // S3 keys
+  let s3keyId
+  describe('Create S3 keys entry and share with team A', function() {
+    it('should be possible to create S3 key', function(done) {
+      agent
+      .post('/s3keys')
+      .set('Accept', 'application/json')
+      .set('authorization', adminToken)
+      .send({
+        bucket_name: "bucketName",
+        access_key: "theAccessKeyId",
+        secret_key: "aSecret"
+      })
+      .end(function(err,res) {
+        const response = getResponse(res, res.status != 200)
+        res.status.should.be.equal(200)
+        res.redirect.should.equal(false)
+        response.success.should.equal(true)
+        s3keyId = response.id
+        done()
+      })
+    })
+    it('should be possible to grant team A read permission', function(done) {
+      agent
+      .post('/permissions')
+      .set('Acccept', 'application/json')
+      .set('authorization', adminToken)
+      .send({resource: s3keyId, grantee: teamA, readOnly: true})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.resource.should.equal(s3keyId);
+        text.grantee.should.equal(teamA);
+        text.readOnly.should.equal(true);
+        done();
+      });
+    });
+    it('competitorA (teamA) should be able to get the S3 keys', function(done) {
+      agent
+      .get('/s3keys/' +  s3keyId)
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorAToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.resource.should.equal(s3keyId);
+        text.result.name.should.equal(s3keyId)
+        text.result.data.bucket_name.should.not.be.empty()
+        done();
+      });
+    });
+    it('competitorB (teamB) should NOT be able to get the S3 keys', function(done) {
+      agent
+      .get('/s3keys/' +  s3keyId)
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res){
+        res.status.should.be.equal(401);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(false);
+        done();
+      });
+    });
+    it('competitorB (teamB) should NOT be able to get the S3 keys', function(done) {
+      agent
+      .get('/s3keys')
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.result.should.be.empty()
+        done();
+      });
+    });
+  })
+
+
   describe('Try to launch a custom machine with a competitor', function() {
     it('should not be possible to launch a simulator outside of the SRC context',
       function(done) {
