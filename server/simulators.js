@@ -571,3 +571,4 @@ exports.setRoutes = function (app) {
 
 exports.create = createImpl
 exports.terminate = terminateImpl
+exports.checkAvailableInstanceHours = checkAvailableInstanceHours
