@@ -3,6 +3,7 @@
 let agent
 let app
 let csgrant
+let fakeCloudServices
 
 const io = require('socket.io-client')
 const clearRequire = require('clear-require');
@@ -118,6 +119,28 @@ describe('<Unit test SRC rounds>', function() {
       socketAddress = 'http://localhost:' + port
       done()
     })
+  })
+
+  before(function(done) {
+    fakeCloudServices = require('../server/fake_cloud_services');
+    // Extend fake cloudservices with a modified generateScript function 
+    // to store passed "simulator.options" in order to be able 
+    // to later access those as part of these tests 
+    fakeCloudServices._generateScript = fakeCloudServices.generateScript
+    fakeCloudServices.optionsList = []
+    fakeCloudServices.generateScript = function(user, opts) {
+      const record = {simId: opts.sim_id, options: opts}
+      //console.log("Options record", record)
+      this.optionsList.push(record)
+      return this._generateScript(user, opts)
+    }
+    fakeCloudServices.getSimOptionsById = function(simId) {
+      const sims = this.optionsList.filter((sim) => {
+        return sim.simId == simId 
+      })
+      return (sims.length && sims[0].options) || undefined
+    }
+    done()
   })
 
   before(function(done) {
@@ -619,7 +642,7 @@ describe('<Unit test SRC rounds>', function() {
         response.requester.should.equal(srcAdmin)
         response.result.length.should.equal(2)
 
-        // Debug round
+        // Debug round, created by admin for 'debugTeam' 
         roundDebug = response.result[0].name
         roundDebug.indexOf('srcround').should.be.above(-1)
 
@@ -651,6 +674,12 @@ describe('<Unit test SRC rounds>', function() {
         response.result[0].permissions[1].username.should.equal(debugTeam)
         response.result[0].permissions[1].permissions.readOnly.should.equal(
           false)
+        // it should not have any S3 keys
+        const originalOptions = fakeCloudServices.getSimOptionsById(practiceSimIdDebug)
+        should.exist(originalOptions.s3bucket)
+        should.strictEqual(originalOptions.s3bucket, 'undefined')
+        should.not.exist(originalOptions.s3accesskey)
+        should.not.exist(originalOptions.s3privatekey)
 
         // Team A's round
         roundA = response.result[1].name
@@ -665,6 +694,7 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[1].data.secure.simulator_machine_id)
         should.exist(response.result[1].data.secure.fieldcomputer_machine_id)
         should.exist(response.result[1].data.public.simulator_id)
+        const teamASimId = response.result[1].data.public.simulator_id
         should.exist(response.result[1].data.public.fieldcomputer_id)
         should.exist(response.result[0].data.public.vpn)
         should.exist(response.result[0].data.public.simulation_data_id)
@@ -681,6 +711,12 @@ describe('<Unit test SRC rounds>', function() {
         response.result[1].permissions[1].permissions.readOnly.should.equal(
           false)
 
+        // it should have S3 keys
+        const teamASimOptions = fakeCloudServices.getSimOptionsById(teamASimId)
+        should.exist(teamASimOptions.s3bucket)
+        should.notEqual(teamASimOptions.s3bucket, 'undefined')
+        should.exist(teamASimOptions.s3accesskey)
+        should.exist(teamASimOptions.s3privatekey)
         done()
       })
     })
@@ -884,6 +920,7 @@ describe('<Unit test SRC rounds>', function() {
         roundBSimSsh = response.result[0].data.secure.simulator_ssh
         roundBFCSsh = response.result[0].data.secure.fieldcomputer_ssh
         should.exist(response.result[0].data.public.simulator_id)
+        const roundBSimId = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
         should.exist(response.result[0].data.public.vpn)
         should.exist(response.result[0].data.public.simulation_data_id)
@@ -894,6 +931,13 @@ describe('<Unit test SRC rounds>', function() {
 
         // Permissions
         should.exist(response.result[0].permissions)
+
+        // teamB should not have associated S3 keys
+        const teamBSimOptions = fakeCloudServices.getSimOptionsById(roundBSimId)
+        should.exist(teamBSimOptions.s3bucket)
+        should.strictEqual(teamBSimOptions.s3bucket, 'undefined')
+        should.not.exist(teamBSimOptions.s3accesskey)
+        should.not.exist(teamBSimOptions.s3privatekey)
 
         done()
       })
