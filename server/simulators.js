@@ -265,7 +265,7 @@ const terminateSimulator = function(user, simulator, cb) {
   // Requirement: simulator must contain the "id". It will be read from DB.
   const machineInfo = {region: simulator.region,
     id: simulator.machine_id};
-  cloudServices.terminateSimulator(machineInfo, function(err, info) {
+  cloudServices.terminateSimulator(machineInfo, function(err) {
     if(err) {
       cb(err)
     }
@@ -281,7 +281,7 @@ const terminateSimulator = function(user, simulator, cb) {
         simulator.status = 'TERMINATING';
         simulator.termination_date = new Date();
         // Update db with termination date
-        csgrant.updateResource(user, simulator.id, simulator, (err, res) => {
+        csgrant.updateResource(user, simulator.id, simulator, () => {
           // send response . Aws timestamps will be updated afterwards
           cb(null, simulator)
 
