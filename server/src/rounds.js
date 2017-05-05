@@ -45,6 +45,7 @@ function setRoutes(app) {
       {body : ['dockerurl']},
       {message : 'Missing required fields.'}
     ),
+    simulators.checkAvailableInstanceHours,
     csgrant.userResources,
     function(req, res) {
 

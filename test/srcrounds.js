@@ -344,6 +344,31 @@ describe('<Unit test SRC rounds>', function() {
       });
   });
 
+  describe('Give team A limited machine-hour budget', function() {
+    it('it should be possible for admin to give team A a 4-hour budget', function(done) {
+      agent
+      .post('/metrics/configs/')
+      .set('Acccept', 'application/json')
+      .set('authorization', adminToken)
+      .send({ identity: teamA, check_enabled: true, max_instance_hours: 4 })
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.success.should.equal(true)
+        should.exist(text.id)
+        text.result.data.should.not.be.empty();
+        text.result.data.identity.should.equal(teamA);
+        should.not.exist(text.result.data.whitelisted);
+        text.result.data.check_enabled.should.equal(true);
+        text.result.data.max_instance_hours.should.equal(4);
+        should.exist(text.result.permissions[teamA])
+        text.result.permissions[teamA].readOnly.should.equal(true);
+        done();
+      });
+    });
+  });
+
   describe('Check initial rounds with admin', function() {
     it('should be empty', function(done) {
       agent
@@ -1101,7 +1126,25 @@ describe('<Unit test SRC rounds>', function() {
           done()
         })
       })
+  })
 
+  describe('Start a new round with competitor A', function() {
+    it('should not be possible due to exhausted budget', function(done) {
+      agent
+      .post('/srcrounds')
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .send({
+        'dockerurl': dockerUrl,
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(403)
+        let response = getResponse(res)
+        response.success.should.equal(false)
+        response.error.should.containEql('Unable to launch more instances')
+        done()
+      })
+    })
   })
 
   // Test in competition mode
