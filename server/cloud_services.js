@@ -20,8 +20,6 @@ exports.awsDefaults = {
   security : 'cloudsim-sim',
 }
 
-
-
 // Generates a new ssh key, registers the public key on the cloud
 // provider and saves the private key
 // @param[in] keyName the key name
@@ -204,6 +202,7 @@ exports.simulatorStatus = function (machineInfo, cb) {
 // machineInfo must contain:
 //       id: the AWS instance id
 //       region: the region where the machine exists
+// cb argument is a callback function with 2 args: error and info.
 exports.terminateSimulator = function (machineInfo, cb) {
   // parameters for terminateInstances
   // we specifiy which machine to

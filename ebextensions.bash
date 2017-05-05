@@ -21,6 +21,10 @@ echo "        - IpProtocol: tcp" >> .ebextensions/https-lbterminate.config
 echo "          FromPort: 443" >> .ebextensions/https-lbterminate.config
 echo "          ToPort: 443" >> .ebextensions/https-lbterminate.config
 echo "          CidrIp: 0.0.0.0/0" >> .ebextensions/https-lbterminate.config
+echo "        - IpProtocol: tcp" >> .ebextensions/https-lbterminate.config
+echo "          FromPort: 80" >> .ebextensions/https-lbterminate.config
+echo "          ToPort: 80" >> .ebextensions/https-lbterminate.config
+echo "          CidrIp: 0.0.0.0/0" >> .ebextensions/https-lbterminate.config
 echo "        - IpProtocol: icmp" >> .ebextensions/https-lbterminate.config
 echo "          FromPort: 8" >> .ebextensions/https-lbterminate.config
 echo "          ToPort: -1" >> .ebextensions/https-lbterminate.config
