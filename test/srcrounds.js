@@ -3,6 +3,7 @@
 let agent
 let app
 let csgrant
+let fakeCloudServices
 
 const io = require('socket.io-client')
 const clearRequire = require('clear-require');
@@ -118,6 +119,28 @@ describe('<Unit test SRC rounds>', function() {
       socketAddress = 'http://localhost:' + port
       done()
     })
+  })
+
+  before(function(done) {
+    fakeCloudServices = require('../server/fake_cloud_services');
+    // Extend fake cloudservices with a modified generateScript function 
+    // to store passed "simulator.options" in order to be able 
+    // to later access those as part of these tests 
+    fakeCloudServices._generateScript = fakeCloudServices.generateScript
+    fakeCloudServices.optionsList = []
+    fakeCloudServices.generateScript = function(user, opts) {
+      const record = {simId: opts.sim_id, options: opts}
+      //console.log("Options record", record)
+      this.optionsList.push(record)
+      return this._generateScript(user, opts)
+    }
+    fakeCloudServices.getSimOptionsById = function(simId) {
+      const sims = this.optionsList.filter((sim) => {
+        return sim.simId == simId 
+      })
+      return (sims.length && sims[0].options) || undefined
+    }
+    done()
   })
 
   before(function(done) {
@@ -328,6 +351,87 @@ describe('<Unit test SRC rounds>', function() {
       });
     });
   });
+
+  // S3 keys
+  let s3keyId
+  describe('Create S3 keys entry and share with team A', function() {
+    it('should be possible to create S3 key', function(done) {
+      agent
+      .post('/s3keys')
+      .set('Accept', 'application/json')
+      .set('authorization', adminToken)
+      .send({
+        bucket_name: "bucketName",
+        access_key: "theAccessKeyId",
+        secret_key: "aSecret"
+      })
+      .end(function(err,res) {
+        const response = getResponse(res, res.status != 200)
+        res.status.should.be.equal(200)
+        res.redirect.should.equal(false)
+        response.success.should.equal(true)
+        s3keyId = response.id
+        done()
+      })
+    })
+    it('should be possible to grant team A read permission', function(done) {
+      agent
+      .post('/permissions')
+      .set('Acccept', 'application/json')
+      .set('authorization', adminToken)
+      .send({resource: s3keyId, grantee: teamA, readOnly: true})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.resource.should.equal(s3keyId);
+        text.grantee.should.equal(teamA);
+        text.readOnly.should.equal(true);
+        done();
+      });
+    });
+    it('competitorA (teamA) should be able to get the S3 keys', function(done) {
+      agent
+      .get('/s3keys/' +  s3keyId)
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorAToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.resource.should.equal(s3keyId);
+        text.result.name.should.equal(s3keyId)
+        text.result.data.bucket_name.should.not.be.empty()
+        done();
+      });
+    });
+    it('competitorB (teamB) should NOT be able to get the S3 keys', function(done) {
+      agent
+      .get('/s3keys/' +  s3keyId)
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res){
+        res.status.should.be.equal(401);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(false);
+        done();
+      });
+    });
+    it('competitorB (teamB) should NOT be able to get the S3 keys', function(done) {
+      agent
+      .get('/s3keys')
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorBToken)
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        let text = JSON.parse(res.text)
+        text.success.should.equal(true);
+        text.result.should.be.empty()
+        done();
+      });
+    });
+  })
+
 
   describe('Try to launch a custom machine with a competitor', function() {
     it('should not be possible to launch a simulator outside of the SRC context',
@@ -563,7 +667,7 @@ describe('<Unit test SRC rounds>', function() {
         response.requester.should.equal(srcAdmin)
         response.result.length.should.equal(2)
 
-        // Debug round
+        // Debug round, created by admin for 'debugTeam' 
         roundDebug = response.result[0].name
         roundDebug.indexOf('srcround').should.be.above(-1)
 
@@ -595,6 +699,12 @@ describe('<Unit test SRC rounds>', function() {
         response.result[0].permissions[1].username.should.equal(debugTeam)
         response.result[0].permissions[1].permissions.readOnly.should.equal(
           false)
+        // it should not have any S3 keys
+        const originalOptions = fakeCloudServices.getSimOptionsById(practiceSimIdDebug)
+        should.exist(originalOptions.s3bucket)
+        should.strictEqual(originalOptions.s3bucket, 'undefined')
+        should.not.exist(originalOptions.s3accesskey)
+        should.not.exist(originalOptions.s3privatekey)
 
         // Team A's round
         roundA = response.result[1].name
@@ -609,6 +719,7 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[1].data.secure.simulator_machine_id)
         should.exist(response.result[1].data.secure.fieldcomputer_machine_id)
         should.exist(response.result[1].data.public.simulator_id)
+        const teamASimId = response.result[1].data.public.simulator_id
         should.exist(response.result[1].data.public.fieldcomputer_id)
         should.exist(response.result[0].data.public.vpn)
         should.exist(response.result[0].data.public.simulation_data_id)
@@ -625,6 +736,12 @@ describe('<Unit test SRC rounds>', function() {
         response.result[1].permissions[1].permissions.readOnly.should.equal(
           false)
 
+        // it should have S3 keys
+        const teamASimOptions = fakeCloudServices.getSimOptionsById(teamASimId)
+        should.exist(teamASimOptions.s3bucket)
+        should.notEqual(teamASimOptions.s3bucket, 'undefined')
+        should.exist(teamASimOptions.s3accesskey)
+        should.exist(teamASimOptions.s3privatekey)
         done()
       })
     })
@@ -828,6 +945,7 @@ describe('<Unit test SRC rounds>', function() {
         roundBSimSsh = response.result[0].data.secure.simulator_ssh
         roundBFCSsh = response.result[0].data.secure.fieldcomputer_ssh
         should.exist(response.result[0].data.public.simulator_id)
+        const roundBSimId = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
         should.exist(response.result[0].data.public.vpn)
         should.exist(response.result[0].data.public.simulation_data_id)
@@ -838,6 +956,13 @@ describe('<Unit test SRC rounds>', function() {
 
         // Permissions
         should.exist(response.result[0].permissions)
+
+        // teamB should not have associated S3 keys
+        const teamBSimOptions = fakeCloudServices.getSimOptionsById(roundBSimId)
+        should.exist(teamBSimOptions.s3bucket)
+        should.strictEqual(teamBSimOptions.s3bucket, 'undefined')
+        should.not.exist(teamBSimOptions.s3accesskey)
+        should.not.exist(teamBSimOptions.s3privatekey)
 
         done()
       })
