@@ -409,11 +409,22 @@ function _computeSimulatorMetrics(user, simulators) {
     const s = simulators[sId]
     // compute time in running status
     const launchTime = moment.utc(s.data.aws_launch_time || s.data.launch_date)
-    let terminationTime = moment.utc(s.data.aws_termination_request_time
-      || s.data.termination_date
-      || new Date()) // we also count still running instances
-    const runningTime = moment.duration(terminationTime.diff(launchTime))
-    const roundUpHours = Math.floor(runningTime.asHours() + 1)
+    let roundUpHours
+    if (s.data.status === 'TERMINATED'
+      && !s.data.termination_date
+      && !s.data.aws_termination_request_time) {
+      // HACK: Defect scenario. simulator marked as terminated but with
+      // not termination datetime. We count those as 1 hours.
+      // console.log("HACK: counting only 1 hr for TERMINATED simulator with no termination_date")
+      roundUpHours = 1
+    } else {
+      // normal scenario
+      let terminationTime = moment.utc(s.data.aws_termination_request_time
+        || s.data.termination_date
+        || new Date()) // we also count still running instances
+      const runningTime = moment.duration(terminationTime.diff(launchTime))
+      roundUpHours = Math.floor(runningTime.asHours() + 1)
+    }
     for(let pId in s.permissions) {
       const username = s.permissions[pId].username
       if (!metrics[username]) {
