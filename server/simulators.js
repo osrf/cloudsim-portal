@@ -290,7 +290,9 @@ const terminateSimulator = function(user, simulator, cb) {
           if (!simulator.aws_termination_request_time) {
             setTimeout(function() {
               cloudServices.simulatorStatus(machineInfo, function(err, state) {
-                if (state.terminationTime) {
+                if (err) {
+                  console.log(JSON.stringify(err))
+                } else if (state.terminationTime) {
                   simulator.aws_termination_request_time = state.terminationTime
                   // update resource (this triggers socket notification)
                   csgrant.updateResource(user, simulator.id, simulator, () => {
@@ -381,21 +383,28 @@ function updateInstanceStatus() {
           console.log("updateInstanceStatus - found simulator with different DB status vs. AWS status: " + resourceName)
           // if terminated, let's also set the termination_date if it wasn't
           // set yet (due to some inconsistency, for example).
-          if (awsState === 'TERMINATED' && !simulator.data.termination_date) {
-            simulator.data.termination_date = new Date();
+          if (awsState === 'TERMINATED') {
+            if (!simulator.data.termination_date) {
+              simulator.data.termination_date = new Date();
+            }
 
-            // Try to also get aws_termination_time
-            const machineInfo = {region: simulator.data.region, id: simulator.data.machine_id}
-            cloudServices.simulatorStatus(machineInfo, function(err, state) {
-              if (state.terminationTime) {
-                simulator.data.aws_termination_request_time = state.terminationTime
-                // update resource (this triggers socket notification)
-                csgrant.updateResource(user, resourceName, simulator.data, () => {
-                  console.log(simulator.id, 'aws_termination_time set:', state.terminationTime)
-                })
-              }
-            })
+            // Also try to get aws_termination_time
+            if (!simulator.data.aws_termination_request_time) {
+              const machineInfo = {region: simulator.data.region, id: simulator.data.machine_id}
+              cloudServices.simulatorStatus(machineInfo, function(err, state) {
+                if (err) {
+                  console.log(JSON.stringify(err))
+                } else if (state.terminationTime) {
+                  simulator.data.aws_termination_request_time = state.terminationTime
+                  // update resource (this triggers socket notification)
+                  csgrant.updateResource(user, resourceName, simulator.data, () => {
+                    console.log(simulator.id, 'aws_termination_time set:', state.terminationTime)
+                  })
+                }
+              })
+            }
           }
+
           csgrant.updateResource(user, resourceName, simulator.data, ()=>{
             if (simulator.data.status === 'TERMINATED') {
               // extra console.log for issue 13
