@@ -375,7 +375,7 @@ function updateInstanceStatus() {
           // if terminated, let's also set the termination_date if it wasn't
           // set yet (due to some inconsistency, for example).
           if (awsState === 'TERMINATED' && !simulator.data.termination_date) {
-            simulator.termination_date = new Date();
+            simulator.data.termination_date = new Date();
           }
           csgrant.updateResource(user, resourceName, simulator.data, ()=>{
             if (simulator.data.status === 'TERMINATED') {
