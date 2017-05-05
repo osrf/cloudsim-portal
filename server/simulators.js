@@ -279,22 +279,27 @@ const terminateSimulator = function(user, simulator, cb) {
         simulator = readData.data
 
         simulator.status = 'TERMINATING';
-        simulator.termination_date = new Date();
+        if (!simulator.termination_date) {
+          simulator.termination_date = new Date();
+        }
         // Update db with termination date
         csgrant.updateResource(user, simulator.id, simulator, () => {
           // send response . Aws timestamps will be updated afterwards
           cb(null, simulator)
 
-          setTimeout(function() {
-            cloudServices.simulatorStatus(machineInfo, function(err, state) {
-              simulator.aws_termination_request_time = state.terminationTime
-              // update resource (this triggers socket notification)
-              csgrant.updateResource(user, simulator.id, simulator, () => {
-                console.log(simulator.id, 'aws_termination_time set:', state.terminationTime)
+          if (!simulator.aws_termination_request_time) {
+            setTimeout(function() {
+              cloudServices.simulatorStatus(machineInfo, function(err, state) {
+                if (state.terminationTime) {
+                  simulator.aws_termination_request_time = state.terminationTime
+                  // update resource (this triggers socket notification)
+                  csgrant.updateResource(user, simulator.id, simulator, () => {
+                    console.log(simulator.id, 'aws_termination_time set:', state.terminationTime)
+                  })
+                }
               })
-            })
-          }, instanceIpUpdateInterval);
-
+            }, instanceIpUpdateInterval);
+          }
         })
       })
     }
@@ -372,10 +377,24 @@ function updateInstanceStatus() {
           simulator.data.status = awsState
           const user = getUserFromResource(simulator)
           const resourceName = simulator.data.id
+          // this console.log is here on purpose, for future tracing if needed.
+          console.log("updateInstanceStatus - found simulator with different DB status vs. AWS status: " + resourceName)
           // if terminated, let's also set the termination_date if it wasn't
           // set yet (due to some inconsistency, for example).
           if (awsState === 'TERMINATED' && !simulator.data.termination_date) {
             simulator.data.termination_date = new Date();
+
+            // Try to also get aws_termination_time
+            const machineInfo = {region: simulator.data.region, id: simulator.data.machine_id}
+            cloudServices.simulatorStatus(machineInfo, function(err, state) {
+              if (state.terminationTime) {
+                simulator.data.aws_termination_request_time = state.terminationTime
+                // update resource (this triggers socket notification)
+                csgrant.updateResource(user, resourceName, simulator.data, () => {
+                  console.log(simulator.id, 'aws_termination_time set:', state.terminationTime)
+                })
+              }
+            })
           }
           csgrant.updateResource(user, resourceName, simulator.data, ()=>{
             if (simulator.data.status === 'TERMINATED') {
@@ -415,7 +434,6 @@ function _computeSimulatorMetrics(user, simulators) {
       && !s.data.aws_termination_request_time) {
       // HACK: Defect scenario. simulator marked as terminated but with
       // not termination datetime. We count those as 1 hours.
-      // console.log("HACK: counting only 1 hr for TERMINATED simulator with no termination_date")
       roundUpHours = 1
     } else {
       // normal scenario
