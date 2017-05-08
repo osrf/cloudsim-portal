@@ -442,6 +442,7 @@ describe('<Simulator controller test>', function() {
         r.result[0].data.status.should.equal('TERMINATED')
         r.result[0].data.region.should.equal('us-west-1')
         should.exist(r.result[0].data.termination_date)
+        should.notEqual(r.result[0].data.termination_date, null)
 
         r.result[1].name.should.not.be.empty()
         r.result[1].name.should.equal(simId2)
@@ -468,6 +469,7 @@ describe('<Simulator controller test>', function() {
         r.resource.should.equal(simId1)
         r.result.data.status.should.equal('TERMINATED');
         should.exist(r.result.data.termination_date)
+        should.notEqual(r.result.data.termination_date, null)
         done();
       });
     });
@@ -500,6 +502,7 @@ describe('<Simulator controller test>', function() {
           r.result[simId1Idx].data.status.should.equal('TERMINATED')
           r.result[simId1Idx].data.region.should.equal('us-west-1')
           should.exist(r.result[simId1Idx].data.termination_date)
+          should.notEqual(r.result[simId1Idx].data.termination_date, null)
 
           r.result[simId2Idx].name.should.not.be.empty();
           r.result[simId2Idx].name.should.equal(simId2);
@@ -1031,8 +1034,10 @@ describe('<Simulator controller test>', function() {
         should.not.exist(r.result[1].data.termination_date)
         r.result[0].data.status.should.equal('TERMINATED')
         should.exist(r.result[0].data.termination_date)
+        should.notEqual(r.result[0].data.termination_date, null)
         r.result[2].data.status.should.equal('TERMINATED')
         should.exist(r.result[2].data.termination_date)
+        should.notEqual(r.result[2].data.termination_date, null)
         done()
       })
     })
@@ -1104,6 +1109,7 @@ describe('<Simulator controller test>', function() {
         sims[1].name.should.equal(simId3)
         sims[1].data.status.should.equal('TERMINATED')
         should.exist(sims[1].data.termination_date)
+        should.notEqual(sims[1].data.termination_date, null)
         sims[2].name.should.equal(simId4)
         sims[2].permissions.length.should.be.exactly(2)
         sims[2].permissions[0].username.should.equal(user2TokenData.identities[0])
@@ -1267,6 +1273,7 @@ describe('<Simulator controller test>', function() {
         r.result.length.should.be.exactly(1)
         r.result[0].data.status.should.equal('TERMINATED')
         should.exist(r.result[0].data.termination_date)
+        should.notEqual(r.result[0].data.termination_date, null)
         done()
       });
     });
@@ -1288,6 +1295,7 @@ describe('<Simulator controller test>', function() {
           sims[0].name.should.equal(simId1)
           sims[0].data.status.should.equal('TERMINATED')
           should.exist(sims[0].data.termination_date)
+          should.notEqual(sims[0].data.termination_date, null)
           sims[0].permissions.length.should.be.exactly(1)
 
           sims[1].name.should.equal(simId2)
@@ -1298,6 +1306,7 @@ describe('<Simulator controller test>', function() {
           sims[2].name.should.equal(simId3)
           sims[2].data.status.should.equal('TERMINATED')
           should.exist(sims[2].data.termination_date)
+          should.notEqual(sims[2].data.termination_date, null)
           sims[2].permissions.length.should.be.exactly(2)
 
           sims[3].name.should.equal(simId4)
