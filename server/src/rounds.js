@@ -248,11 +248,11 @@ function setRoutes(app) {
                     let simulator = resourceData.simulator
                     let options =  simulator.options || {}
                     options.role = 'simulator'
-                    options.token = req.headers.authorization
+                    options.token = userToken
                     options.route = serverVpnKeyUrl
                     options.subnet = '192.168.2'
                     options.resources = simResources
-                    // route to post back sim data
+                    // route to post back sim data (needed by cloudsim-sim)
                     options.simulation_data_route = simDataUrl
                     if (!s3key) {
                       options.s3bucket = 'undefined'
@@ -316,6 +316,8 @@ function setRoutes(app) {
                         options.github_deploy_key = resourceData.github_deploy_key || 'undefined'
                         options.resources = simResources
                         options.portal_data_route = portalDataRoute
+                        // route to post back sim data (needed by cloudsim-sim)
+                        options.simulation_data_route = simDataUrl
                         fieldcomputer.options = options
                         // create fc instance using user identity and share with
                         // team
