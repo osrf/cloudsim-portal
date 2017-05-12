@@ -3,6 +3,16 @@
 const common = require('../common')
 const csgrant = require('cloudsim-grant')
 
+// when false, log output is suppressed
+exports.showLog = false
+
+// log to console
+function log(str, o) {
+  if (exports.showLog) {
+    console.log(str, o)
+  }
+}
+
 // global variables and settings
 const srcAdmin = 'src-admins'
 
@@ -31,7 +41,7 @@ function setRoutes(app) {
       const newData = req.body
       // update simulation data
       // this triggers websocket notifications
-
+      log("new data", newData)
       csgrant.updateResource(user, id, newData, (err, data) => {
         let r = {
           success: false
