@@ -153,9 +153,9 @@ describe('<Unit test Metrics>', function() {
         text.result.data.should.not.be.empty();
         text.result.data.identity.should.equal(teamC);
         should.not.exist(text.result.data.whitelisted);
+        should.not.exist(text.result.data.admin_identity);
         text.result.data.check_enabled.should.equal(true);
         text.result.data.max_instance_hours.should.equal(7);
-        text.result.data.admin_identity.should.equal(teamA);
         should.exist(text.result.permissions[teamA])
         should.exist(text.result.permissions[teamC])
         text.result.permissions[teamA].readOnly.should.equal(false);
@@ -264,6 +264,41 @@ describe('<Unit test Metrics>', function() {
         res.redirect.should.equal(false);
         let text = JSON.parse(res.text);
         text.success.should.equal(false);
+        done();
+      });
+    });
+    it('should be possible for TeamA to get the configs of TeamC', function(done) {
+      agent
+      .get('/metrics/configs')
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorAToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        configId = text.result[1].name;
+        text.result[1].data.should.not.be.empty();
+        text.result[1].data.identity.should.equal(teamC);
+        text.result[1].data.check_enabled.should.equal(true);
+        text.result[1].data.max_instance_hours.should.equal(7);
+        done();
+      });
+    });
+    it('should be possible for TeamA to modify the configs of TeamC', function(done) {
+      agent
+      .put('/metrics/configs/' + configId)
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorAToken)
+      .send({ max_instance_hours: 5 })
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.result.data.should.not.be.empty();
+        text.result.data.identity.should.equal(teamC);
+        text.result.data.check_enabled.should.equal(true);
+        text.result.data.max_instance_hours.should.equal(5);
         done();
       });
     });
