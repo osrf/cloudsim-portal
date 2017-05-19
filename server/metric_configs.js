@@ -83,7 +83,7 @@ function findMetricConfigForIdentity(req, identity, cb) {
 
 function createMetricsConfig(req, res) {
   const newData = _.pick(req.body, 'identity', 'whitelisted',
-    'max_instance_hours', 'check_enabled', 'admin_identity')
+    'max_instance_hours', 'check_enabled')
   const identity = req.body.identity
   const admin_identity = req.body.admin_identity
   console.log(' Create Metrics config, with data: ', JSON.stringify(newData))
@@ -113,19 +113,19 @@ function createMetricsConfig(req, res) {
           if (err) {
             return error(err)
           }
+          // Give admin_identity (if it exists) read/write access
+          if (admin_identity !== undefined) {
+            csgrant.grantPermission(user, admin_identity, resourceName, false, function(err) {
+              if (err) {
+                return error(err)
+              }
+            })
+          }
+          r.success = true
+          r.result = data
+          r.id = resourceName
+          res.jsonp(r)
         })
-        // Give admin_identity (if it exists) read/write access
-        if (admin_identity !== undefined) {
-          csgrant.grantPermission(user, admin_identity, resourceName, false, function(err) {
-            if (err) {
-              return error(err)
-            }
-          })
-        }
-        r.success = true
-        r.result = data
-        r.id = resourceName
-        res.jsonp(r)
       })    
   })
 }
