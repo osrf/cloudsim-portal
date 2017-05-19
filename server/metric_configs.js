@@ -119,12 +119,19 @@ function createMetricsConfig(req, res) {
               if (err) {
                 return error(err)
               }
+              // The admin_identity is present and permission was correctly granted to both identities.
+              r.success = true
+              r.result = data
+              r.id = resourceName
+              res.jsonp(r)  
             })
+          } else {
+            // There is no admin_identity and the permission was granted correctly to the user identity.
+            r.success = true
+            r.result = data
+            r.id = resourceName
+            res.jsonp(r)            
           }
-          r.success = true
-          r.result = data
-          r.id = resourceName
-          res.jsonp(r)
         })
       })    
   })
