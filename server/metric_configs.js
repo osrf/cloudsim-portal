@@ -129,6 +129,7 @@ function createMetricsConfig(req, res) {
       })    
   })
 }
+
 function setRoutes(app) {
   /// GET /metrics/config
   /// Return config associated to allowed instance-hours by team
