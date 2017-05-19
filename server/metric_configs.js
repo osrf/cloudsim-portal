@@ -95,6 +95,14 @@ function createMetricsConfig(req, res) {
     res.status(errCode || 500).jsonp(r)
   }
 
+  // Inner function used to send a Success response.
+  function sendSuccessResponse(r, data, resourceName) {
+    r.success = true
+    r.result = data
+    r.id = resourceName
+    res.jsonp(r)
+  }
+
   findMetricConfigForIdentity(req, identity, (err, found) => {
     if(err) {
       return error(err)
@@ -120,17 +128,11 @@ function createMetricsConfig(req, res) {
                 return error(err)
               }
               // The admin_identity is present and permission was correctly granted to both identities.
-              r.success = true
-              r.result = data
-              r.id = resourceName
-              res.jsonp(r)  
+              sendSuccessResponse(r, data, resourceName)
             })
           } else {
             // There is no admin_identity and the permission was granted correctly to the user identity.
-            r.success = true
-            r.result = data
-            r.id = resourceName
-            res.jsonp(r)            
+            sendSuccessResponse(r, data, resourceName)
           }
         })
       })    
