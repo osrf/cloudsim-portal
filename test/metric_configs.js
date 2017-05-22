@@ -28,6 +28,8 @@ const teamB = "SRC-teamB"
 const competitorBTokenData = {identities: [competitorB, teamB]}
 let competitorBToken
 
+const teamC = "SRC-teamC"
+
 describe('<Unit test Metrics>', function() {
 
   // before hook used to require modules used by this test.
@@ -128,10 +130,36 @@ describe('<Unit test Metrics>', function() {
         text.result.data.should.not.be.empty();
         text.result.data.identity.should.equal(teamA);
         should.not.exist(text.result.data.whitelisted);
+        should.not.exist(text.result.data.admin_identity);
         text.result.data.check_enabled.should.equal(true);
         text.result.data.max_instance_hours.should.equal(7);
         should.exist(text.result.permissions[teamA])
         text.result.permissions[teamA].readOnly.should.equal(true);
+        done();
+      });
+    });
+    it('the admin should be possible to post a new metrics config targetting TeamC and grant read/write permission to TeamA', function(done) {
+      agent
+      .post('/metrics/configs/')
+      .set('Acccept', 'application/json')
+      .set('authorization', userToken)
+      .send({ identity: teamC, check_enabled: true, max_instance_hours: 7, admin_identity: teamA })
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.success.should.equal(true)
+        should.exist(text.id)
+        text.result.data.should.not.be.empty();
+        text.result.data.identity.should.equal(teamC);
+        should.not.exist(text.result.data.whitelisted);
+        should.not.exist(text.result.data.admin_identity);
+        text.result.data.check_enabled.should.equal(true);
+        text.result.data.max_instance_hours.should.equal(7);
+        should.exist(text.result.permissions[teamA])
+        should.exist(text.result.permissions[teamC])
+        text.result.permissions[teamA].readOnly.should.equal(false);
+        text.result.permissions[teamC].readOnly.should.equal(true);
         done();
       });
     });
@@ -180,7 +208,7 @@ describe('<Unit test Metrics>', function() {
         done();
       });
     });
-    it('should not be possible to get configs by non authorized users', function(done) {
+    it('should NOT be possible to get configs by non authorized users', function(done) {
       agent
       .get('/metrics/configs')
       .set('Acccept', 'application/json')
@@ -194,7 +222,7 @@ describe('<Unit test Metrics>', function() {
         done();
       });
     });
-    it('should not be possible to update specific config by non authorized users', function(done) {
+    it('should NOT be possible to update specific config by non authorized users', function(done) {
       agent
       .put('/metrics/configs/' + configId)
       .set('Acccept', 'application/json')
@@ -236,6 +264,41 @@ describe('<Unit test Metrics>', function() {
         res.redirect.should.equal(false);
         let text = JSON.parse(res.text);
         text.success.should.equal(false);
+        done();
+      });
+    });
+    it('should be possible for TeamA to get the configs of TeamC', function(done) {
+      agent
+      .get('/metrics/configs')
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorAToken)
+      .send({})
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        configId = text.result[1].name;
+        text.result[1].data.should.not.be.empty();
+        text.result[1].data.identity.should.equal(teamC);
+        text.result[1].data.check_enabled.should.equal(true);
+        text.result[1].data.max_instance_hours.should.equal(7);
+        done();
+      });
+    });
+    it('should be possible for TeamA to modify the configs of TeamC', function(done) {
+      agent
+      .put('/metrics/configs/' + configId)
+      .set('Acccept', 'application/json')
+      .set('authorization', competitorAToken)
+      .send({ max_instance_hours: 5 })
+      .end(function(err,res){
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.result.data.should.not.be.empty();
+        text.result.data.identity.should.equal(teamC);
+        text.result.data.check_enabled.should.equal(true);
+        text.result.data.max_instance_hours.should.equal(5);
         done();
       });
     });
