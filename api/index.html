@@ -1892,6 +1892,166 @@
               ]
             },
           },
+          // /srcsimulations
+          "\/srcsimulations": {
+            // GET
+            "get": {
+              "tags": [
+                "srcsimulations"
+              ],
+              "summary": "Get all SRC simulations for a user (data, stats)",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                    },
+                  },
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          },
+          // /srcsimulations
+          "\/srcsimulations\/{resourceId}": {
+            // GET
+            "get": {
+              "tags": [
+                "srcsimulations"
+              ],
+              "summary": "Get a specific SRC simulation data",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of resource",
+                  "required": true,
+                  "type": "string",
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "operation": {
+                        "$ref": "#\/definitions\/Operation"
+                      },
+                      "requester": {
+                        "$ref": "#\/definitions\/Requester"
+                      },
+                      "resource": {
+                        "$ref": "#\/definitions\/ResourceId"
+                      },
+                      "id": {
+                        "$ref": "#\/definitions\/ResourceId"
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/Resource"
+                      },
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+            // PUT
+            "put": {
+              "tags": [
+                "srcsimulations"
+              ],
+              "summary": "Update an SRC simulation data",
+              "consumes": [
+                "application\/json",
+              ],
+              "produces": [
+                "application\/json"
+              ],
+              "parameters": [
+                {
+                  "name": "resourceId",
+                  "in": "path",
+                  "description": "Id of resource",
+                  "required": true,
+                  "type": "string",
+                },
+                {
+                  "in": "body",
+                  "name": "body",
+                  "description": "Object with SRCsimulation data",
+                  "required": true,
+                  "schema": {
+                    "type": "object",
+                    "properties" : {
+                      "body": {
+                        "type": "string",
+                        "default": "",
+                      }
+                    },
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Success",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                      },
+                      "result": {
+                        "$ref": "#\/definitions\/Resource"
+                      },
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Not authorized"
+                }
+              },
+              "security": [
+                {
+                  "token": [],
+                }
+              ]
+            },
+          }
         },
         definitions: {
           "Operation": {

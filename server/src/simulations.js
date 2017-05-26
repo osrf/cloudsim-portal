@@ -2,6 +2,17 @@
 
 const common = require('../common')
 const csgrant = require('cloudsim-grant')
+const _ = require('underscore')
+
+// when false, log output is suppressed
+exports.showLog = false
+
+// log to console
+function log(str, o) {
+  if (exports.showLog) {
+    console.log(str, o)
+  }
+}
 
 // global variables and settings
 const srcAdmin = 'src-admins'
@@ -31,18 +42,29 @@ function setRoutes(app) {
       const newData = req.body
       // update simulation data
       // this triggers websocket notifications
-
-      csgrant.updateResource(user, id, newData, (err, data) => {
-        let r = {
-          success: false
-        }
-        if (err) {
-          r.error = err
+      log("new data", newData)
+      // need to re-read the simulator resource based on the given simulator.id
+      // to make sure we have the latest data.
+      let r = {
+        success: false
+      }
+      csgrant.readResource(user, id, function(readErr, record) {
+        if(readErr) {
+          r.error = readErr
           return res.status(500).jsonp(r)
         }
-        r.success =  true
-        r.result = data
-        res.jsonp(r)
+        const data = record.data
+        _.extend(data, newData)
+        log("Extended data with new data. Current:", data)
+        csgrant.updateResource(user, id, data, (err, result) => {
+          if (err) {
+            r.error = err
+            return res.status(500).jsonp(r)
+          }
+          r.success =  true
+          r.result = result
+          res.jsonp(r)
+        })
       })
     })
 
