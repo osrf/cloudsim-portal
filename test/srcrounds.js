@@ -9,6 +9,7 @@ const io = require('socket.io-client')
 const clearRequire = require('clear-require');
 const should = require('should')
 const supertest = require('supertest')
+const _ = require('underscore')
 
 // Users for testing:
 // * SRC admin
@@ -1593,6 +1594,49 @@ describe('<Unit test SRC rounds>', function() {
       .end(function(err,res) {
         res.status.should.be.equal(200)
         done()
+      })
+    })
+  })
+
+  describe('Check PUT does actually extend current data with sent data',
+  function() {
+    it('data should be extended (not overwritten)',
+    function(done) {
+      agent
+      .get('/srcsimulations/' + compBSimDataId)
+      .set('Accept', 'application/json')
+      .set('authorization', srcAdminToken)
+      .end(function(err,res) {
+        res.status.should.be.equal(200)
+        let origResponse = getResponse(res)
+        const originalData = origResponse.result.data
+
+        const dataToSend = {newData: 'newData'}
+        agent
+        .put('/srcsimulations/' + compBSimDataId)
+        .set('Accept', 'application/json')
+        .set('authorization', srcAdminToken)
+        .send(dataToSend)
+        .end(function(err,res) {
+          res.status.should.be.equal(200)
+          // now RE read data from server
+          agent
+          .get('/srcsimulations/' + compBSimDataId)
+          .set('Accept', 'application/json')
+          .set('authorization', srcAdminToken)
+          .end(function(err,res) {
+            res.status.should.be.equal(200)
+            let response = getResponse(res)
+            const currentData = response.result.data
+            should.notDeepEqual(currentData, originalData)
+            const extended = _.extend(originalData, dataToSend)
+            // check for different instances
+            should.notEqual(currentData, extended)
+            should.deepEqual(currentData, extended)
+            done()
+          })
+
+        })
       })
     })
   })
