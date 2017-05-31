@@ -1571,6 +1571,8 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', srcAdminToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(false)
         done()
       })
     })
@@ -1587,6 +1589,8 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', competitorBToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(false)
         done()
       })
     })
@@ -1620,6 +1624,9 @@ describe('<Unit test SRC rounds>', function() {
       .send({myData: 'anyData'})
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(false)
+        response.result.data.myData.should.equal('anyData')
         done()
       })
     })
@@ -1660,6 +1667,9 @@ describe('<Unit test SRC rounds>', function() {
             // check for different instances
             should.notEqual(currentData, extended)
             should.deepEqual(currentData, extended)
+            currentData.practice.should.equal(false)
+            currentData.myData.should.equal('anyData')
+            currentData.newData.should.equal('newData')
             done()
           })
 

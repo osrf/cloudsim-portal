@@ -193,7 +193,7 @@ function setRoutes(app) {
 
         // create src simulation data that will keep track of
         // application-specific data like scores, time remaining, etc
-        const simulationData = {srcround: resourceName}
+        const simulationData = {srcround: resourceName, practice: practice}
         srcsimulations.createSimulationData(req.user, resourceData.team,
         simulationData, (dataResp) => {
           if (dataResp.error)
