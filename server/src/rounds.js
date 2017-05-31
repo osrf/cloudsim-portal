@@ -36,22 +36,14 @@ function setRoutes(app) {
     csgrant.userResources,
     common.filterResources('srcround-'),
     function(req, res, next) {
-      // filter out terminated rounds
+      // filter out all terminated rounds for now
       let filter = true
-
-      // only admins can request to see all rounds, including terminated ones.
-      if ((req.identities.indexOf(srcAdmin) >= 0 ||
-          req.identities.indexOf(adminUser) >= 0)) {
-        filter = false
-      }
-
       if (filter) {
         // do not return terminated rounds
         req.userResources = req.userResources.filter((obj)=>{
           return !obj.data.public.terminated
         })
       }
-
       next()
     },
     common.redactFromResources('permissions'),

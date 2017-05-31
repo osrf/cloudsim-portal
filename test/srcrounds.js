@@ -1227,11 +1227,7 @@ describe('<Unit test SRC rounds>', function() {
         let response = getResponse(res)
         response.success.should.equal(true)
         response.requester.should.equal(srcAdmin)
-        response.result.length.should.equal(4)
-        for (var i = 0; i < response.result.length; ++i) {
-          response.result[i].data.public.terminated.should.equal(true)
-          response.result[0].data.public.practice.should.equal(true)
-        }
+        response.result.length.should.equal(0)
         done()
       })
     })
@@ -1521,39 +1517,27 @@ describe('<Unit test SRC rounds>', function() {
         let response = getResponse(res)
         response.success.should.equal(true)
         response.requester.should.equal(srcAdmin2)
-
-        // should be 5: 4 terminated and 1 running
-        response.result.length.should.equal(5)
-        // find index of non-terminated round
-        let idx = -1
-        for (var i = 0; i < response.result.length; ++i) {
-          if (!response.result[i].data.public.terminated) {
-            idx = i
-            break
-          }
-        }
-        idx.should.be.greaterThan(-1)
-
+        response.result.length.should.equal(1)
         // Round data
-        compRoundB = response.result[idx].name
+        compRoundB = response.result[0].name
         compRoundB.indexOf('srcround').should.be.above(-1)
 
         // competition data permission
         // secure, public, and permissions data should all be available
-        should.exist(response.result[idx].data.secure)
-        should.exist(response.result[idx].permissions)
-        should.exist(response.result[idx].data.public)
-        response.result[idx].data.public.terminated.should.equal(false)
-        response.result[idx].data.public.practice.should.equal(false)
-        should.exist(response.result[idx].data.public.vpn)
-        should.exist(response.result[idx].data.public.simulation_data_id)
+        should.exist(response.result[0].data.secure)
+        should.exist(response.result[0].permissions)
+        should.exist(response.result[0].data.public)
+        response.result[0].data.public.terminated.should.equal(false)
+        response.result[0].data.public.practice.should.equal(false)
+        should.exist(response.result[0].data.public.vpn)
+        should.exist(response.result[0].data.public.simulation_data_id)
 
         // admins should be able to get ssh key data
-        compRoundBSimSsh = response.result[idx].data.secure.simulator_ssh
-        compRoundBFCSsh = response.result[idx].data.secure.fieldcomputer_ssh
+        compRoundBSimSsh = response.result[0].data.secure.simulator_ssh
+        compRoundBFCSsh = response.result[0].data.secure.fieldcomputer_ssh
 
-        response.result[idx].data.dockerurl.should.equal(dockerUrl)
-        response.result[idx].data.team.should.equal(teamB)
+        response.result[0].data.dockerurl.should.equal(dockerUrl)
+        response.result[0].data.team.should.equal(teamB)
 
         done()
       })
