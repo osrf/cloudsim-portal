@@ -41,7 +41,8 @@ function setRoutes(app) {
       if (filter) {
         // do not return terminated rounds
         req.userResources = req.userResources.filter((obj)=>{
-          return !obj.data.public.terminated
+          return (typeof obj.data.public.terminated !== 'undefined')
+              && !obj.data.public.terminated
         })
       }
       next()
