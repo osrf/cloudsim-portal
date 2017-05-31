@@ -124,9 +124,9 @@ describe('<Unit test SRC rounds>', function() {
 
   before(function(done) {
     fakeCloudServices = require('../server/fake_cloud_services');
-    // Extend fake cloudservices with a modified generateScript function 
-    // to store passed "simulator.options" in order to be able 
-    // to later access those as part of these tests 
+    // Extend fake cloudservices with a modified generateScript function
+    // to store passed "simulator.options" in order to be able
+    // to later access those as part of these tests
     fakeCloudServices._generateScript = fakeCloudServices.generateScript
     fakeCloudServices.optionsList = []
     fakeCloudServices.generateScript = function(user, opts) {
@@ -137,7 +137,7 @@ describe('<Unit test SRC rounds>', function() {
     }
     fakeCloudServices.getSimOptionsById = function(simId) {
       const sims = this.optionsList.filter((sim) => {
-        return sim.simId == simId 
+        return sim.simId == simId
       })
       return (sims.length && sims[0].options) || undefined
     }
@@ -668,7 +668,7 @@ describe('<Unit test SRC rounds>', function() {
         response.requester.should.equal(srcAdmin)
         response.result.length.should.equal(2)
 
-        // Debug round, created by admin for 'debugTeam' 
+        // Debug round, created by admin for 'debugTeam'
         roundDebug = response.result[0].name
         roundDebug.indexOf('srcround').should.be.above(-1)
 
@@ -680,6 +680,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.secure.fieldcomputer_ssh)
         should.exist(response.result[0].data.secure.simulator_machine_id)
         should.exist(response.result[0].data.secure.fieldcomputer_machine_id)
+        response.result[0].data.public.terminated.should.equal(false)
+        response.result[0].data.public.practice.should.equal(true)
         should.exist(response.result[0].data.public.simulator_id)
         practiceSimIdDebug = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
@@ -719,6 +721,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[1].data.secure.fieldcomputer_ssh)
         should.exist(response.result[1].data.secure.simulator_machine_id)
         should.exist(response.result[1].data.secure.fieldcomputer_machine_id)
+        response.result[0].data.public.terminated.should.equal(false)
+        response.result[0].data.public.practice.should.equal(true)
         should.exist(response.result[1].data.public.simulator_id)
         const teamASimId = response.result[1].data.public.simulator_id
         should.exist(response.result[1].data.public.fieldcomputer_id)
@@ -825,6 +829,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.secure.fieldcomputer_ssh)
         roundASimSsh = response.result[0].data.secure.simulator_ssh
         roundAFCSsh = response.result[0].data.secure.fieldcomputer_ssh
+        response.result[0].data.public.terminated.should.equal(false)
+        response.result[0].data.public.practice.should.equal(true)
         should.exist(response.result[0].data.public.simulator_id)
         should.exist(response.result[0].data.public.fieldcomputer_id)
         should.exist(response.result[0].data.public.vpn)
@@ -945,6 +951,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.secure.fieldcomputer_ssh)
         roundBSimSsh = response.result[0].data.secure.simulator_ssh
         roundBFCSsh = response.result[0].data.secure.fieldcomputer_ssh
+        response.result[0].data.public.terminated.should.equal(false)
+        response.result[0].data.public.practice.should.equal(true)
         should.exist(response.result[0].data.public.simulator_id)
         const roundBSimId = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
@@ -1219,7 +1227,11 @@ describe('<Unit test SRC rounds>', function() {
         let response = getResponse(res)
         response.success.should.equal(true)
         response.requester.should.equal(srcAdmin)
-        response.result.length.should.equal(0)
+        response.result.length.should.equal(4)
+        for (var i = 0; i < response.result.length; ++i) {
+          response.result[i].data.public.terminated.should.equal(true)
+          response.result[0].data.public.practice.should.equal(true)
+        }
         done()
       })
     })
@@ -1445,6 +1457,8 @@ describe('<Unit test SRC rounds>', function() {
         should.not.exist(response.result[0].permissions)
         // only public data are avaialble
         should.exist(response.result[0].data.public)
+        response.result[0].data.public.terminated.should.equal(false)
+        response.result[0].data.public.practice.should.equal(false)
         should.exist(response.result[0].data.public.simulator_id)
         compSimBId = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
@@ -1507,26 +1521,39 @@ describe('<Unit test SRC rounds>', function() {
         let response = getResponse(res)
         response.success.should.equal(true)
         response.requester.should.equal(srcAdmin2)
-        response.result.length.should.equal(1)
+
+        // should be 5: 4 terminated and 1 running
+        response.result.length.should.equal(5)
+        // find index of non-terminated round
+        let idx = -1
+        for (var i = 0; i < response.result.length; ++i) {
+          if (!response.result[i].data.public.terminated) {
+            idx = i
+            break
+          }
+        }
+        idx.should.be.greaterThan(-1)
 
         // Round data
-        compRoundB = response.result[0].name
+        compRoundB = response.result[idx].name
         compRoundB.indexOf('srcround').should.be.above(-1)
 
         // competition data permission
         // secure, public, and permissions data should all be available
-        should.exist(response.result[0].data.secure)
-        should.exist(response.result[0].permissions)
-        should.exist(response.result[0].data.public)
-        should.exist(response.result[0].data.public.vpn)
-        should.exist(response.result[0].data.public.simulation_data_id)
+        should.exist(response.result[idx].data.secure)
+        should.exist(response.result[idx].permissions)
+        should.exist(response.result[idx].data.public)
+        response.result[idx].data.public.terminated.should.equal(false)
+        response.result[idx].data.public.practice.should.equal(false)
+        should.exist(response.result[idx].data.public.vpn)
+        should.exist(response.result[idx].data.public.simulation_data_id)
 
         // admins should be able to get ssh key data
-        compRoundBSimSsh = response.result[0].data.secure.simulator_ssh
-        compRoundBFCSsh = response.result[0].data.secure.fieldcomputer_ssh
+        compRoundBSimSsh = response.result[idx].data.secure.simulator_ssh
+        compRoundBFCSsh = response.result[idx].data.secure.fieldcomputer_ssh
 
-        response.result[0].data.dockerurl.should.equal(dockerUrl)
-        response.result[0].data.team.should.equal(teamB)
+        response.result[idx].data.dockerurl.should.equal(dockerUrl)
+        response.result[idx].data.team.should.equal(teamB)
 
         done()
       })

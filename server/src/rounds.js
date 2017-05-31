@@ -35,6 +35,25 @@ function setRoutes(app) {
     csgrant.authenticate,
     csgrant.userResources,
     common.filterResources('srcround-'),
+    function(req, res, next) {
+      // filter out terminated rounds
+      let filter = true
+
+      // only admins can request to see all rounds, including terminated ones.
+      if ((req.identities.indexOf(srcAdmin) >= 0 ||
+          req.identities.indexOf(adminUser) >= 0)) {
+        filter = false
+      }
+
+      if (filter) {
+        // do not return terminated rounds
+        req.userResources = req.userResources.filter((obj)=>{
+          return !obj.data.public.terminated
+        })
+      }
+
+      next()
+    },
     common.redactFromResources('permissions'),
     common.redactFromResources('data.secure'),
     csgrant.allResources)
@@ -234,7 +253,7 @@ function setRoutes(app) {
                       res.status(500).jsonp(err)
                       return
                     }
-                    const s3key = (keys.length && keys[0].data) || undefined 
+                    const s3key = (keys.length && keys[0].data) || undefined
 
                     // Create simulator
                     // the options will be passed to the simulator instance and
@@ -276,6 +295,10 @@ function setRoutes(app) {
                       // remove simulator options data
                       delete simulator.options
 
+                      // respond with available data
+                      // others will be populated later once FC is ready
+                      resourceData.public.practice = practice
+                      resourceData.public.terminated = false
                       // respond without waiting for fc to be ready
                       res.jsonp(r)
 
@@ -422,9 +445,11 @@ function setRoutes(app) {
               fcError = resp.error
             }
 
-            // delete srcround resource
-            csgrant.deleteResource(req.user, resource, (err, data) => {
-              if(err) {
+            // Instead of deleting the round resource, mark it as terminated
+            data.data.public.terminated = true
+            csgrant.updateResource(user, resource, data.data,
+            (err) => {
+              if (err) {
                 return res.status(500).jsonp({success: false, error: err})
               }
               let r = {
