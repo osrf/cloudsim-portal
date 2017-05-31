@@ -234,7 +234,7 @@ function setRoutes(app) {
                       res.status(500).jsonp(err)
                       return
                     }
-                    const s3key = (keys.length && keys[0].data) || undefined 
+                    const s3key = (keys.length && keys[0].data) || undefined
 
                     // Create simulator
                     // the options will be passed to the simulator instance and
@@ -287,7 +287,7 @@ function setRoutes(app) {
                       // computer instance as we need to pass the ip onto the
                       // fieldcomputer via options
                       getInstanceIp(req.user, simId,
-                      instanceIpUpdateInterval+10, 50, (err, server_ip) => {
+                      instanceIpUpdateInterval+10, 200, (err, server_ip) => {
                         if (err) {
                           console.log (JSON.stringify(err, null, 2))
                           return
@@ -633,7 +633,7 @@ const getInstanceIp = function(user, simId, delay, maxRetry, cb) {
       }
       if (!data.data.machine_ip) {
         let retry = maxRetry-1
-        getInstanceIp(user, simId, 500, retry, cb)
+        getInstanceIp(user, simId, 5000, retry, cb)
       }
       else {
         cb(null, data.data.machine_ip)
