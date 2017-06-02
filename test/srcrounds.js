@@ -124,9 +124,9 @@ describe('<Unit test SRC rounds>', function() {
 
   before(function(done) {
     fakeCloudServices = require('../server/fake_cloud_services');
-    // Extend fake cloudservices with a modified generateScript function 
-    // to store passed "simulator.options" in order to be able 
-    // to later access those as part of these tests 
+    // Extend fake cloudservices with a modified generateScript function
+    // to store passed "simulator.options" in order to be able
+    // to later access those as part of these tests
     fakeCloudServices._generateScript = fakeCloudServices.generateScript
     fakeCloudServices.optionsList = []
     fakeCloudServices.generateScript = function(user, opts) {
@@ -137,7 +137,7 @@ describe('<Unit test SRC rounds>', function() {
     }
     fakeCloudServices.getSimOptionsById = function(simId) {
       const sims = this.optionsList.filter((sim) => {
-        return sim.simId == simId 
+        return sim.simId == simId
       })
       return (sims.length && sims[0].options) || undefined
     }
@@ -668,7 +668,7 @@ describe('<Unit test SRC rounds>', function() {
         response.requester.should.equal(srcAdmin)
         response.result.length.should.equal(2)
 
-        // Debug round, created by admin for 'debugTeam' 
+        // Debug round, created by admin for 'debugTeam'
         roundDebug = response.result[0].name
         roundDebug.indexOf('srcround').should.be.above(-1)
 
@@ -680,6 +680,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.secure.fieldcomputer_ssh)
         should.exist(response.result[0].data.secure.simulator_machine_id)
         should.exist(response.result[0].data.secure.fieldcomputer_machine_id)
+        response.result[0].data.public.terminated.should.equal(false)
+        response.result[0].data.public.practice.should.equal(true)
         should.exist(response.result[0].data.public.simulator_id)
         practiceSimIdDebug = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
@@ -719,6 +721,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[1].data.secure.fieldcomputer_ssh)
         should.exist(response.result[1].data.secure.simulator_machine_id)
         should.exist(response.result[1].data.secure.fieldcomputer_machine_id)
+        response.result[0].data.public.terminated.should.equal(false)
+        response.result[0].data.public.practice.should.equal(true)
         should.exist(response.result[1].data.public.simulator_id)
         const teamASimId = response.result[1].data.public.simulator_id
         should.exist(response.result[1].data.public.fieldcomputer_id)
@@ -825,6 +829,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.secure.fieldcomputer_ssh)
         roundASimSsh = response.result[0].data.secure.simulator_ssh
         roundAFCSsh = response.result[0].data.secure.fieldcomputer_ssh
+        response.result[0].data.public.terminated.should.equal(false)
+        response.result[0].data.public.practice.should.equal(true)
         should.exist(response.result[0].data.public.simulator_id)
         should.exist(response.result[0].data.public.fieldcomputer_id)
         should.exist(response.result[0].data.public.vpn)
@@ -945,6 +951,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.secure.fieldcomputer_ssh)
         roundBSimSsh = response.result[0].data.secure.simulator_ssh
         roundBFCSsh = response.result[0].data.secure.fieldcomputer_ssh
+        response.result[0].data.public.terminated.should.equal(false)
+        response.result[0].data.public.practice.should.equal(true)
         should.exist(response.result[0].data.public.simulator_id)
         const roundBSimId = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
@@ -1445,6 +1453,8 @@ describe('<Unit test SRC rounds>', function() {
         should.not.exist(response.result[0].permissions)
         // only public data are avaialble
         should.exist(response.result[0].data.public)
+        response.result[0].data.public.terminated.should.equal(false)
+        response.result[0].data.public.practice.should.equal(false)
         should.exist(response.result[0].data.public.simulator_id)
         compSimBId = response.result[0].data.public.simulator_id
         should.exist(response.result[0].data.public.fieldcomputer_id)
@@ -1508,7 +1518,6 @@ describe('<Unit test SRC rounds>', function() {
         response.success.should.equal(true)
         response.requester.should.equal(srcAdmin2)
         response.result.length.should.equal(1)
-
         // Round data
         compRoundB = response.result[0].name
         compRoundB.indexOf('srcround').should.be.above(-1)
@@ -1518,6 +1527,8 @@ describe('<Unit test SRC rounds>', function() {
         should.exist(response.result[0].data.secure)
         should.exist(response.result[0].permissions)
         should.exist(response.result[0].data.public)
+        response.result[0].data.public.terminated.should.equal(false)
+        response.result[0].data.public.practice.should.equal(false)
         should.exist(response.result[0].data.public.vpn)
         should.exist(response.result[0].data.public.simulation_data_id)
 
@@ -1544,6 +1555,9 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', srcAdminToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(false)
+        response.result.data.team.should.equal(teamB)
         done()
       })
     })
@@ -1560,6 +1574,9 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', competitorBToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(false)
+        response.result.data.team.should.equal(teamB)
         done()
       })
     })
@@ -1593,6 +1610,10 @@ describe('<Unit test SRC rounds>', function() {
       .send({myData: 'anyData'})
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(false)
+        response.result.data.team.should.equal(teamB)
+        response.result.data.myData.should.equal('anyData')
         done()
       })
     })
@@ -1633,6 +1654,9 @@ describe('<Unit test SRC rounds>', function() {
             // check for different instances
             should.notEqual(currentData, extended)
             should.deepEqual(currentData, extended)
+            currentData.practice.should.equal(false)
+            currentData.myData.should.equal('anyData')
+            currentData.newData.should.equal('newData')
             done()
           })
 
@@ -1746,6 +1770,9 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', srcAdminToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(true)
+        response.result.data.team.should.equal(debugTeam)
         done()
       })
     })
@@ -1762,6 +1789,9 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', competitorAToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(true)
+        response.result.data.team.should.equal(teamA)
         done()
       })
     })
@@ -1778,6 +1808,9 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', srcAdminToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(true)
+        response.result.data.team.should.equal(teamA)
         done()
       })
     })
@@ -1794,6 +1827,9 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', competitorBToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(true)
+        response.result.data.team.should.equal(teamB)
         done()
       })
     })
@@ -1810,6 +1846,9 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', srcAdminToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(true)
+        response.result.data.team.should.equal(teamB)
         done()
       })
     })
@@ -1853,6 +1892,8 @@ describe('<Unit test SRC rounds>', function() {
           let response = getResponse(res)
           response.success.should.equal(true)
           response.result.data.myData.should.equal('anyData')
+          response.result.data.practice.should.equal(true)
+          response.result.data.team.should.equal(debugTeam)
           done()
         })
       })
@@ -1881,6 +1922,8 @@ describe('<Unit test SRC rounds>', function() {
           let response = getResponse(res)
           response.success.should.equal(true)
           response.result.data.compAData.should.equal('anyCompAData')
+          response.result.data.practice.should.equal(true)
+          response.result.data.team.should.equal(teamA)
           done()
         })
       })

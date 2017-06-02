@@ -35,6 +35,18 @@ function setRoutes(app) {
     csgrant.authenticate,
     csgrant.userResources,
     common.filterResources('srcround-'),
+    function(req, res, next) {
+      // filter out all terminated rounds for now
+      let filter = true
+      if (filter) {
+        // do not return terminated rounds
+        req.userResources = req.userResources.filter((obj)=>{
+          return (typeof obj.data.public.terminated !== 'undefined')
+              && !obj.data.public.terminated
+        })
+      }
+      next()
+    },
     common.redactFromResources('permissions'),
     common.redactFromResources('data.secure'),
     csgrant.allResources)
@@ -174,7 +186,11 @@ function setRoutes(app) {
 
         // create src simulation data that will keep track of
         // application-specific data like scores, time remaining, etc
-        const simulationData = {srcround: resourceName}
+        const simulationData = {
+          srcround: resourceName,
+          practice: practice,
+          team: resourceData.team,
+        }
         srcsimulations.createSimulationData(req.user, resourceData.team,
         simulationData, (dataResp) => {
           if (dataResp.error)
@@ -234,7 +250,7 @@ function setRoutes(app) {
                       res.status(500).jsonp(err)
                       return
                     }
-                    const s3key = (keys.length && keys[0].data) || undefined 
+                    const s3key = (keys.length && keys[0].data) || undefined
 
                     // Create simulator
                     // the options will be passed to the simulator instance and
@@ -276,6 +292,10 @@ function setRoutes(app) {
                       // remove simulator options data
                       delete simulator.options
 
+                      // respond with available data
+                      // others will be populated later once FC is ready
+                      resourceData.public.practice = practice
+                      resourceData.public.terminated = false
                       // respond without waiting for fc to be ready
                       res.jsonp(r)
 
@@ -422,9 +442,11 @@ function setRoutes(app) {
               fcError = resp.error
             }
 
-            // delete srcround resource
-            csgrant.deleteResource(req.user, resource, (err, data) => {
-              if(err) {
+            // Instead of deleting the round resource, mark it as terminated
+            data.data.public.terminated = true
+            csgrant.updateResource(user, resource, data.data,
+            (err) => {
+              if (err) {
                 return res.status(500).jsonp({success: false, error: err})
               }
               let r = {
