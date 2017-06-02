@@ -1,6 +1,7 @@
 # Cloudsim Portal
 
-cloudsim-portal is part of the [cloudsim](https://bitbucket.org/osrf/cloudsim) project
+cloudsim-portal is part of the [cloudsim](https://bitbucket.org/osrf/cloudsim) project.
+You can find
 
 [ ![Codeship Status for osrf/cloudsim-portal](https://codeship.com/projects/915a1070-0a4d-0134-bce0-06f29080c625/status?branch=default)](https://codeship.com/projects/155557)
 
@@ -13,8 +14,8 @@ This is the cloud interface micro service for Cloudsim
 ## What is this repository for? ##
 
 * A web app that manages simulators on the cloud
-* Has different types of users (to create, share and start simulation runs)
-* Launches new AWS gpu instances with simulators and field computers
+* Has different types of users (to create, share and start machines on the cloud)
+* Launches new AWS instances with simulators or field computers
 * Must be run from an AWS instance when using SSL certificates
 
 ## Prerequisite ##
@@ -107,7 +108,7 @@ This won't survive a reboot unless you put this in
 
 #### nodejs ####
 
-You need the following: nodejs (version 4 and up) and gulp
+You need the following: nodejs (version 4 and up)
 
 If you are running Ubuntu Trusty or older distributions, you should install using nodesource:
 
@@ -116,13 +117,6 @@ If you are running Ubuntu Trusty or older distributions, you should install usin
 Otherwise, install using apt-get:
 
     sudo apt-get install -y nodejs nodejs-legacy npm redis-server mercurial
-    sudo npm install -g gulp
-
-
-#### MongoDB ####
-
-https://docs.mongodb.com/manual/installation/
-
 
 ### Setup the portal ###
 
@@ -150,9 +144,9 @@ For security purposes, all sockets and REST API's are protected. Set up the publ
 
 From the command line:
 
-    gulp
+    npm start
 
-gulp starts the portal http server and you should be able to access it by going
+This starts the portal http server and you should be able to access it by going
 to:
 
 https://ip_address:4000 (if port 4000 is open)
@@ -183,7 +177,7 @@ other useful mongo commands for retrieving data from collections:
 
 ### How to run tests ###
 
-    gulp test
+    npm test
 
 This sets the `NODE_ENV` environment variable to `test` and uses fake cloud services.
 No AWS instances will be launched.
@@ -198,12 +192,8 @@ The difference between fake cloud services and AWS dry-run is that the fake clou
 
 To use fake cloud services, comment out the `AWS_ACCESS_KEY_ID` environment variable.in the `.env` file.
 
-
 ## Deployment instructions ##
 
+Refer to [these](https://bitbucket.org/osrf/cloudsim/wiki/Deployment)
+instructions on how to deploy to AWS Elastic Beanstalk using Codeship.
 
-## Contribution guidelines ##
-
-## Who do I talk to? ##
-
-* Repo owner or admin: hugo@osrfoundation.org

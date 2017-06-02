@@ -1767,6 +1767,8 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', srcAdminToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(true)
         done()
       })
     })
@@ -1783,6 +1785,8 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', competitorAToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(true)
         done()
       })
     })
@@ -1799,6 +1803,8 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', srcAdminToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(true)
         done()
       })
     })
@@ -1815,6 +1821,8 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', competitorBToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(true)
         done()
       })
     })
@@ -1831,6 +1839,8 @@ describe('<Unit test SRC rounds>', function() {
       .set('authorization', srcAdminToken)
       .end(function(err,res) {
         res.status.should.be.equal(200)
+        let response = getResponse(res)
+        response.result.data.practice.should.equal(true)
         done()
       })
     })
@@ -1874,6 +1884,7 @@ describe('<Unit test SRC rounds>', function() {
           let response = getResponse(res)
           response.success.should.equal(true)
           response.result.data.myData.should.equal('anyData')
+          response.result.data.practice.should.equal(true)
           done()
         })
       })
@@ -1902,6 +1913,7 @@ describe('<Unit test SRC rounds>', function() {
           let response = getResponse(res)
           response.success.should.equal(true)
           response.result.data.compAData.should.equal('anyCompAData')
+          response.result.data.practice.should.equal(true)
           done()
         })
       })
