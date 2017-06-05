@@ -268,6 +268,7 @@ function setRoutes(app) {
                     options.route = serverVpnKeyUrl
                     options.subnet = '192.168.2'
                     options.resources = simResources
+                    options.record_gazebo_log = !practice
                     // route to post back sim data (needed by cloudsim-sim)
                     options.simulation_data_route = simDataUrl
                     if (!s3key) {
