@@ -272,7 +272,6 @@ function setRoutes(app) {
                     options.subnet = '192.168.2'
                     options.resources = simResources
                     options.record_gazebo_log = !practice
-                    options.enable_traffic_shaper = enable_tc
                     // route to post back sim data (needed by cloudsim-sim)
                     options.simulation_data_route = simDataUrl
                     if (!s3key) {
@@ -341,6 +340,7 @@ function setRoutes(app) {
                         options.github_deploy_key = resourceData.github_deploy_key || 'undefined'
                         options.resources = simResources
                         options.portal_data_route = portalDataRoute
+                        options.enable_traffic_shaper = enable_tc
                         // route to post back sim data (needed by cloudsim-sim)
                         options.simulation_data_route = simDataUrl
                         fieldcomputer.options = options
