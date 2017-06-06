@@ -26,6 +26,9 @@ if (process.env.NODE_ENV === 'test') {
 // during practice
 let practice = process.env.SRC_PRACTICE || true
 
+// env variable to enable / disable traffic shaper
+const enable_tc = process.env.SRC_ENABLE_TC || true
+
 const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
 
 function setRoutes(app) {
@@ -269,6 +272,7 @@ function setRoutes(app) {
                     options.subnet = '192.168.2'
                     options.resources = simResources
                     options.record_gazebo_log = !practice
+                    options.enable_traffic_shaper = enable_tc
                     // route to post back sim data (needed by cloudsim-sim)
                     options.simulation_data_route = simDataUrl
                     if (!s3key) {
