@@ -431,7 +431,7 @@ function setRoutes(app) {
         // able to terminate the instance.
         // During competition, the instances will be terminated by
         // cloudsim-sim using the src-admins token after uploading the logs
-        terminateInstance(user, simulatorData, practice, (resp) => {
+        terminateInstance(user, simulatorData, true, (resp) => {
           let simError
           if (resp.error) {
             console.log('Error terminating simulator: ' +
@@ -440,7 +440,7 @@ function setRoutes(app) {
           }
 
           // Terminate field computer
-          terminateInstance(user, fieldcomputerData, practice, (resp) => {
+          terminateInstance(user, fieldcomputerData, true, (resp) => {
             let fcError
             if (resp.error) {
               console.log('Error terminating field computer: ' +

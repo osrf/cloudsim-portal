@@ -1981,7 +1981,7 @@ describe('<Unit test SRC rounds>', function() {
 
   describe('Get machines with admin', function() {
 
-    it('should check that simulator machine is not terminated',
+    it('should check that simulator machine is terminated',
       function(done) {
         agent
         .get('/simulators/' + compSimBId)
@@ -1989,12 +1989,12 @@ describe('<Unit test SRC rounds>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200)
           const r = getResponse(res)
-          r.result.data.status.should.equal('LAUNCHING');
+          r.result.data.status.should.equal('TERMINATED');
           done()
         })
       })
 
-    it('should check that field computer is not terminated',
+    it('should check that field computer is terminated',
       function(done) {
         agent
         .get('/simulators/' + compFCBId)
@@ -2002,7 +2002,7 @@ describe('<Unit test SRC rounds>', function() {
         .end(function(err,res){
           res.status.should.be.equal(200)
           const r = getResponse(res)
-          r.result.data.status.should.equal('LAUNCHING');
+          r.result.data.status.should.equal('TERMINATED');
           done()
         })
       })
