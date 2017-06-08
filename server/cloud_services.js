@@ -160,14 +160,14 @@ exports.simulatorStatus = function (machineInfo, cb) {
 
   ec2.describeInstances(params, function(err, data) {
     if (err) {
-      cb(err);
+      cb(err)
     }
     else {
       let instance
       try {
-        instance = data.Reservations[0].Instances[0];
-      } catch (e) {
-        cb(e)
+        instance = data.Reservations[0].Instances[0]
+      } catch (ex) {
+        cb(ex)
         return
       }
 
@@ -178,7 +178,7 @@ exports.simulatorStatus = function (machineInfo, cb) {
       }
       // This field may not be available if the instance was already terminated
       // We use it as a hack to know the "creation" time of the instance.
-      if (instance.BlockDeviceMappings[0]) {
+      if (instance.BlockDeviceMappings && instance.BlockDeviceMappings[0]) {
         info.creationTime = instance.BlockDeviceMappings[0].Ebs.AttachTime
       }
       // Field only available when the instance is terminating or terminated

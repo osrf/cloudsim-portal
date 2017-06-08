@@ -184,6 +184,10 @@ const getInstanceIp = function(info, delay, maxRetry, cb) {
 
   setTimeout(() => {
     cloudServices.simulatorStatus(info, (err, state) => {
+      if (err) {
+        // log error and continue trying (ie. does not `return`)
+        console.log("Error getting AWS status", JSON.stringify(err, null, 2))
+      }
       if (!state.ip) {
         let retry = maxRetry-1
         getInstanceIp(info, 5000, retry, cb)
