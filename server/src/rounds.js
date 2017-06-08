@@ -24,10 +24,14 @@ if (process.env.NODE_ENV === 'test') {
 
 // teams have permission to launch and terminate rounds, and download ssh keys
 // during practice
-let practice = process.env.SRC_PRACTICE || true
+let practice = true
+if (process.env.SRC_PRACTICE)
+  practice = JSON.parse(process.env.SRC_PRACTICE)
 
 // env variable to enable / disable traffic shaper
-const enable_tc = process.env.SRC_ENABLE_TC || true
+let enable_tc = true
+if (process.env.SRC_ENABLE_TC)
+  enable_tc = JSON.parse(process.env.SRC_ENABLE_TC)
 
 const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
 
