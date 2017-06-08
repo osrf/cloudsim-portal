@@ -277,6 +277,7 @@ function setRoutes(app) {
                     options.resources = simResources
                     options.record_gazebo_log = !practice
                     // route to post back sim data (needed by cloudsim-sim)
+                    options.srcsimulation_id = simDataId
                     options.simulation_data_route = simDataUrl
                     if (!s3key) {
                       options.s3bucket = 'undefined'
