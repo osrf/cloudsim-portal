@@ -24,7 +24,14 @@ if (process.env.NODE_ENV === 'test') {
 
 // teams have permission to launch and terminate rounds, and download ssh keys
 // during practice
-let practice = process.env.SRC_PRACTICE || true
+let practice = true
+if (process.env.SRC_PRACTICE)
+  practice = JSON.parse(process.env.SRC_PRACTICE)
+
+// env variable to enable / disable traffic shaper
+let enable_tc = true
+if (process.env.SRC_ENABLE_TC)
+  enable_tc = JSON.parse(process.env.SRC_ENABLE_TC)
 
 const adminUser = process.env.CLOUDSIM_ADMIN || 'admin'
 
@@ -35,6 +42,18 @@ function setRoutes(app) {
     csgrant.authenticate,
     csgrant.userResources,
     common.filterResources('srcround-'),
+    function(req, res, next) {
+      // filter out all terminated rounds for now
+      let filter = true
+      if (filter) {
+        // do not return terminated rounds
+        req.userResources = req.userResources.filter((obj)=>{
+          return (typeof obj.data.public.terminated !== 'undefined')
+              && !obj.data.public.terminated
+        })
+      }
+      next()
+    },
     common.redactFromResources('permissions'),
     common.redactFromResources('data.secure'),
     csgrant.allResources)
@@ -174,7 +193,11 @@ function setRoutes(app) {
 
         // create src simulation data that will keep track of
         // application-specific data like scores, time remaining, etc
-        const simulationData = {srcround: resourceName}
+        const simulationData = {
+          srcround: resourceName,
+          practice: practice,
+          team: resourceData.team,
+        }
         srcsimulations.createSimulationData(req.user, resourceData.team,
         simulationData, (dataResp) => {
           if (dataResp.error)
@@ -234,7 +257,7 @@ function setRoutes(app) {
                       res.status(500).jsonp(err)
                       return
                     }
-                    const s3key = (keys.length && keys[0].data) || undefined 
+                    const s3key = (keys.length && keys[0].data) || undefined
 
                     // Create simulator
                     // the options will be passed to the simulator instance and
@@ -252,6 +275,7 @@ function setRoutes(app) {
                     options.route = serverVpnKeyUrl
                     options.subnet = '192.168.2'
                     options.resources = simResources
+                    options.record_gazebo_log = !practice
                     // route to post back sim data (needed by cloudsim-sim)
                     options.simulation_data_route = simDataUrl
                     if (!s3key) {
@@ -276,6 +300,10 @@ function setRoutes(app) {
                       // remove simulator options data
                       delete simulator.options
 
+                      // respond with available data
+                      // others will be populated later once FC is ready
+                      resourceData.public.practice = practice
+                      resourceData.public.terminated = false
                       // respond without waiting for fc to be ready
                       res.jsonp(r)
 
@@ -287,7 +315,7 @@ function setRoutes(app) {
                       // computer instance as we need to pass the ip onto the
                       // fieldcomputer via options
                       getInstanceIp(req.user, simId,
-                      instanceIpUpdateInterval+10, 50, (err, server_ip) => {
+                      instanceIpUpdateInterval+10, 200, (err, server_ip) => {
                         if (err) {
                           console.log (JSON.stringify(err, null, 2))
                           return
@@ -316,6 +344,7 @@ function setRoutes(app) {
                         options.github_deploy_key = resourceData.github_deploy_key || 'undefined'
                         options.resources = simResources
                         options.portal_data_route = portalDataRoute
+                        options.enable_traffic_shaper = enable_tc
                         // route to post back sim data (needed by cloudsim-sim)
                         options.simulation_data_route = simDataUrl
                         fieldcomputer.options = options
@@ -405,7 +434,7 @@ function setRoutes(app) {
         // able to terminate the instance.
         // During competition, the instances will be terminated by
         // cloudsim-sim using the src-admins token after uploading the logs
-        terminateInstance(user, simulatorData, practice, (resp) => {
+        terminateInstance(user, simulatorData, true, (resp) => {
           let simError
           if (resp.error) {
             console.log('Error terminating simulator: ' +
@@ -414,7 +443,7 @@ function setRoutes(app) {
           }
 
           // Terminate field computer
-          terminateInstance(user, fieldcomputerData, practice, (resp) => {
+          terminateInstance(user, fieldcomputerData, true, (resp) => {
             let fcError
             if (resp.error) {
               console.log('Error terminating field computer: ' +
@@ -422,9 +451,11 @@ function setRoutes(app) {
               fcError = resp.error
             }
 
-            // delete srcround resource
-            csgrant.deleteResource(req.user, resource, (err, data) => {
-              if(err) {
+            // Instead of deleting the round resource, mark it as terminated
+            data.data.public.terminated = true
+            csgrant.updateResource(user, resource, data.data,
+            (err) => {
+              if (err) {
                 return res.status(500).jsonp({success: false, error: err})
               }
               let r = {
@@ -633,7 +664,7 @@ const getInstanceIp = function(user, simId, delay, maxRetry, cb) {
       }
       if (!data.data.machine_ip) {
         let retry = maxRetry-1
-        getInstanceIp(user, simId, 500, retry, cb)
+        getInstanceIp(user, simId, 5000, retry, cb)
       }
       else {
         cb(null, data.data.machine_ip)

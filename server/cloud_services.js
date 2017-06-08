@@ -163,12 +163,19 @@ exports.simulatorStatus = function (machineInfo, cb) {
       cb(err);
     }
     else {
-      var instance = data.Reservations[0].Instances[0];
-      var info = {
+      let instance
+      try {
+        instance = data.Reservations[0].Instances[0];
+      } catch (e) {
+        cb(e)
+        return
+      }
+
+      const info = {
         ip: instance.PublicIpAddress,
         state: instance.State.Name,
         launchTime: instance.LaunchTime
-      };
+      }
       // This field may not be available if the instance was already terminated
       // We use it as a hack to know the "creation" time of the instance.
       if (instance.BlockDeviceMappings[0]) {
