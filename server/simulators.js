@@ -157,7 +157,7 @@ const createImpl = function(user, opts, cb) {
               // console.log(simulator.id, 'launch!')
             })
 
-            getInstanceIp(info, instanceIpUpdateInterval, 10, (err, state) => {
+            getInstanceIp(info, instanceIpUpdateInterval, 200, (err, state) => {
               if (err) {
                 console.log(JSON.stringify(err))
                 return
@@ -186,7 +186,7 @@ const getInstanceIp = function(info, delay, maxRetry, cb) {
     cloudServices.simulatorStatus(info, (err, state) => {
       if (!state.ip) {
         let retry = maxRetry-1
-        getInstanceIp(info, 1000, retry, cb)
+        getInstanceIp(info, 5000, retry, cb)
       }
       else {
         return cb(null, state)
