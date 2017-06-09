@@ -188,7 +188,7 @@ const getInstanceIp = function(info, delay, maxRetry, cb) {
         // log error and continue trying (ie. does not `return`)
         console.log("Error getting AWS status", JSON.stringify(err, null, 2))
       }
-      if (state && !state.ip) {
+      if (!state || !state.ip) {
         let retry = maxRetry-1
         getInstanceIp(info, 5000, retry, cb)
       }
