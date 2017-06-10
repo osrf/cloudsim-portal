@@ -3,8 +3,13 @@
 /// Server side simulator controller.
 
 /// Module dependencies.
+const parameters = require('parameters-middleware');
 const util = require('util')
 const csgrant = require('cloudsim-grant')
+const moment = require('moment')
+const _ = require('underscore')
+const common = require('./common')
+const metricConfigsModule = require('./metric_configs')
 
 // initialise cloudServices, depending on the environment
 var cloudServices = null;
@@ -18,7 +23,7 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.NODE_ENV !== 'test') {
 }
 
 // global variables and settings
-var instanceStatusUpdateInterval = 15000;
+var instanceStatusUpdateInterval = 5000;
 var instanceIpUpdateInterval = 10000;
 
 if (process.env.NODE_ENV === 'test') {
@@ -26,58 +31,63 @@ if (process.env.NODE_ENV === 'test') {
   instanceStatusUpdateInterval = 1;
   instanceIpUpdateInterval = 1;
 }
-//var terminatingInstanceList = [];
 
 const awsDefaults = cloudServices.awsDefaults
 
-/// Create a simulator
+/// Create a new simulator instance based on the content of the request
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
 /// @return Simulator create function.
 const create = function(req, res) {
-  // console.log('simulator controller create')
-  // Create a new simulator instance based on the content of the request
+
+  // Call implementation function
+  let opts = req.body
+  let user = req.user
+  createImpl(user, opts, function(resp) {
+
+    // Send response
+    res.jsonp(resp);
+  })
+}
+
+/// Implementation for the create function. This doesn't finish the response.
+const createImpl = function(user, opts, cb) {
+
   let error
+
+  // Cloud services
   if (!cloudServices) {
-    // Create an error
     error = {error: {
       msg: 'Cloud services are not available'
     }};
-    console.log(error.msg)
-    res.jsonp(error);
+    console.log(error.error.msg)
+    cb(error);
     return;
   }
 
   // create the simulator data
   var simulator = {status: 'LAUNCHING'}
-  simulator.region = req.body.region
-  simulator.hardware = req.body.hardware
-  simulator.image = req.body.image
+  simulator.region = opts.region
+  simulator.hardware = opts.hardware
+  simulator.image = opts.image
+
   // TODO: Check if user owns this SSH key resource, otherwise someone can
   // launch a machine with an ssh key they don't own, and download the key
   // from the machine later using the /download route
-  simulator.sshkey = req.body.sshkey
+  simulator.sshkey = opts.sshkey
   if (!simulator.sshkey) {
     simulator.sshkey = awsDefaults.keyName
   }
-  simulator.options = req.body.options
+  simulator.options = opts.options || {}
 
-  if (req.body.sgroup)
-    simulator.sgroup = req.body.sgroup
-  if (!simulator.region || !simulator.image || !simulator.hardware)
-  {
-    error = {
-      error: {
-        msg: 'Missing required fields (image, region, hardware)'
-      }
-    }
-    console.log(error.msg)
-    res.jsonp(error);
-    return;
+  // we use just one (1) security group
+  if (opts.sgroup) {
+    simulator.sgroup = opts.sgroup
+  } else {
+    simulator.sgroup = awsDefaults.security
   }
-
   // Set the simulator user
-  simulator.creator = req.user;
+  simulator.creator = user;
   simulator.launch_date = new Date();
   simulator.termination_date = null;
   simulator.machine_ip = '';
@@ -85,29 +95,34 @@ const create = function(req, res) {
 
   csgrant.getNextResourceId('simulator', (err, resourceName) => {
     if(err) {
-      res.jsonp(error(err))
+      cb(error(err))
       return
     }
     simulator.id = resourceName
+
+    // add id to the options file
+    if (simulator.options) {
+      simulator.options.sim_id = simulator.id
+      simulator.options.portal_url = common.portalUrl()
+    }
+
     // add resource to csgrant
-    csgrant.createResource(req.user, simulator.id, simulator,
+    csgrant.createResource(user, simulator.id, simulator,
       (err) => {
         if (err) {
           console.log('create resource error:' + err)
-          res.jsonp(error(err));
+          cb(error(err));
           return;
         }
 
         // launch the simulator!
-        const tagValue = resourceName + '_' + req.user
+        const tagValue = resourceName + '_' + user
         const tag = {Name: tagValue}
         // use a script that will pass on the username,
         const scriptTxt = cloudServices.generateScript(
           simulator.creator,
-          simulator.options )
-        let sgroups = [awsDefaults.security];
-        if (req.body.sgroup)
-          sgroups.push(req.body.sgroup)
+          simulator.options)
+        let sgroups = [simulator.sgroup];
         cloudServices.launchSimulator(
           simulator.region,
           simulator.sshkey,
@@ -127,56 +142,58 @@ const create = function(req, res) {
                 }
               }
               console.log(error.msg)
-              res.jsonp(error);
+              cb(error);
               return;
             }
+
             const info = machine;
             simulator.machine_id = info.id;
             // send json response object to update the
             // caller with new simulator data.
-            res.jsonp(simulator)
+            cb(simulator)
 
             // update resource (this triggers socket notification)
-            csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
-              console.log(simulator.id, 'launch!')
+            csgrant.updateResource(user, simulator.id, simulator, ()=>{
+              // console.log(simulator.id, 'launch!')
             })
 
-            setTimeout(function() {
-              cloudServices.simulatorStatus(info, function(err, state) {
-                // update resource (this triggers socket notification)
-                simulator.machine_ip = state.ip
-                csgrant.updateResource(req.user, simulator.id, simulator, ()=>{
-                  console.log(simulator.id, 'ip:', simulator.machine_ip)
-                })
+            getInstanceIp(info, instanceIpUpdateInterval, 200, (err, state) => {
+              if (err) {
+                console.log(JSON.stringify(err))
+                return
+              }
 
+              // update resource (this triggers socket notification)
+              simulator.machine_ip = state.ip
+              simulator.aws_launch_time = state.launchTime
+              simulator.aws_creation_time = state.creationTime
+              csgrant.updateResource(user, simulator.id, simulator, ()=>{
+                // console.log(simulator.id, 'ip:', simulator.machine_ip)
               })
-            }, instanceIpUpdateInterval);
+            })
           })
       })
   })
 }
 
-// Terminates a simulator.
-function terminateSimulator(user, simulator, cb) {
+// repeatedly poll machine_ip using cloud services
+const getInstanceIp = function(info, delay, maxRetry, cb) {
+  if (maxRetry < 0) {
+    return cb({error: 'Cannot get instance ip'}, null)
+  }
 
-  var machineInfo = {region: simulator.region,
-    id: simulator.machine_id};
-  cloudServices.terminateSimulator(machineInfo, function(err) {
-    if(err) {
-      cb(err)
-    }
-    else {
-      simulator.status = 'TERMINATING';
-      simulator.termination_date = Date.now();
-      // update resource (this triggers socket notification)
-      csgrant.updateResource(user, simulator.id, simulator, ()=>{
-        console.log(simulator.id, 'terminate')
-      })
-      cb(null, simulator)
-    }
-  }) // terminate
+  setTimeout(() => {
+    cloudServices.simulatorStatus(info, (err, state) => {
+      if (!state.ip) {
+        let retry = maxRetry-1
+        getInstanceIp(info, 5000, retry, cb)
+      }
+      else {
+        return cb(null, state)
+      }
+    })
+  }, delay)
 }
-
 
 function getUserFromResource(resource) {
   const permissions = resource.permissions
@@ -194,15 +211,28 @@ function getUserFromResource(resource) {
 /// Delete a simulator.
 /// @param[in] req Nodejs request object.
 /// @param[out] res Nodejs response object.
-/// @return Destroy function
-const destroy = function(req, res) {
-  const simulator = req.resourceData
+/// @return terminate function
+const terminate = function(req, res) {
+
+  // Call implementation function
+  let opts = req.resourceData
+  let user = req.user
+
+  terminateImpl(user, opts, (resp) => {
+    // Send response
+    res.jsonp(resp);
+  })
+}
+
+/// Implementation for the terminate function. This doesn't finish the response.
+const terminateImpl = function(user, opts, cb) {
+
   if (!cloudServices) {
     // Create an error
     error = {error: {
       msg: 'Cloud services are not available'
-    }};
-    res.jsonp(error);
+    }}
+    cb(error)
     return;
   }
 
@@ -215,23 +245,68 @@ const destroy = function(req, res) {
   // }
 
   // finally terminate the simulator
-  terminateSimulator(req.user,
-                     simulator.data,
-                     function(err) {
-                       if (err) {
-                         var error = {error: {
-                           msg: 'Error terminating simulator'
-                         }};
-                         res.jsonp(error);
-                         return;
-                       }
-                       else {
-                         res.jsonp(simulator)
-                       }
-                     })
+  terminateSimulator(user, opts.data, function(err) {
+    if (err) {
+      cb({error: {msg: 'Error terminating simulator'}})
+      return
+    }
+    else {
+      cb(opts)
+    }
+  })
 }
 
+// Terminates a simulator.
+// cb parameter is a callback function with 2 arguments: error and simulator.
+const terminateSimulator = function(user, simulator, cb) {
+  if (!simulator.id) {
+    throw new Error("Missing simulator.id")
+  }
+  // Requirement: simulator must contain the "id". It will be read from DB.
+  const machineInfo = {region: simulator.region,
+    id: simulator.machine_id};
+  cloudServices.terminateSimulator(machineInfo, function(err) {
+    if(err) {
+      cb(err)
+    }
+    else {
+      // need to re-read the simulator resource based on the given simulator.id
+      // to make sure we have the latest data.
+      csgrant.readResource(user, simulator.id, function(err, readData) {
+        if(err) {
+          return cb(err)
+        }
+        simulator = readData.data
 
+        simulator.status = 'TERMINATING';
+        if (!simulator.termination_date) {
+          simulator.termination_date = new Date();
+        }
+        // Update db with termination date
+        csgrant.updateResource(user, simulator.id, simulator, () => {
+          // send response . Aws timestamps will be updated afterwards
+          cb(null, simulator)
+
+          if (!simulator.aws_termination_request_time) {
+            setTimeout(function() {
+              cloudServices.simulatorStatus(machineInfo, function(err, state) {
+                if (err) {
+                  console.log(JSON.stringify(err))
+                } else if (state.terminationTime) {
+                  simulator.aws_termination_request_time = state.terminationTime
+                  // update resource (this triggers socket notification)
+                  csgrant.updateResource(user, simulator.id, simulator, () => {
+                    console.log(simulator.id, 'aws_termination_time set:', state.terminationTime)
+                  })
+                }
+              })
+            }, instanceIpUpdateInterval);
+          }
+        })
+      })
+    }
+  }) // terminate
+}
 function getAllNonTerminatedSimulators() {
   const resources = csgrant.copyInternalDatabase()
   const sims = {}
@@ -304,18 +379,181 @@ function updateInstanceStatus() {
           simulator.data.status = awsState
           const user = getUserFromResource(simulator)
           const resourceName = simulator.data.id
+          // this console.log is here on purpose, for future tracing if needed.
+          console.log("updateInstanceStatus - found simulator with different DB status vs. AWS status: " + resourceName)
+          // if terminated, let's also set the termination_date if it wasn't
+          // set yet (due to some inconsistency, for example).
+          if (awsState === 'TERMINATED') {
+            if (!simulator.data.termination_date) {
+              simulator.data.termination_date = new Date();
+            }
+
+            // Also try to get aws_termination_time
+            if (!simulator.data.aws_termination_request_time) {
+              const machineInfo = {region: simulator.data.region, id: simulator.data.machine_id}
+              cloudServices.simulatorStatus(machineInfo, function(err, state) {
+                if (err) {
+                  console.log(JSON.stringify(err))
+                } else if (state.terminationTime) {
+                  simulator.data.aws_termination_request_time = state.terminationTime
+                  // update resource (this triggers socket notification)
+                  csgrant.updateResource(user, resourceName, simulator.data, () => {
+                    console.log(simulator.id, 'aws_termination_time set:', state.terminationTime)
+                  })
+                }
+              })
+            }
+          }
+
           csgrant.updateResource(user, resourceName, simulator.data, ()=>{
             if (simulator.data.status === 'TERMINATED') {
               // extra console.log for issue 13
-              console.log('\n\n', awsInstanceStates,'\n*\n', simulator.data)
+              // console.log('\n\n', awsInstanceStates,'\n*\n', simulator.data)
             }
-            console.log(simId,simulator.data.id,
+            /* console.log(simId,simulator.data.id,
               'status update', oldState, '=>',
-              simulator.data.status)
+              simulator.data.status)*/
           })
         }
       }
     })
+}
+
+/**
+ * Internal function that calculates and returns metrics corresponding
+ * to all the simulators accessible by the invoking user, grouped by groups/roles.
+ * Retuns an array in which the values are the grouped simulator metrics.
+ */
+function _computeSimulatorMetrics(user, simulators) {
+  //const simulators = req.userResources
+  // result
+  const metrics = {}
+  // at a minimum, the current user must be returned
+  metrics[user] = {
+    'identity': user,
+    'running_time': 0
+  }
+  for(let sId in simulators) {
+    const s = simulators[sId]
+    // compute time in running status
+    const launchTime = moment.utc(s.data.aws_launch_time || s.data.launch_date)
+    let roundUpHours
+    if (s.data.status === 'TERMINATED'
+      && !s.data.termination_date
+      && !s.data.aws_termination_request_time) {
+      // HACK: Defect scenario. simulator marked as terminated but with
+      // not termination datetime. We count those as 1 hours.
+      roundUpHours = 1
+    } else {
+      // normal scenario
+      let terminationTime = moment.utc(s.data.aws_termination_request_time
+        || s.data.termination_date
+        || new Date()) // we also count still running instances
+      const runningTime = moment.duration(terminationTime.diff(launchTime))
+      roundUpHours = Math.floor(runningTime.asHours() + 1)
+    }
+    for(let pId in s.permissions) {
+      const username = s.permissions[pId].username
+      if (!metrics[username]) {
+        metrics[username] = {
+          'identity': username,
+          'running_time': 0
+        }
+      }
+      metrics[username].running_time += roundUpHours
+    }
+  }
+  let result = []
+  for(let uId in metrics) {
+    result.push(metrics[uId])
+  }
+  return result
+}
+
+/**
+ * Returns simulator metrics grouped by user.
+ * If the request has a team parameter then the returned result will only contain
+ * the metrics for the given team name, if applicable.
+ * The queried simulators are gathered just from the list of simulators for which the
+ * current user has read permissions.
+ */
+function getSimulatorMetrics(req, res) {
+  let metrics = _computeSimulatorMetrics(req.user, req.userResources)
+
+  if (req.query.team) {
+    metrics = metrics.filter((metric) => {
+      return metric.username === req.query.team
+    })
+  }
+
+  // prepare response
+  const r = {
+    success: false,
+    operation: 'get simulator metrics for user',
+    requester: req.user,
+  }
+  r.success = true
+  r.result = metrics
+  res.jsonp(r)
+}
+
+/**
+ * Middleware to check instance-hours availability for the current user's identities.
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ */
+function checkAvailableInstanceHours(req, res, next) {
+  csgrant.readAllResourcesForUser(req.identities, (err, items) => {
+    if(err) {
+      return res.status(500).jsonp({
+        success: false,
+        "error": err
+      })
+    }
+    // this filtered list will only contain enabled configurations (or whitelisted ones)
+    const metricsConfigs = metricConfigsModule.getEnabledConfigs(req, items)
+    if (_.isEmpty(metricsConfigs)) {
+      next()
+      return
+    }
+
+    // is this a whitelisted user? (ie. any of his identities is whitelisted)
+    if (metricsConfigs.find((config) => { return config.whitelisted})) {
+      next()
+      return
+    }
+
+    // Get the config with the minimum number of allowed instance-hours
+    const config = _.min(metricsConfigs, config => { return config.max_instance_hours })
+
+    const simulators = filterSimulators(items)
+    const metrics = _computeSimulatorMetrics(req.user, simulators)
+
+    const exhausted = metrics.find( (metric) => {
+      return metric.running_time >= config.max_instance_hours
+    })
+
+    if (!exhausted) {
+      next()
+      return
+    }
+    // Don't launch machines if limit is reached.
+    const error = {
+      success: false,
+      error: 'Unable to launch more instances. Instance-hours limit '
+        + ' reached for identity: ' + config.identity
+    }
+    return res.status(403).jsonp(error);
+  })
+}
+
+function filterSimulators(resources) {
+  return resources.filter( (obj)=>{
+    if(obj.name.indexOf('simulator-') == 0)
+      return true
+    return false
+  })
 }
 
 // used to start the periodicall resource database update (against the aws info)
@@ -331,15 +569,7 @@ exports.setRoutes = function (app) {
   app.get('/simulators',
     csgrant.authenticate,
     csgrant.userResources,
-    function (req, res, next) {
-      const resources = req.userResources
-      req.userResources = resources.filter( (obj)=>{
-        if(obj.name.indexOf('simulator-') == 0)
-          return true
-        return false
-      })
-      next()
-    },
+    common.filterResources('simulator-'),
     csgrant.allResources)
 
   /// DEL /simulators
@@ -347,13 +577,18 @@ exports.setRoutes = function (app) {
   app.delete('/simulators/:resourceId',
     csgrant.authenticate,
     csgrant.ownsResource(':resourceId', false),
-    destroy)
+    terminate)
 
   /// POST /simulators
   /// Create a new simulation
   app.post('/simulators',
     csgrant.authenticate,
     csgrant.ownsResource('simulators', false),
+    parameters(
+      {body : ['region', 'hardware', 'image']},
+      {message : 'Missing required fields (image, region, hardware).'}
+    ),
+    checkAvailableInstanceHours,
     create)
 
   /// GET /simulators/:simulationId
@@ -362,4 +597,16 @@ exports.setRoutes = function (app) {
    csgrant.authenticate,
    csgrant.ownsResource(':resourceId', true),
    csgrant.resource)
+
+  /// GET /metrics/simulators
+  /// Return metrics associated to simulators grouped by user
+  app.get('/metrics/simulators',
+    csgrant.authenticate,
+    csgrant.userResources,
+    common.filterResources('simulator-'),
+    getSimulatorMetrics)
 }
+
+exports.create = createImpl
+exports.terminate = terminateImpl
+exports.checkAvailableInstanceHours = checkAvailableInstanceHours
