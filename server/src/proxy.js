@@ -18,8 +18,8 @@ function setRoutes(app) {
         method: 'POST',
         headers: {'authorization': req.headers.authorization}
       }).on('error', function(e) {
-        res.end(e);
-      }).pipe(res);
+        res.status(400).end(JSON.stringify(e))
+      }).pipe(res)
     })
 }
 
