@@ -277,6 +277,7 @@ function setRoutes(app) {
                     options.resources = simResources
                     options.record_gazebo_log = !practice
                     // route to post back sim data (needed by cloudsim-sim)
+                    options.srcsimulation_id = simDataId
                     options.simulation_data_route = simDataUrl
                     if (!s3key) {
                       options.s3bucket = 'undefined'
@@ -659,10 +660,10 @@ const getInstanceIp = function(user, simId, delay, maxRetry, cb) {
   setTimeout(() => {
     csgrant.readResource(user, simId, (err, data) => {
       if (err) {
-        cb(err)
-        return
+        // log error and continue trying (ie. does not `return`)
+        console.log("Error reading resource", JSON.stringify(err, null, 2))
       }
-      if (!data.data.machine_ip) {
+      if (!data || !data.data || !data.data.machine_ip) {
         let retry = maxRetry-1
         getInstanceIp(user, simId, 5000, retry, cb)
       }
