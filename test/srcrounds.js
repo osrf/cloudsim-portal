@@ -2098,6 +2098,23 @@ describe('<Unit test SRC rounds>', function() {
       })
     })
 
+    it('should not be possible to post to proxy with non-existent target',
+    function(done) {
+      agent
+      .post('/srcproxy')
+      .set('Accept', 'application/json')
+      .set('authorization', competitorAToken)
+      .send({
+        'host': 'localhost:8866',
+        'path': '/srcproxy-test',
+        'data': 'competitor'
+      })
+      .end(function(err,res) {
+        res.status.should.be.equal(400)
+        done()
+      })
+    })
+
     after(function(done) {
       testHttpServer.close()
       done()
