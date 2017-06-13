@@ -346,6 +346,7 @@ function setRoutes(app) {
                         options.resources = simResources
                         options.portal_data_route = portalDataRoute
                         options.enable_traffic_shaper = enable_tc
+                        options.team = resourceData.team
                         // route to post back sim data (needed by cloudsim-sim)
                         options.simulation_data_route = simDataUrl
                         fieldcomputer.options = options
