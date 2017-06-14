@@ -138,7 +138,7 @@ describe('<Unit test Metrics>', function() {
         done();
       });
     });
-    it('the admin should be possible to post a new metrics config targetting TeamC and grant read/write permission to TeamA', function(done) {
+    it('should be possible for the admin to post a new metrics config targetting TeamC and grant read/write permission to TeamA', function(done) {
       agent
       .post('/metrics/configs/')
       .set('Acccept', 'application/json')
@@ -302,23 +302,40 @@ describe('<Unit test Metrics>', function() {
         done();
       });
     });
-  });
-
-  describe('Check Metrics Invalid HTTP Methods', function() {
-    it('should not be possible to DEL to metrics/config', function(done) {
+    it('should NOT be possible to delete configs by non authorized users', function(done) {
       agent
-      .del('/metrics/configs')
-      .set('Acccept', 'application/json')
-      .set('authorization', userToken)
+      .del('/metrics/configs/' + configId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
       .send({})
-      .end(function(err,res){
-        res.status.should.be.equal(404);
+      .end(function(err,res) {
+        res.status.should.be.equal(401);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.success.should.equal(false);
         done();
       });
     });
-    it('should not be possible to DEL to metrics/config', function(done) {
+    it('should be possible for admins to delete configs', function(done) {
       agent
-      .del('/metrics/configs/:resourceId')
+      .del('/metrics/configs/' + configId)
+      .set('Accept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res) {
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.success.should.equal(true)
+        done();
+      });
+    });
+  });
+
+  describe('Check Metrics Invalid HTTP Methods', function() {
+    it('should not be possible to DEL to metrics/config collection url', function(done) {
+      agent
+      .del('/metrics/configs')
       .set('Acccept', 'application/json')
       .set('authorization', userToken)
       .send({})
