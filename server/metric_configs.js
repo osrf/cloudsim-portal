@@ -137,6 +137,21 @@ function createMetricsConfig(req, res) {
   })
 }
 
+function deleteMetricsConfig(req, res) {
+  const r = {success: false}
+  const resourceName = req.resourceName;
+  console.log(' Delete Metrics config: ', JSON.stringify(resourceName));
+  csgrant.deleteResource(req.authorizedIdentity, resourceName, function(err) {
+    if (err) {
+      console.log(err);
+      return res.jsonp({success: false, error: err});
+    }
+    // Success
+    r.success = true;
+    res.jsonp(r);
+  });
+}
+
 function setRoutes(app) {
   /// GET /metrics/config
   /// Return config associated to allowed instance-hours by team
@@ -159,6 +174,13 @@ function setRoutes(app) {
     csgrant.authenticate,
     csgrant.ownsResource(':resourceId', false),
     updateMetricsConfig)
+
+  /// DELETE /metrics/config
+  /// Delete a metrics configuration
+  app.delete('/metrics/configs/:resourceId',
+    csgrant.authenticate,
+    csgrant.ownsResource(':resourceId', false),
+    deleteMetricsConfig);
 }
 
 exports.getEnabledConfigs = getEnabledConfigs

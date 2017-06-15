@@ -101,7 +101,7 @@ describe('<Unit test Metrics>', function() {
     it('should be possible to get all configs accessible by admin user', function(done) {
       agent
       .get('/metrics/configs')
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', userToken)
       .send({})
       .end(function(err,res){
@@ -117,7 +117,7 @@ describe('<Unit test Metrics>', function() {
     it('the admin should be possible to post a new metrics config targetting TeamA', function(done) {
       agent
       .post('/metrics/configs/')
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', userToken)
       .send({ identity: teamA, check_enabled: true, max_instance_hours: 7 })
       .end(function(err,res){
@@ -138,10 +138,10 @@ describe('<Unit test Metrics>', function() {
         done();
       });
     });
-    it('the admin should be possible to post a new metrics config targetting TeamC and grant read/write permission to TeamA', function(done) {
+    it('should be possible for the admin to post a new metrics config targetting TeamC and grant read/write permission to TeamA', function(done) {
       agent
       .post('/metrics/configs/')
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', userToken)
       .send({ identity: teamC, check_enabled: true, max_instance_hours: 7, admin_identity: teamA })
       .end(function(err,res){
@@ -166,7 +166,7 @@ describe('<Unit test Metrics>', function() {
     it('should NOT be possible to post a new metrics config targetting a duplicated identity', function(done) {
       agent
       .post('/metrics/configs/')
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', userToken)
       .send({ identity: teamA, check_enabled: true, max_instance_hours: 10 })
       .end(function(err,res){
@@ -180,7 +180,7 @@ describe('<Unit test Metrics>', function() {
     it('should be possible to get configs by users from the targetted team', function(done) {
       agent
       .get('/metrics/configs')
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', competitorAToken)
       .send({})
       .end(function(err,res){
@@ -197,7 +197,7 @@ describe('<Unit test Metrics>', function() {
     it('should NOT be possible to update specific config by users from the targetted team (readonly)', function(done) {
       agent
       .put('/metrics/configs/' + configId)
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', competitorAToken)
       .send({ max_instance_hours: 5 })
       .end(function(err,res){
@@ -211,7 +211,7 @@ describe('<Unit test Metrics>', function() {
     it('should NOT be possible to get configs by non authorized users', function(done) {
       agent
       .get('/metrics/configs')
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', competitorBToken)
       .send({})
       .end(function(err,res){
@@ -225,7 +225,7 @@ describe('<Unit test Metrics>', function() {
     it('should NOT be possible to update specific config by non authorized users', function(done) {
       agent
       .put('/metrics/configs/' + configId)
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', competitorBToken)
       .send({ max_instance_hours: 8 })
       .end(function(err,res){
@@ -239,7 +239,7 @@ describe('<Unit test Metrics>', function() {
     it('should be possible to update any config by admin user', function(done) {
       agent
       .put('/metrics/configs/' + configId)
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', userToken)
       .send({ max_instance_hours: 9 })
       .end(function(err,res){
@@ -256,7 +256,7 @@ describe('<Unit test Metrics>', function() {
     it('should NOT be possible to update main config 000 by a non admin user', function(done) {
       agent
       .put('/metrics/configs/metrics-configs-000')
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', competitorAToken)
       .send({ check_enabled: false})
       .end(function(err,res){
@@ -270,7 +270,7 @@ describe('<Unit test Metrics>', function() {
     it('should be possible for TeamA to get the configs of TeamC', function(done) {
       agent
       .get('/metrics/configs')
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', competitorAToken)
       .send({})
       .end(function(err,res){
@@ -288,7 +288,7 @@ describe('<Unit test Metrics>', function() {
     it('should be possible for TeamA to modify the configs of TeamC', function(done) {
       agent
       .put('/metrics/configs/' + configId)
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', competitorAToken)
       .send({ max_instance_hours: 5 })
       .end(function(err,res){
@@ -302,24 +302,55 @@ describe('<Unit test Metrics>', function() {
         done();
       });
     });
-  });
-
-  describe('Check Metrics Invalid HTTP Methods', function() {
-    it('should not be possible to DEL to metrics/config', function(done) {
+    it('should NOT be possible to delete configs by non authorized users', function(done) {
       agent
-      .del('/metrics/configs')
-      .set('Acccept', 'application/json')
-      .set('authorization', userToken)
+      .del('/metrics/configs/' + configId)
+      .set('Accept', 'application/json')
+      .set('authorization', competitorBToken)
       .send({})
-      .end(function(err,res){
-        res.status.should.be.equal(404);
+      .end(function(err,res) {
+        res.status.should.be.equal(401);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.success.should.equal(false);
         done();
       });
     });
-    it('should not be possible to DEL to metrics/config', function(done) {
+    it('should be possible for admins to delete configs', function(done) {
       agent
-      .del('/metrics/configs/:resourceId')
-      .set('Acccept', 'application/json')
+      .del('/metrics/configs/' + configId)
+      .set('Accept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res) {
+        res.status.should.be.equal(200);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.success.should.equal(true)
+        done();
+      });
+    });
+    it('should NOT be possible to delete a non-existant config resource', function(done) {
+      agent
+      .del('/metrics/configs/' + configId)
+      .set('Accept', 'application/json')
+      .set('authorization', userToken)
+      .send({})
+      .end(function(err,res) {
+        res.status.should.be.equal(401);
+        res.redirect.should.equal(false);
+        let text = JSON.parse(res.text);
+        text.success.should.equal(false)
+        done();
+      });
+    });
+  });
+
+  describe('Check Metrics Invalid HTTP Methods', function() {
+    it('should not be possible to DEL to metrics/config collection url', function(done) {
+      agent
+      .del('/metrics/configs')
+      .set('Accept', 'application/json')
       .set('authorization', userToken)
       .send({})
       .end(function(err,res){
@@ -330,7 +361,7 @@ describe('<Unit test Metrics>', function() {
     it('should not be possible to PUT to metric configs collection url', function(done) {
       agent
       .put('/metrics/configs')
-      .set('Acccept', 'application/json')
+      .set('Accept', 'application/json')
       .set('authorization', userToken)
       .send({})
       .end(function(err,res){
