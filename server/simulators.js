@@ -163,12 +163,18 @@ const createImpl = function(user, opts, cb) {
                 return
               }
 
-              // update resource (this triggers socket notification)
-              simulator.machine_ip = state.ip
-              simulator.aws_launch_time = state.launchTime
-              simulator.aws_creation_time = state.creationTime
-              csgrant.updateResource(user, simulator.id, simulator, ()=>{
-                // console.log(simulator.id, 'ip:', simulator.machine_ip)
+              csgrant.readResource(user, simulator.id, function(err, readData) {
+                if(err) {
+                  return cb(err)
+                }
+                simulator = readData.data
+                // update resource (this triggers socket notification)
+                simulator.machine_ip = state.ip
+                simulator.aws_launch_time = state.launchTime
+                simulator.aws_creation_time = state.creationTime
+                csgrant.updateResource(user, simulator.id, simulator, ()=>{
+                  // console.log(simulator.id, 'ip:', simulator.machine_ip)
+                })
               })
             })
           })
@@ -297,10 +303,22 @@ const terminateSimulator = function(user, simulator, cb) {
                 if (err) {
                   console.log(JSON.stringify(err))
                 } else if (state.terminationTime) {
-                  simulator.aws_termination_request_time = state.terminationTime
-                  // update resource (this triggers socket notification)
-                  csgrant.updateResource(user, simulator.id, simulator, () => {
-                    console.log(simulator.id, 'aws_termination_time set:', state.terminationTime)
+
+                  // re-read resource to get latest data
+                  csgrant.readResource(user, simulator.id,
+                  function(err, readData) {
+                    if(err) {
+                      return cb(err)
+                    }
+                    simulator = readData.data
+
+                    simulator.aws_termination_request_time =
+                      state.terminationTime
+                    // update resource (this triggers socket notification)
+                    csgrant.updateResource(user, simulator.id, simulator, () => {
+                      console.log(simulator.id, 'aws_termination_time set:',
+                      state.terminationTime)
+                    })
                   })
                 }
               })
@@ -380,43 +398,51 @@ function updateInstanceStatus() {
           continue  // skip changes for missing 'LAUNCHING' machines
         // update if state has changed
         if (oldState !== awsState) {
-          simulator.data.status = awsState
           const user = getUserFromResource(simulator)
           const resourceName = simulator.data.id
           // this console.log is here on purpose, for future tracing if needed.
           console.log("updateInstanceStatus - found simulator with different DB status vs. AWS status: " + resourceName)
-          // if terminated, let's also set the termination_date if it wasn't
-          // set yet (due to some inconsistency, for example).
-          if (awsState === 'TERMINATED') {
-            if (!simulator.data.termination_date) {
-              simulator.data.termination_date = new Date();
-            }
 
-            // Also try to get aws_termination_time
-            if (!simulator.data.aws_termination_request_time) {
-              const machineInfo = {region: simulator.data.region, id: simulator.data.machine_id}
-              cloudServices.simulatorStatus(machineInfo, function(err, state) {
-                if (err) {
-                  console.log(JSON.stringify(err))
-                } else if (state.terminationTime) {
-                  simulator.data.aws_termination_request_time = state.terminationTime
-                  // update resource (this triggers socket notification)
-                  csgrant.updateResource(user, resourceName, simulator.data, () => {
-                    console.log(simulator.id, 'aws_termination_time set:', state.terminationTime)
-                  })
-                }
-              })
-            }
-          }
 
-          csgrant.updateResource(user, resourceName, simulator.data, ()=>{
-            if (simulator.data.status === 'TERMINATED') {
-              // extra console.log for issue 13
-              // console.log('\n\n', awsInstanceStates,'\n*\n', simulator.data)
+          // re-read resource to get latest data
+          csgrant.readResource(user, resourceName,  function(err, simulator) {
+            simulator.data.status = awsState
+
+            let getAWSTermRequestTime = false;
+            // if terminated, let's also set the termination_date if it wasn't
+            // set yet (due to some inconsistency, for example).
+            if (awsState === 'TERMINATED' ) {
+              if (!simulator.data.termination_date)
+                simulator.data.termination_date = new Date();
+              getAWSTermRequestTime =
+                  !simulator.data.aws_termination_request_time
             }
-            /* console.log(simId,simulator.data.id,
-              'status update', oldState, '=>',
-              simulator.data.status)*/
+            csgrant.updateResource(user, resourceName, simulator.data, ()=> {
+              if (getAWSTermRequestTime) {
+                const machineInfo = {region: simulator.data.region,
+                  id: simulator.data.machine_id}
+                cloudServices.simulatorStatus(machineInfo,
+                function(err, state) {
+                  if (err) {
+                    console.log(JSON.stringify(err))
+                  }
+                  else if (state.terminationTime) {
+                    // re-read resource to get latest data
+                    csgrant.readResource(user, resourceName,
+                    function(err, simulator) {
+                      simulator.data.aws_termination_request_time =
+                          state.terminationTime
+                      // update resource (this triggers socket notification)
+                      csgrant.updateResource(user, resourceName, simulator.data,
+                      () => {
+                        console.log(simulator.data.id,
+                            'aws_termination_time set:', state.terminationTime)
+                      })
+                    })
+                  }
+                })
+              }
+            })
           })
         }
       }
@@ -560,7 +586,7 @@ function filterSimulators(resources) {
   })
 }
 
-// used to start the periodicall resource database update (against the aws info)
+// used to start the periodic resource database update (against the aws info)
 exports.initInstanceStatus = function() {
   console.log('starting instance status update with interval (ms): ',
     instanceStatusUpdateInterval)

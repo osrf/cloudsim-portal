@@ -170,7 +170,6 @@ exports.simulatorStatus = function (machineInfo, cb) {
         cb(ex)
         return
       }
-
       const info = {
         ip: instance.PublicIpAddress,
         state: instance.State.Name,
@@ -491,5 +490,3 @@ echo "cloud-init is done" >> $logpath
 `
   return script
 }
-
-
